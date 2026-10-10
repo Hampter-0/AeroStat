@@ -110,6 +110,11 @@ async fn check_now(State(state): State<AppState>) -> Json<Vec<crate::models::Che
 
     for service in &services {
         let result = check_service(&client, service).await;
+
+        if let Err(e) = db::record(&state.db, &result).await {
+            tracing::error!("Failed to record metric for {}: {e}", result.service_id);
+        }
+
         results.push(result);
     }
 
