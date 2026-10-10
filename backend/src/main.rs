@@ -3,7 +3,9 @@ mod config;
 mod db;
 mod models;
 mod state;
+mod services;
 
+use crate::services::{check_service, CheckableService};
 use axum::{extract::State, routing::get, Json, Router};
 use clap::Parser;
 use cli::Commands;
@@ -54,6 +56,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/", get(root))
         .route("/health", get(health))
         .route("/api/services", get(list_services))
+        .route("/api/check-now", get(check_now))
         .with_state(state)
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
@@ -92,4 +95,23 @@ async fn list_services(State(state): State<AppState>) -> Json<Vec<ServiceRow>> {
     .unwrap_or_default();
 
     Json(rows)
+}
+
+async fn check_now(State(state): State<AppState>) -> Json<Vec<crate::models::CheckResult>> {
+    let services: Vec<CheckableService> = sqlx::query_as(
+        "SELECT id, url, expected_status FROM services ORDER BY sort_order",
+    )
+    .fetch_all(&state.db)
+    .await
+    .unwrap_or_default();
+
+    let client = reqwest::Client::new();
+    let mut results = Vec::new();
+
+    for service in &services {
+        let result = check_service(&client, service).await;
+        results.push(result);
+    }
+
+    Json(results)
 }

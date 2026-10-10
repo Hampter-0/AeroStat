@@ -1,4 +1,8 @@
-#[allow(unused_imports)]
+#![allow(unused_imports)]
+
 mod service;
-#[allow(unused_imports)]
 pub use service::{GroupConfig, ServiceConfig, ServicesConfig};
+
+mod metric;
+pub use metric::CheckResult;
+pub use service::*;
