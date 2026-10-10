@@ -1,12 +1,19 @@
 use sqlx::postgres::{PgPool, PgPoolOptions};
 
-pub async fn init(database_url: &str) -> anyhow::Result<PgPool> {
+/// Opens a connection pool. Does not run migrations — call `migrate`
+/// separately once you have a pool.
+pub async fn connect(database_url: &str) -> anyhow::Result<PgPool> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(database_url)
         .await?;
 
-    sqlx::migrate!("./migrations").run(&pool).await?;
-
     Ok(pool)
+}
+
+/// Runs all pending migrations from `backend/migrations` against the pool.
+
+pub async fn migrate(pool: &PgPool) -> anyhow::Result<()> {
+    sqlx::migrate!("./migrations").run(pool).await?;
+    Ok(())
 }

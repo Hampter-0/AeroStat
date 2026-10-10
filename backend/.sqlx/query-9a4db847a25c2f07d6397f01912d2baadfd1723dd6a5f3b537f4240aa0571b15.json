@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO services (id, name, url, type, group_id, expected_status, check_interval_seconds, sort_order)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n            ON CONFLICT (id) DO UPDATE\n            SET name = EXCLUDED.name,\n                url = EXCLUDED.url,\n                type = EXCLUDED.type,\n                group_id = EXCLUDED.group_id,\n                expected_status = EXCLUDED.expected_status,\n                check_interval_seconds = EXCLUDED.check_interval_seconds,\n                sort_order = EXCLUDED.sort_order\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Int4Array",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9a4db847a25c2f07d6397f01912d2baadfd1723dd6a5f3b537f4240aa0571b15"
+}
