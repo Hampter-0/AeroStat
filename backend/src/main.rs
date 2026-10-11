@@ -15,6 +15,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    cli::print_banner();
     dotenvy::dotenv().ok();
 
     tracing_subscriber::fmt()
