@@ -2,11 +2,10 @@
 mod config;
 mod db;
 mod models;
+mod routes;
 mod services;
 mod state;
 
-use crate::services::{check_service, CheckableService};
-use axum::{extract::State, routing::get, Json, Router};
 use clap::Parser;
 use cli::Commands;
 use state::AppState;
@@ -55,12 +54,7 @@ async fn main() -> anyhow::Result<()> {
 
     let state = AppState { db: pool };
 
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/health", get(health))
-        .route("/api/services", get(list_services))
-        .route("/api/check-now", get(check_now))
-        .with_state(state)
+    let app = routes::build(state)
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
@@ -71,55 +65,4 @@ async fn main() -> anyhow::Result<()> {
     axum::serve(listener, app).await?;
 
     Ok(())
-}
-
-async fn root() -> &'static str {
-    "Statuspage API is running"
-}
-
-async fn health() -> &'static str {
-    "ok"
-}
-
-#[derive(serde::Serialize)]
-struct ServiceRow {
-    id: String,
-    name: String,
-    url: String,
-}
-
-async fn list_services(State(state): State<AppState>) -> Json<Vec<ServiceRow>> {
-    let rows = sqlx::query_as!(
-        ServiceRow,
-        "SELECT id, name, url FROM services ORDER BY sort_order"
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-
-    Json(rows)
-}
-
-async fn check_now(State(state): State<AppState>) -> Json<Vec<crate::models::CheckResult>> {
-    let services: Vec<CheckableService> = sqlx::query_as(
-        "SELECT id, url, expected_status, check_interval_seconds FROM services ORDER BY sort_order",
-    )
-    .fetch_all(&state.db)
-    .await
-    .unwrap_or_default();
-
-    let client = reqwest::Client::new();
-    let mut results = Vec::new();
-
-    for service in &services {
-        let result = check_service(&client, service).await;
-
-        if let Err(e) = db::record(&state.db, &result).await {
-            tracing::error!("Failed to record metric for {}: {e}", result.service_id);
-        }
-
-        results.push(result);
-    }
-
-    Json(results)
 }
