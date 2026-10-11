@@ -8,6 +8,7 @@ pub struct ServiceStatus {
     name: String,
     url: String,
     group_id: Option<String>,
+    group_name: Option<String>,
     status: Option<String>,
     response_time_ms: Option<i32>,
     checked_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -21,10 +22,12 @@ pub async fn get(State(state): State<AppState>) -> Json<Vec<ServiceStatus>> {
             s.name,
             s.url,
             s.group_id,
+            g.name AS group_name,
             m.status,
             m.response_time AS response_time_ms,
             m.checked_at
         FROM services s
+        LEFT JOIN groups g ON g.id = s.group_id
         LEFT JOIN LATERAL (
             SELECT status, response_time, checked_at
             FROM metrics
@@ -32,7 +35,7 @@ pub async fn get(State(state): State<AppState>) -> Json<Vec<ServiceStatus>> {
             ORDER BY checked_at DESC
             LIMIT 1
         ) m ON true
-        ORDER BY s.sort_order
+        ORDER BY g.sort_order, s.sort_order
         "#,
     )
     .fetch_all(&state.db)
