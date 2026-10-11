@@ -13,6 +13,7 @@ CREATE TABLE services (
     group_id TEXT REFERENCES groups(id) ON DELETE SET NULL,
     expected_status INT[] NOT NULL DEFAULT ARRAY[200],
     check_interval_seconds INT NOT NULL DEFAULT 300,
+    next_check_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

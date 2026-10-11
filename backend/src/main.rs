@@ -2,8 +2,8 @@
 mod config;
 mod db;
 mod models;
-mod state;
 mod services;
+mod state;
 
 use crate::services::{check_service, CheckableService};
 use axum::{extract::State, routing::get, Json, Router};
@@ -49,6 +49,9 @@ async fn main() -> anyhow::Result<()> {
     } else {
         tracing::info!("SEED_ON_STARTUP=false, skipping automatic seeding");
     }
+
+    services::spawn_all(pool.clone()).await?;
+    tracing::info!("Service checkers started");
 
     let state = AppState { db: pool };
 
@@ -99,7 +102,7 @@ async fn list_services(State(state): State<AppState>) -> Json<Vec<ServiceRow>> {
 
 async fn check_now(State(state): State<AppState>) -> Json<Vec<crate::models::CheckResult>> {
     let services: Vec<CheckableService> = sqlx::query_as(
-        "SELECT id, url, expected_status FROM services ORDER BY sort_order",
+        "SELECT id, url, expected_status, check_interval_seconds FROM services ORDER BY sort_order",
     )
     .fetch_all(&state.db)
     .await

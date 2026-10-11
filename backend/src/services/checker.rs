@@ -8,6 +8,7 @@ pub struct CheckableService {
     pub id: String,
     pub url: String,
     pub expected_status: Vec<i32>,
+    pub check_interval_seconds: i32,
 }
 
 /// Performs a single HTTP(S) check against one service and returns the result
