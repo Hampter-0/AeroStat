@@ -53,6 +53,12 @@ async fn main() -> anyhow::Result<()> {
     services::spawn_all(pool.clone()).await?;
     tracing::info!("Service checkers started");
 
+    services::spawn_cleanup(pool.clone(), settings.metrics_retention_days);
+    tracing::info!(
+        "Metrics cleanup scheduled (retention: {} days)",
+        settings.metrics_retention_days
+    );
+
     let state = AppState { db: pool };
 
     let app = routes::build(state)
