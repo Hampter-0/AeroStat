@@ -1,4 +1,5 @@
 mod incidents;
+mod maintenance;
 mod services;
 mod status;
 
@@ -14,8 +15,6 @@ pub async fn health() -> &'static str {
     "ok"
 }
 
-/// Builds the full application router
-
 pub fn build(state: AppState) -> Router {
     Router::new()
         .route("/", get(root))
@@ -24,5 +23,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/check-now", get(services::check_now))
         .route("/api/status", get(status::get))
         .route("/api/incidents", get(incidents::list))
+        .route("/api/maintenance", get(maintenance::list))
         .with_state(state)
 }
