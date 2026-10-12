@@ -2,6 +2,7 @@ mod incidents;
 mod maintenance;
 mod services;
 mod status;
+mod uptime;
 
 use axum::{routing::get, Router};
 
@@ -24,5 +25,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/status", get(status::get))
         .route("/api/incidents", get(incidents::list))
         .route("/api/maintenance", get(maintenance::list))
+        .route("/api/uptime/:service_id", get(uptime::get))
         .with_state(state)
 }
