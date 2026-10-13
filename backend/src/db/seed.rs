@@ -2,8 +2,6 @@ use sqlx::PgPool;
 
 use crate::models::ServicesConfig;
 
-/// Reads a services.yml file and upserts its contents into the database.
-
 pub async fn seed_from_file(pool: &PgPool, path: &str) -> anyhow::Result<()> {
     if !std::path::Path::new(path).exists() {
         tracing::warn!("{path} not found, skipping service seeding");
@@ -57,10 +55,32 @@ pub async fn seed_from_file(pool: &PgPool, path: &str) -> anyhow::Result<()> {
         .await?;
     }
 
+    // Remove services that are no longer present in the file.
+    let current_ids: Vec<String> = config.services.iter().map(|s| s.id.clone()).collect();
+    let deleted_services = sqlx::query!(
+        "DELETE FROM services WHERE NOT (id = ANY($1))",
+        &current_ids
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
+    // Remove groups that are no longer present in the file.
+    let current_group_ids: Vec<String> = config.groups.iter().map(|g| g.id.clone()).collect();
+    let deleted_groups = sqlx::query!(
+        "DELETE FROM groups WHERE NOT (id = ANY($1))",
+        &current_group_ids
+    )
+    .execute(pool)
+    .await?
+    .rows_affected();
+
     tracing::info!(
-        "Seeded {} group(s) and {} service(s) from {path}",
+        "Seeded {} group(s) and {} service(s) from {path} (removed {} stale service(s), {} stale group(s))",
         config.groups.len(),
-        config.services.len()
+        config.services.len(),
+        deleted_services,
+        deleted_groups,
     );
 
     Ok(())
