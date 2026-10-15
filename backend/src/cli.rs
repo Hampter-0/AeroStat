@@ -2,11 +2,12 @@ use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 
 pub const BANNER: &str = r#"
-   ____  ____  _______   __   ______________  ________  _______    ____  _____
-  / __ \/ __ \/ ____/ | / /  / ___/_  __/   |/_  __/ / / / ___/   / __ \/ ___/
- / / / / /_/ / __/ /  |/ /   \__ \ / / / /| | / / / / / /\__ \   / /_/ /\__ \ 
-/ /_/ / ____/ /___/ /|  /   ___/ // / / ___ |/ / / /_/ /___/ /  / _, _/___/ /
-\____/_/   /_____/_/ |_/   /____//_/ /_/  |_/_/  \____//____/  /_/ |_|/____/
+    ___                  _____ __        __ 
+   /   | ___  _________ / ___// /_____ _/ /_
+  / /| |/ _ \/ ___/ __ \\__ \/ __/ __  / __/
+ / ___ /  __/ /  / /_/ /__/ / /_/ /_/ / /_  
+/_/  |_\___/_/   \____/____/\__/\____/\__/     
+
 "#;
 
 #[derive(Parser)]
@@ -24,12 +25,11 @@ pub enum Commands {
     Seed,
 }
 
-
 pub fn print_banner() {
     println!("{}", BANNER.truecolor(124, 66, 38));
     println!(
         "  {} {}",
-        "Open Status Rs — self-hosted monitoring".bold(),
+        "AeroStat — self-hosted monitoring".bold(),
         format!("v{}", env!("CARGO_PKG_VERSION")).dimmed()
     );
     println!();

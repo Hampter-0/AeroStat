@@ -2,6 +2,8 @@ use sqlx::PgPool;
 
 use crate::models::ServicesConfig;
 
+/// Reads a services.yml file and upserts its contents into the database.
+
 pub async fn seed_from_file(pool: &PgPool, path: &str) -> anyhow::Result<()> {
     if !std::path::Path::new(path).exists() {
         tracing::warn!("{path} not found, skipping service seeding");

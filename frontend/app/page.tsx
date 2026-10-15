@@ -4,7 +4,7 @@ export default async function Home() {
 
   return (
     <main>
-      <h1>Open Status Rs</h1>
+      <h1>AeroStat</h1>
 
       <p>Backend API: {process.env.API_URL}</p>
 
