@@ -1,0 +1,40 @@
+export function Check({ size }: { size?: number }) {
+    var finalSize = size
+    if (finalSize === undefined) {
+        finalSize = 16
+    }
+    return (
+        <svg width={finalSize} height={finalSize} viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="m5.5 10.2 2.8 2.8 6.2-6.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}
+
+export function Calendar() {
+    return (
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="3" y="4.5" width="14" height="12.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M6.5 2.8v3.4M13.5 2.8v3.4M3 8h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+    )
+}
+
+export function Arrow() {
+    return (
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M4 10h11M11 6l4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}
+
+export function Chevron({ open }: { open: boolean }) {
+    var className = 'chevron'
+    if (open) {
+        className = 'chevron open'
+    }
+    return (
+        <svg className={className} width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="m6 8 4 4 4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    )
+}
