@@ -38,3 +38,16 @@ export function Chevron({ open }: { open: boolean }) {
         </svg>
     )
 }
+
+export function X({ size }: { size?: number }) {
+  var finalSize = size
+  if (finalSize === undefined) {
+    finalSize = 16
+  }
+  return (
+    <svg width={finalSize} height={finalSize} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 6l-12 12" />
+      <path d="M6 6l12 12" />
+    </svg>
+  )
+}

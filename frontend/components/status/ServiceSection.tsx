@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { ServiceStatus, UptimeStats } from '@/lib/types'
-import { Check, Chevron } from '@/components/icons'
+import { Check, Chevron, X } from '@/components/icons'
 import ServiceCard from './ServiceCard'
 
 export default function ServiceSection({
@@ -49,7 +49,8 @@ export default function ServiceSection({
           <small>{serviceCountLabel}</small>
         </span>
         <span className={statusClassName}>
-          <Check size={12} /> {statusText} <Chevron open={open} />
+          {!allOnline && <X size={12} />}
+          {allOnline && <Check size={12} />} {statusText} <Chevron open={open} />
         </span>
       </button>
       {open && (

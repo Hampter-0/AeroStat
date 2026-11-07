@@ -1,5 +1,5 @@
 import type { ServiceStatus } from '@/lib/types'
-import { Check } from '@/components/icons'
+import { Check, X } from '@/components/icons'
 import UptimeBars from './UptimeBars'
 
 export default function ServiceCard({
@@ -14,10 +14,12 @@ export default function ServiceCard({
   var checkClassName = 'live-check'
   var labelClassName = ''
   var statusText = 'Operational'
+  var isDown = false
   if (service.status !== 'online') {
     checkClassName = 'live-check down'
     labelClassName = 'down'
     statusText = 'Down'
+    isDown = true
   }
 
   var uptimeText = '-'
@@ -30,7 +32,8 @@ export default function ServiceCard({
       <div className="live-service-heading">
         <div className="live-service-name">
           <span className={checkClassName}>
-            <Check size={15} />
+            {isDown && <X size={15} />}
+            {!isDown && <Check size={15} />}
           </span>
           <div>
             <strong>{service.name}</strong>
@@ -42,7 +45,7 @@ export default function ServiceCard({
           <span>Uptime</span>
         </div>
       </div>
-      <UptimeBars />
+      <UptimeBars down={isDown} />
     </article>
   )
 }

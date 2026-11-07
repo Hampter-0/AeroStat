@@ -1,5 +1,5 @@
 import ServiceSection from '@/components/status/ServiceSection'
-import { Arrow, Calendar, Check } from '@/components/icons'
+import { Arrow, Calendar, Check, X } from '@/components/icons'
 import { getStatus, getUpcomingMaintenance, getUptime } from '@/lib/api'
 import type { MaintenanceWindow, ServiceStatus, UptimeStats } from '@/lib/types'
 
@@ -85,7 +85,8 @@ export default async function Home() {
     <>
       <section className="operational-hero">
         <span className={heroCheckClassName}>
-          <Check size={34} />
+          {!allOnline && <X size={34} />}
+          {allOnline && <Check size={34} />}
         </span>
         <h1>{heroText}</h1>
         <a href="/incidents">Incident history <Arrow /></a>
