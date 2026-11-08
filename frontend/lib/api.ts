@@ -1,4 +1,4 @@
-import type { MaintenanceWindow, ServiceStatus, UptimeStats } from './types'
+import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from './types'
 
 const API_URL = process.env.API_URL
 
@@ -22,6 +22,14 @@ export async function getUptime(serviceId: string): Promise<UptimeStats> {
   const res = await fetch(`${API_URL}/api/uptime/${serviceId}`, { cache: 'no-store' })
   if (!res.ok) {
     throw new Error(`Failed to fetch uptime for ${serviceId}: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function getIncidents(): Promise<Incident[]> {
+  const res = await fetch(`${API_URL}/api/incidents`, { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch incidents: ${res.status}`)
   }
   return res.json()
 }

@@ -26,3 +26,14 @@ export interface UptimeStats {
   total_checks: number
   period_days: number
 }
+
+export interface Incident {
+  id: number
+  title: string
+  description: string | null
+  status: string
+  severity: string
+  affected_services: string[] | null
+  created_at: string
+  resolved_at: string | null
+}
