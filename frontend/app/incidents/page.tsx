@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 import { getIncidents } from '@/lib/api'
 import type { Incident } from '@/lib/types'
@@ -24,14 +25,16 @@ function IncidentEntry({ incident }: { incident: Incident }) {
   }
 
   return (
-    <div className="event-preview">
-      <span className="event-title-row">
-        <strong>{incident.title}</strong>
-        <span className={tagClassName}>{tagLabel}</span>
-      </span>
-      {incident.description && <span className="event-description">{incident.description}</span>}
-      <span className="event-meta">Reported on {formatFullDate(incident.created_at)}</span>
-    </div>
+    <Link href={'/incidents/' + incident.id} className="event-preview-link">
+      <div className="event-preview">
+        <span className="event-title-row">
+          <strong>{incident.title}</strong>
+          <span className={tagClassName}>{tagLabel}</span>
+        </span>
+        {incident.description && <span className="event-description">{incident.description}</span>}
+        <span className="event-meta">Reported on {formatFullDate(incident.created_at)}</span>
+      </div>
+    </Link>
   )
 }
 
@@ -62,8 +65,6 @@ export default async function IncidentsPage() {
     windowMonths.push(monthDate)
     offset = offset - 1
   }
-  // windowMonths is now [oldest, middle, newest], and we display
-  // newest-first, same direction as the incidents list itself.
   const orderedMonths = [windowMonths[2], windowMonths[1], windowMonths[0]]
 
   const oldestLabel = formatMonthLabel(windowMonths[0])

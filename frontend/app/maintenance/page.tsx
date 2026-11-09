@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 import { getAllMaintenance } from '@/lib/api'
 import type { MaintenanceWindow } from '@/lib/types'
@@ -31,18 +32,20 @@ function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: Maintenanc
   }
 
   return (
-    <div className="event-preview">
-      <span className="event-title-row">
-        <strong>{maintenanceWindow.title}</strong>
-        <span className={tagClassName}>{tagLabel}</span>
-      </span>
-      {maintenanceWindow.description && (
-        <span className="event-description">{maintenanceWindow.description}</span>
-      )}
-      <span className="event-meta">
-        {formatFullDate(maintenanceWindow.scheduled_start)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end)}
-      </span>
-    </div>
+    <Link href={'/maintenance/' + maintenanceWindow.id} className="event-preview-link">
+      <div className="event-preview">
+        <span className="event-title-row">
+          <strong>{maintenanceWindow.title}</strong>
+          <span className={tagClassName}>{tagLabel}</span>
+        </span>
+        {maintenanceWindow.description && (
+          <span className="event-description">{maintenanceWindow.description}</span>
+        )}
+        <span className="event-meta">
+          {formatFullDate(maintenanceWindow.scheduled_start)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end)}
+        </span>
+      </div>
+    </Link>
   )
 }
 

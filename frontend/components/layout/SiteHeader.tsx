@@ -25,7 +25,7 @@ export default function SiteHeader({ siteName }: { siteName: string }) {
           <Link href="/" className={navClass('/')}>Status</Link>
           <Link href="/incidents" className={navClass('/incidents')}>Incidents</Link>
           <Link href="/maintenance" className={navClass('/maintenance')}>Maintenance</Link>
-          <a href="https://portfolio.hampternom.nl/contact">Contact</a>
+          <a href="https://portfolio.hampternom.nl/#contact" target='blank'>Contact</a>
         </nav>
       </div>
     </header>
