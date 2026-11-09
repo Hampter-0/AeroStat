@@ -33,3 +33,11 @@ export async function getIncidents(): Promise<Incident[]> {
   }
   return res.json()
 }
+
+export async function getAllMaintenance(): Promise<MaintenanceWindow[]> {
+  const res = await fetch(`${API_URL}/api/maintenance`, { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch maintenance: ${res.status}`)
+  }
+  return res.json()
+}
