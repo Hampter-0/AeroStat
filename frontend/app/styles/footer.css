@@ -19,3 +19,18 @@
 .footer-logo b {
     color: var(--blue);
 }
+
+.powered-by {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.powered-by strong {
+    color: #24292f;
+    font-weight: 600;
+}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import './globals.css'
 import SiteHeader from '@/components/layout/SiteHeader'
+import PoweredBy from '@/components/layout/PoweredBy'
 
 var siteName: string = 'AeroStat'
 if (process.env.SITE_NAME) {
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body style={bodyStyle}>
         <SiteHeader siteName={siteName} />
         <main>{children}</main>
+        <PoweredBy siteName={siteName} />
       </body>
     </html>
   )
