@@ -25,6 +25,8 @@ async fn main() -> anyhow::Result<()> {
     let cli = cli::Cli::parse();
     let settings = config::Settings::load()?;
     let pool = db::connect(&settings.database_url).await?;
+    let redis_pool = db::connect_redis(&settings.redis_url)?;
+    tracing::info!("Connected to Redis");
 
     match cli.command {
         Some(Commands::Migrate) => {
@@ -59,7 +61,10 @@ async fn main() -> anyhow::Result<()> {
         settings.metrics_retention_days
     );
 
-    let state = AppState { db: pool };
+    let state = AppState {
+        db: pool,
+        redis: redis_pool,
+    };
 
     let app = routes::build(state)
         .layer(CorsLayer::permissive())
