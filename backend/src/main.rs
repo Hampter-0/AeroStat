@@ -61,6 +61,9 @@ async fn main() -> anyhow::Result<()> {
         settings.metrics_retention_days
     );
 
+    services::spawn_rollup(pool.clone(), redis_pool.clone());
+    tracing::info!("Daily rollup scheduled");
+
     let state = AppState {
         db: pool,
         redis: redis_pool,
