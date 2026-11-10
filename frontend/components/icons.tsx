@@ -67,3 +67,20 @@ export function ChevronRight() {
     </svg>
   )
 }
+
+export function PendingRing() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="17.5" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="16.07" cy="14.41" r="1.3" fill="currentColor" />
+      <circle cx="12.32" cy="17.13" r="1.3" fill="currentColor" />
+      <circle cx="7.68" cy="17.13" r="1.3" fill="currentColor" />
+      <circle cx="3.93" cy="14.41" r="1.3" fill="currentColor" />
+      <circle cx="2.5" cy="10" r="1.3" fill="currentColor" />
+      <circle cx="3.93" cy="5.59" r="1.3" fill="currentColor" />
+      <circle cx="7.68" cy="2.87" r="1.3" fill="currentColor" />
+      <circle cx="12.32" cy="2.87" r="1.3" fill="currentColor" />
+      <circle cx="16.07" cy="5.59" r="1.3" fill="currentColor" />
+    </svg>
+  )
+}

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from '@/components/icons'
+import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import { getIncidents } from '@/lib/api'
 
 function formatFullDate(iso: string) {
@@ -18,8 +18,6 @@ function formatDateTime(iso: string) {
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
-
-
 
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -50,6 +48,11 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     affectedServices = incident.affected_services
   }
 
+  var hasResolvedEntry = false
+  if (incident.status === 'resolved' && incident.resolved_at) {
+    hasResolvedEntry = true
+  }
+
   return (
     <div className="detail-page">
       <Link href="/incidents" className="back-button">
@@ -76,8 +79,11 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         </div>
 
         <div className="detail-updates">
-          {incident.status === 'resolved' && incident.resolved_at && (
+          {hasResolvedEntry && incident.resolved_at && (
             <div className="detail-update">
+              <span className="update-marker done">
+                <Check size={11} />
+              </span>
               <div className="update-card">
                 <div>
                   <strong>Resolved</strong>
@@ -87,7 +93,11 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
               </div>
             </div>
           )}
+
           <div className="detail-update">
+            <span className="update-marker pending">
+              <PendingRing />
+            </span>
             <div className="update-card">
               <div>
                 <strong>Reported</strong>

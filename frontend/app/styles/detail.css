@@ -117,3 +117,25 @@
     text-decoration: none;
     color: inherit;
 }
+
+.update-marker {
+    position: absolute;
+    left: -11px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.update-marker.done {
+    color: #fff;
+    background: var(--green);
+}
+
+.update-marker.pending {
+    color: #c4cbd2;
+    background: #fff;
+}

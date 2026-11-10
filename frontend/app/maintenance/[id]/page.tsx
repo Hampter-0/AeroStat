@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from '@/components/icons'
+import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import { getAllMaintenance } from '@/lib/api'
 
 function formatFullDate(iso: string) {
@@ -45,9 +45,16 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
 
   var tagClassName = 'scheduled-tag'
   var tagLabel = 'Scheduled'
+  var isCompleted = false
   if (end < now) {
     tagClassName = 'completed-tag'
     tagLabel = 'Completed'
+    isCompleted = true
+  }
+
+  var topMarkerClassName = 'update-marker pending'
+  if (isCompleted) {
+    topMarkerClassName = 'update-marker done'
   }
 
   var affectedServices: string[] = []
@@ -84,6 +91,10 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
 
         <div className="detail-updates">
           <div className="detail-update">
+            <span className={topMarkerClassName}>
+              {isCompleted && <Check size={11} />}
+              {!isCompleted && <PendingRing />}
+            </span>
             <div className="update-card">
               <div>
                 <strong>{tagLabel}</strong>
@@ -92,7 +103,11 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
               <p>{maintenanceWindow.description}</p>
             </div>
           </div>
+
           <div className="detail-update">
+            <span className="update-marker pending">
+              <PendingRing />
+            </span>
             <div className="update-card">
               <div>
                 <strong>Created</strong>
