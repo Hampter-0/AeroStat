@@ -10,7 +10,7 @@
     align-items: center;
     gap: 6px;
     border: 0;
-    color: #0969da;
+    color: var(--link);
     background: transparent;
     font-size: 11px;
     text-decoration: none;
@@ -18,9 +18,9 @@
 
 .detail-card {
     margin-top: 20px;
-    border: 1px solid #d8dee4;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: #fff;
+    background: var(--panel);
     overflow: hidden;
 }
 
@@ -30,14 +30,14 @@
 
 .detail-header h1 {
     margin: 14px 0 10px;
-    color: #24292f;
+    color: var(--text);
     font-size: 26px;
     letter-spacing: -.03em;
 }
 
 .detail-header p {
     margin: 0;
-    color: #6e7781;
+    color: var(--muted);
     font-size: 11px;
 }
 
@@ -46,13 +46,13 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    border-top: 1px solid #d8dee4;
-    border-bottom: 1px solid #d8dee4;
-    background: #f6f8fa;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-soft);
 }
 
 .affected-row>span {
-    color: #57606a;
+    color: var(--text-soft);
     font-size: 10px;
 }
 
@@ -64,8 +64,8 @@
 .service-chip {
     padding: 5px 8px;
     border-radius: 20px;
-    color: #57606a;
-    background: #eaeef2;
+    color: var(--text-soft);
+    background: var(--chip-bg);
     font-size: 9px;
 }
 
@@ -76,7 +76,7 @@
 .detail-update {
     position: relative;
     padding: 0 0 25px 23px;
-    border-left: 2px solid #e6ebf0;
+    border-left: 2px solid var(--border-soft);
 }
 
 .detail-update:last-child {
@@ -85,9 +85,9 @@
 
 .update-card {
     padding: 17px 18px;
-    border: 1px solid #d8dee4;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: #fff;
+    background: var(--panel);
 }
 
 .update-card>div {
@@ -101,13 +101,13 @@
 }
 
 .update-card time {
-    color: #8c959f;
+    color: var(--subtle);
     font-size: 10px;
 }
 
 .update-card p {
     margin: 12px 0 0;
-    color: #57606a;
+    color: var(--text-soft);
     font-size: 10px;
     line-height: 1.6;
 }
@@ -128,7 +128,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: #fff;
+  background: var(--panel);
 }
 
 .update-marker.done {
@@ -137,8 +137,8 @@
 }
 
 .update-marker.pending {
-    color: #c4cbd2;
-    background: #fff;
+    color: var(--faint);
+    background: var(--panel);
 }
 
 .update-marker.ongoing-incident {
@@ -148,5 +148,5 @@
 
 .update-marker.ongoing-maintenance {
     color: #fff;
-    background: #1678c2;
+    background: var(--info);
 }

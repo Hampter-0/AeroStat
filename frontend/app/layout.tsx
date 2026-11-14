@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import './globals.css'
 import SiteHeader from '@/components/layout/SiteHeader'
 import PoweredBy from '@/components/layout/PoweredBy'
+import { themeInitScript } from '@/lib/theme'
 
 var siteName: string = 'AeroStat'
 if (process.env.SITE_NAME) {
@@ -23,7 +24,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const bodyStyle = { '--blue': accentColor } as React.CSSProperties
 
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body style={bodyStyle}>
         <SiteHeader siteName={siteName} />
         <main>{children}</main>

@@ -4,12 +4,10 @@ import UptimeBars from './UptimeBars'
 
 export default function ServiceCard({
   service,
-  groupName,
   uptimePercent,
   days,
 }: {
   service: ServiceStatus
-  groupName: string
   uptimePercent: number | null
   days: DayHistory[]
 }) {
@@ -39,7 +37,7 @@ export default function ServiceCard({
           </span>
           <div>
             <strong>{service.name}</strong>
-            <span className={labelClassName}>{statusText} - {groupName}</span>
+            <span className={labelClassName}>{statusText}</span>
           </div>
         </div>
         <div className="live-uptime">

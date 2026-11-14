@@ -1,5 +1,5 @@
 main {
-    background: #f6f8fa;
+    background: var(--panel-soft);
 }
 
 .operational-hero {
@@ -28,7 +28,7 @@ main {
 
 .operational-hero h1 {
     margin: 16px 0 2px;
-    color: #1f2328;
+    color: var(--text);
     font-size: 29px;
     line-height: 1;
     letter-spacing: -.04em;
@@ -39,13 +39,13 @@ main {
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    color: #8c959f;
+    color: var(--subtle);
     font-size: 10px;
     text-decoration: none;
 }
 
 .operational-hero a:hover {
-    color: #0969da;
+    color: var(--link);
 }
 
 .notice {
@@ -57,22 +57,22 @@ main {
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 14px;
-    border: 1px solid #d8dee4;
+    border: 1px solid var(--border);
     border-radius: 3px;
-    background: #fff;
-    box-shadow: 0 3px 9px rgba(31, 35, 40, .06);
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .notice.scheduled {
-    border-color: #eac54f;
+    border-color: var(--warning-border);
 }
 
 .notice.ongoing-maintenance {
-    border-color: #93c5fd;
+    border-color: var(--info-border);
 }
 
 .notice.incident {
-    border-color: #f3b4bb;
+    border-color: var(--danger-border);
 }
 
 .notice-icon {
@@ -84,21 +84,21 @@ main {
 }
 
 .notice-icon.scheduled {
-    color: #9a6700;
-    background: #fff8c5;
-    border: 1px solid #eac54f;
+    color: var(--warning-text);
+    background: var(--warning-bg);
+    border: 1px solid var(--warning-border);
 }
 
 .notice-icon.ongoing-maintenance {
-    color: #1678c2;
-    background: #dbeafe;
-    border: 1px solid #93c5fd;
+    color: var(--info);
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
 }
 
 .notice-icon.incident {
-    color: #cf3c4f;
-    background: #fde2e4;
-    border: 1px solid #f3b4bb;
+    color: var(--danger-text);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
 }
 
 .notice-copy h2 {
@@ -114,15 +114,15 @@ main {
 }
 
 .notice-copy p.scheduled-text {
-    color: #9a6700;
+    color: var(--warning-text);
 }
 
 .notice-copy p.ongoing-text {
-    color: #1678c2;
+    color: var(--info);
 }
 
 .notice-copy p.incident-text {
-    color: #cf3c4f;
+    color: var(--danger-text);
 }
 
 .text-button {
@@ -131,7 +131,7 @@ main {
     align-items: center;
     gap: 6px;
     border: 0;
-    color: #0969da;
+    color: var(--link);
     background: transparent;
     font-size: 9px;
     text-decoration: none;
@@ -148,7 +148,7 @@ main {
 
 .live-status>h2 {
     margin: 0 0 17px;
-    color: #24292f;
+    color: var(--text);
     font-size: 19px;
     letter-spacing: -.025em;
 }
@@ -159,10 +159,10 @@ main {
 }
 
 .live-service-section {
-    border: 1px solid #d8dee4;
+    border: 1px solid var(--border);
     border-radius: 4px;
-    background: #fff;
-    box-shadow: 0 3px 9px rgba(31, 35, 40, .05);
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .live-section-heading {
@@ -174,8 +174,8 @@ main {
     justify-content: space-between;
     border: 0;
     border-radius: 3px;
-    color: #24292f;
-    background: #fff;
+    color: var(--text);
+    background: var(--panel);
     text-align: left;
 }
 
@@ -184,7 +184,7 @@ main {
 }
 
 .live-section-heading:hover {
-    background: #fafbfc;
+    background: var(--panel-hover);
 }
 
 .live-section-heading>span:first-child {
@@ -198,7 +198,7 @@ main {
 }
 
 .live-section-heading small {
-    color: #8c959f;
+    color: var(--subtle);
     font-size: 9px;
 }
 
@@ -206,7 +206,7 @@ main {
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #16a85b;
+    color: var(--success);
     font-size: 9px;
 }
 
@@ -216,7 +216,7 @@ main {
 
 .live-section-status .chevron {
     margin-left: 6px;
-    color: #737d87;
+    color: var(--muted);
     transition: transform .18s ease;
 }
 
@@ -228,17 +228,17 @@ main {
     padding: 14px;
     display: grid;
     gap: 12px;
-    border-top: 1px solid #e6e9ed;
+    border-top: 1px solid var(--border-soft);
     border-radius: 0 0 3px 3px;
-    background: #f6f8fa;
+    background: var(--panel-soft);
 }
 
 .live-service-card {
     padding: 18px 18px 16px;
-    border: 1px solid #d8dee4;
+    border: 1px solid var(--border);
     border-radius: 3px;
-    background: #fff;
-    box-shadow: 0 3px 9px rgba(31, 35, 40, .06);
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .live-service-heading {
@@ -272,7 +272,7 @@ main {
 
 .live-service-name strong {
     display: block;
-    color: #24292f;
+    color: var(--text);
     font-size: 13px;
     font-weight: 600;
 }
@@ -280,7 +280,7 @@ main {
 .live-service-name>div>span {
     display: block;
     margin-top: 3px;
-    color: #16b866;
+    color: var(--success);
     font-size: 9px;
 }
 
@@ -294,7 +294,7 @@ main {
 
 .live-uptime strong {
     display: block;
-    color: #24292f;
+    color: var(--text);
     font-size: 12px;
     font-weight: 600;
 }
@@ -302,7 +302,7 @@ main {
 .live-uptime span {
     display: block;
     margin-top: 3px;
-    color: #8c959f;
+    color: var(--subtle);
     font-size: 9px;
 }
 
@@ -342,7 +342,7 @@ a.bar {
 
 .bar:hover,
 .bar:focus-visible {
-    box-shadow: inset 0 0 0 1px rgba(31, 35, 40, .22);
+    box-shadow: inset 0 0 0 1px var(--bar-ring);
 }
 
 .bar-tooltip {
@@ -356,7 +356,7 @@ a.bar {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(140, 149, 159, .3);
+    box-shadow: 0 8px 24px var(--tooltip-shadow);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -382,7 +382,7 @@ a.bar {
     align-items: center;
     gap: 7px;
     padding-bottom: 9px;
-    color: #24292f;
+    color: var(--text);
     font-size: 10px;
     font-weight: 600;
 }
@@ -413,7 +413,7 @@ a.bar {
 .tooltip-event {
     display: block;
     margin-bottom: 8px;
-    color: #24292f;
+    color: var(--text);
     font-size: 9px;
 }
 
@@ -427,10 +427,22 @@ a.bar {
 .bar-tooltip time {
     display: block;
     padding-top: 9px;
-    border-top: 1px solid #eaeef2;
+    border-top: 1px solid var(--border-soft);
     color: var(--muted);
     font-size: 9px;
     text-align: center;
+}
+
+.history-labels {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    color: var(--subtle);
+    font-size: 9px;
+}
+
+.history-mobile {
+    display: none;
 }
 
 .status-unavailable {
@@ -440,13 +452,13 @@ a.bar {
     text-align: center;
     border: 1px solid var(--border);
     border-radius: 6px;
-    background: #fff;
-    box-shadow: 0 3px 9px rgba(31, 35, 40, .06);
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .status-unavailable h2 {
     margin: 0 0 8px;
-    color: #24292f;
+    color: var(--text);
     font-size: 20px;
 }
 
@@ -458,4 +470,62 @@ a.bar {
 
 .notice+.notice {
     margin-top: 12px;
+}
+@media (max-width: 560px) {
+    .operational-hero {
+        width: calc(100% - 28px);
+        padding: 44px 0 28px;
+    }
+
+    .notice,
+    .live-status,
+    .status-unavailable {
+        width: calc(100% - 28px);
+    }
+
+    .notice {
+        min-height: 0;
+        padding: 14px;
+        grid-template-columns: auto 1fr;
+        align-items: start;
+        gap: 6px 12px;
+    }
+
+    .notice .text-button {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .live-section-services {
+        padding: 10px;
+    }
+
+    .live-service-card {
+        padding: 14px 12px 12px;
+    }
+
+    .uptime-bars {
+        height: 33px;
+        gap: 2px;
+    }
+
+    .bar {
+        min-width: 1px;
+    }
+
+    .bar:nth-child(-n+30) {
+        display: none;
+    }
+
+    .history-full {
+        display: none;
+    }
+
+    .history-mobile {
+        display: inline;
+    }
+
+    .bar-tooltip {
+        left: clamp(52px, var(--bar-center-mobile), calc(100% - 52px));
+    }
 }

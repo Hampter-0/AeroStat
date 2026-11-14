@@ -67,7 +67,6 @@ export default function ServiceSection({
             return (
               <ServiceCard
                 service={service}
-                groupName={groupName}
                 uptimePercent={uptimePercent}
                 days={days}
                 key={service.id}

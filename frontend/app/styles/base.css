@@ -1,17 +1,88 @@
 :root {
     font-family: 'Inter', sans-serif;
-    color: #24292f;
-    background: #fff;
+    color: var(--text);
+    background: var(--panel-soft);
     font-synthesis: none;
-    --bg: #fff;
+    color-scheme: light;
+
     --panel: #fff;
     --panel-soft: #f6f8fa;
+    --panel-hover: #fafbfc;
+    --chip-bg: #eaeef2;
     --border: #d8dee4;
+    --border-soft: #e6e9ed;
+
+    --text: #24292f;
+    --text-soft: #57606a;
     --muted: #6e7781;
+    --subtle: #8c959f;
+    --faint: #c4cbd2;
+    --link: #0969da;
+
     --green: #16c96f;
     --red: #e5484d;
-    --blue: #1678c2;
     --amber: #d99a2b;
+    --blue: #1678c2;
+
+    --success: #16a85b;
+    --success-text: #1a7f4b;
+    --success-bg: #dafbe1;
+    --success-border: #aceebb;
+    --warning: #bf8700;
+    --warning-text: #9a6700;
+    --warning-bg: #fff8c5;
+    --warning-border: #eac54f;
+    --info: #1678c2;
+    --info-bg: #dbeafe;
+    --info-border: #93c5fd;
+    --danger-text: #cf3c4f;
+    --danger-bg: #fde2e4;
+    --danger-border: #f3b4bb;
+
+    --shadow: rgba(31, 35, 40, .06);
+    --bar-ring: rgba(31, 35, 40, .22);
+    --tooltip-shadow: rgba(140, 149, 159, .3);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+
+    --panel: #161b22;
+    --panel-soft: #0d1117;
+    --panel-hover: #1c2128;
+    --chip-bg: #21262d;
+    --border: #30363d;
+    --border-soft: #262c34;
+
+    --text: #e6edf3;
+    --text-soft: #b1bac4;
+    --muted: #8b949e;
+    --subtle: #7d8590;
+    --faint: #484f58;
+    --link: #4493f8;
+
+    --green: #2fbf71;
+    --red: #f85149;
+    --amber: #d29922;
+
+    --success: #3fb950;
+    --success-text: #3fb950;
+    --success-bg: rgba(46, 160, 67, .15);
+    --success-border: rgba(46, 160, 67, .4);
+    --warning: #d29922;
+    --warning-text: #e3b341;
+    --warning-bg: rgba(187, 128, 9, .15);
+    --warning-border: rgba(187, 128, 9, .45);
+    --info: #4493f8;
+    --info-bg: rgba(56, 139, 253, .15);
+    --info-border: rgba(56, 139, 253, .45);
+    --danger-text: #ff7b72;
+    --danger-bg: rgba(248, 81, 73, .15);
+    --danger-border: rgba(248, 81, 73, .45);
+
+    --shadow: rgba(1, 4, 9, .35);
+    --bar-ring: rgba(255, 255, 255, .35);
+    --tooltip-shadow: rgba(1, 4, 9, .6);
 }
 
 * {
@@ -26,7 +97,7 @@ body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
-    background: #f6f8fa;
+    background: var(--panel-soft);
 }
 
 button,
@@ -39,7 +110,7 @@ button {
 }
 
 main {
-    background: #f6f8fa;
+    background: var(--panel-soft);
 }
 
 main {

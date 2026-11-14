@@ -3,6 +3,7 @@ import type { DayHistory } from '@/lib/types'
 import { Check, Tool, X } from '@/components/icons'
 
 const HISTORY_DAYS = 60
+const MOBILE_DAYS = 30
 
 function formatDay(dateText: string) {
   const date = new Date(dateText + 'T00:00:00Z')
@@ -34,89 +35,101 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
   }
 
   return (
-    <div className="uptime-bars" aria-label="60 day uptime history">
-      {shownDays.map(function (day, index) {
-        var isDown = false
-        if (day.status === 'offline' || day.status === 'degraded') {
-          isDown = true
-        }
-
-        var stateClassName = ''
-        var label = 'Operational'
-        var icon = <Check size={11} />
-        if (day.status === 'no_data') {
-          stateClassName = ' no-data'
-          label = 'No data'
-        }
-
-        var hasEvents = false
-        var href = ''
-        if (day.events.length > 0) {
-          hasEvents = true
-          const firstEvent = day.events[0]
-          stateClassName = ' event'
-          href = '/incidents/' + firstEvent.id
-          label = 'Incident'
-          icon = <X size={11} />
-          if (firstEvent.kind === 'maintenance') {
-            href = '/maintenance/' + firstEvent.id
-            label = 'Maintenance'
-            icon = <Tool size={11} />
+    <>
+      <div className="uptime-bars" aria-label="Uptime history">
+        {shownDays.map(function (day, index) {
+          var isDown = false
+          if (day.status === 'offline' || day.status === 'degraded') {
+            isDown = true
           }
-        }
 
-        if (isDown) {
-          stateClassName = ' down'
-          label = 'Downtime'
-          icon = <X size={11} />
-        }
+          var stateClassName = ''
+          var label = 'Operational'
+          var icon = <Check size={11} />
+          if (day.status === 'no_data') {
+            stateClassName = ' no-data'
+            label = 'No data'
+          }
 
-        const centerPercent = ((index + 0.5) / shownDays.length) * 100
-        const barStyle = { '--bar-center': centerPercent + '%' } as CSSProperties
+          var hasEvents = false
+          var href = ''
+          if (day.events.length > 0) {
+            hasEvents = true
+            const firstEvent = day.events[0]
+            stateClassName = ' event'
+            href = '/incidents/' + firstEvent.id
+            label = 'Incident'
+            icon = <X size={11} />
+            if (firstEvent.kind === 'maintenance') {
+              href = '/maintenance/' + firstEvent.id
+              label = 'Maintenance'
+              icon = <Tool size={11} />
+            }
+          }
 
-        var showDowntime = false
-        if (day.downtime_minutes > 0 && day.status !== 'online') {
-          showDowntime = true
-        }
+          if (isDown) {
+            stateClassName = ' down'
+            label = 'Downtime'
+            icon = <X size={11} />
+          }
 
-        var dateText = ''
-        if (day.date) {
-          dateText = formatDay(day.date)
-        }
+          const centerPercent = ((index + 0.5) / shownDays.length) * 100
+          const mobileIndex = index - (shownDays.length - MOBILE_DAYS)
+          const mobileCenterPercent = ((mobileIndex + 0.5) / MOBILE_DAYS) * 100
+          const barStyle = {
+            '--bar-center': centerPercent + '%',
+            '--bar-center-mobile': mobileCenterPercent + '%',
+          } as CSSProperties
 
-        const className = 'bar' + stateClassName
-        const tooltip = (
-          <span className="bar-tooltip" role="tooltip">
-            <strong>
-              <span className="tooltip-check">{icon}</span>
-              {label}
-            </strong>
-            {day.events.map(function (event) {
-              return (
-                <span className="tooltip-event" key={event.kind + '-' + event.id}>
-                  {event.title}
-                </span>
-              )
-            })}
-            {showDowntime && <span className="downtime-duration">Down for {formatMinutes(day.downtime_minutes)}</span>}
-            {dateText && <time dateTime={day.date}>{dateText}</time>}
-          </span>
-        )
+          var showDowntime = false
+          if (day.downtime_minutes > 0 && day.status !== 'online') {
+            showDowntime = true
+          }
 
-        if (hasEvents) {
-          return (
-            <a key={index} className={className} style={barStyle} href={href} aria-label={dateText + ': ' + label + '. Open report.'}>
-              {tooltip}
-            </a>
+          var dateText = ''
+          if (day.date) {
+            dateText = formatDay(day.date)
+          }
+
+          const className = 'bar' + stateClassName
+          const tooltip = (
+            <span className="bar-tooltip" role="tooltip">
+              <strong>
+                <span className="tooltip-check">{icon}</span>
+                {label}
+              </strong>
+              {day.events.map(function (event) {
+                return (
+                  <span className="tooltip-event" key={event.kind + '-' + event.id}>
+                    {event.title}
+                  </span>
+                )
+              })}
+              {showDowntime && <span className="downtime-duration">Down for {formatMinutes(day.downtime_minutes)}</span>}
+              {dateText && <time dateTime={day.date}>{dateText}</time>}
+            </span>
           )
-        }
 
-        return (
-          <span key={index} className={className} style={barStyle} tabIndex={0} aria-label={dateText + ': ' + label}>
-            {tooltip}
-          </span>
-        )
-      })}
-    </div>
+          if (hasEvents) {
+            return (
+              <a key={index} className={className} style={barStyle} href={href} aria-label={dateText + ': ' + label + '. Open report.'}>
+                {tooltip}
+              </a>
+            )
+          }
+
+          return (
+            <span key={index} className={className} style={barStyle} tabIndex={0} aria-label={dateText + ': ' + label}>
+              {tooltip}
+            </span>
+          )
+        })}
+      </div>
+      <div className="history-labels">
+        <span className="history-full">{HISTORY_DAYS} days ago</span>
+        <span className="history-mobile">{MOBILE_DAYS} days ago</span>
+        <span>Today</span>
+      </div>
+    </>
   )
 }
