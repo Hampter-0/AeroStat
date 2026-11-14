@@ -63,13 +63,13 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
 
   const entries: TimelineEntry[] = []
   if (maintenanceWindow.updates.length > 0) {
-    maintenanceWindow.updates.forEach(function (update, index) {
+    maintenanceWindow.updates.forEach(function (update) {
       let markerClassName = 'update-marker pending'
       let icon = <PendingRing />
       if (update.status === 'completed') {
         markerClassName = 'update-marker done'
         icon = <Check size={11} />
-      } else if (index === 0 && isOngoing) {
+      } else if (update.status === 'in_progress') {
         markerClassName = 'update-marker ongoing-maintenance'
         icon = <Tool size={11} />
       }

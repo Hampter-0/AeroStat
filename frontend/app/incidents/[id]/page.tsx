@@ -48,15 +48,12 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
 
   const entries: TimelineEntry[] = []
   if (incident.updates.length > 0) {
-    incident.updates.forEach(function (update, index) {
-      let markerClassName = 'update-marker pending'
-      let icon = <PendingRing />
+    incident.updates.forEach(function (update) {
+      let markerClassName = 'update-marker ongoing-incident'
+      let icon = <AlertSmall />
       if (update.status === 'resolved') {
         markerClassName = 'update-marker done'
         icon = <Check size={11} />
-      } else if (index === 0 && isOngoing) {
-        markerClassName = 'update-marker ongoing-incident'
-        icon = <AlertSmall />
       }
       entries.push({
         key: 'update-' + update.id,
