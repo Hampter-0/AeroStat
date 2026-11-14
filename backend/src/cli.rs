@@ -22,6 +22,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Open the interactive CLI menu (does not start the server)
+    Cli,
     /// Run pending database migrations
     Migrate,
     /// Seed services/groups from config/services.yml

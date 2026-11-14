@@ -6,7 +6,7 @@ use axum::Router;
 
 use crate::state::AppState;
 
-pub use users::create_admin_from_cli;
+pub use users::{create_admin_from_cli, reset_password_from_cli};
 
 pub fn router() -> Router<AppState> {
     Router::new()

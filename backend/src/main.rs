@@ -1,6 +1,7 @@
 ﻿mod auth;
 mod cli;
 mod config;
+mod console;
 mod db;
 mod error;
 mod models;
@@ -20,17 +21,26 @@ async fn main() -> anyhow::Result<()> {
     cli::print_banner();
     dotenvy::dotenv().ok();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
-        .init();
-
     let cli = cli::Cli::parse();
+
+    // The interactive CLI ignores RUST_LOG so info logs don't clutter the menu.
+    let filter = if matches!(cli.command, Some(Commands::Cli)) {
+        EnvFilter::new("warn")
+    } else {
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into())
+    };
+    tracing_subscriber::fmt().with_env_filter(filter).init();
+
     let settings = config::Settings::load()?;
     let pool = db::connect(&settings.database_url).await?;
     let redis_pool = db::connect_redis(&settings.redis_url)?;
     tracing::info!("Connected to Redis");
 
     match cli.command {
+        Some(Commands::Cli) => {
+            console::run(&pool).await?;
+            return Ok(());
+        }
         Some(Commands::Migrate) => {
             db::migrate(&pool).await?;
             tracing::info!("Migrations applied, exiting");

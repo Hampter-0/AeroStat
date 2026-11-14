@@ -229,6 +229,30 @@ pub async fn create_admin_from_cli(pool: &sqlx::PgPool, username: &str, password
     Ok(())
 }
 
+pub async fn reset_password_from_cli(pool: &sqlx::PgPool, username: &str, password: String) -> anyhow::Result<()> {
+    let username = username.trim().to_lowercase();
+    validate_password(&password).map_err(|e| anyhow::anyhow!(error_text(e)))?;
+
+    let user: Option<(i64,)> = sqlx::query_as("SELECT id FROM users WHERE username = $1")
+        .bind(&username)
+        .fetch_optional(pool)
+        .await?;
+    let (id,) = user.ok_or_else(|| anyhow::anyhow!("No account named '{username}'"))?;
+
+    let password_hash = auth::hash_password(password).await?;
+    sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")
+        .bind(&password_hash)
+        .bind(id)
+        .execute(pool)
+        .await?;
+    sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 fn error_text(error: ApiError) -> String {
     match error {
         ApiError::BadRequest(message) | ApiError::Conflict(message) => message,
