@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AlertSmall, Check, ChevronLeft, PendingRing } from '@/components/icons'
+import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getIncident, getServiceNames } from '@/lib/api'
 
@@ -41,16 +41,11 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     affectedServices = incident.affected_services
   }
 
-  let isOngoing = false
-  if (incident.status !== 'resolved') {
-    isOngoing = true
-  }
-
   const entries: TimelineEntry[] = []
   if (incident.updates.length > 0) {
     incident.updates.forEach(function (update) {
-      let markerClassName = 'update-marker ongoing-incident'
-      let icon = <AlertSmall />
+      let markerClassName = 'update-marker pending'
+      let icon = <PendingRing />
       if (update.status === 'resolved') {
         markerClassName = 'update-marker done'
         icon = <Check size={11} />
@@ -75,19 +70,13 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         icon: <Check size={11} />,
       })
     }
-    let reportedMarkerClassName = 'update-marker pending'
-    let reportedIcon = <PendingRing />
-    if (isOngoing) {
-      reportedMarkerClassName = 'update-marker ongoing-incident'
-      reportedIcon = <AlertSmall />
-    }
     entries.push({
       key: 'reported',
       label: 'Reported',
       time: formatDateTime(incident.created_at),
       message: incident.description,
-      markerClassName: reportedMarkerClassName,
-      icon: reportedIcon,
+      markerClassName: 'update-marker pending',
+      icon: <PendingRing />,
     })
   }
 

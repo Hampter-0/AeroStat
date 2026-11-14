@@ -1,0 +1,8 @@
+export const MAINTENANCE_UPDATE_STATUSES = ['scheduled', 'in_progress', 'completed']
+
+export const MAINTENANCE_HINTS: Record<string, string> = {
+  scheduled: 'Planned, not started yet',
+  in_progress: 'Work is happening now',
+  completed: 'Work is done',
+  cancelled: 'Not going ahead',
+}

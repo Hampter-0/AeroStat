@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Chevron, Monitor, Moon, Sun } from '@/components/icons'
-
-type ThemeChoice = 'system' | 'light' | 'dark'
-
-const STORAGE_KEY = 'theme'
+import {
+  THEME_CHANGE_EVENT,
+  THEME_STORAGE_KEY,
+  applyTheme,
+  readChoice,
+  readServerChoice,
+  subscribeToChoice,
+  type ThemeChoice,
+} from '@/lib/theme-client'
 
 const options: { value: ThemeChoice; label: string; icon: React.ReactNode }[] = [
   { value: 'system', label: 'System', icon: <Monitor /> },
@@ -13,69 +18,10 @@ const options: { value: ThemeChoice; label: string; icon: React.ReactNode }[] = 
   { value: 'dark', label: 'Dark', icon: <Moon /> },
 ]
 
-function applyTheme(choice: ThemeChoice) {
-  let dark = false
-  if (choice === 'dark') {
-    dark = true
-  } else if (choice === 'system') {
-    dark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  }
-  let theme = 'light'
-  if (dark) {
-    theme = 'dark'
-  }
-  document.documentElement.dataset.theme = theme
-}
-
-const CHANGE_EVENT = 'themechoicechange'
-
-function readChoice(): ThemeChoice {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === 'light' || stored === 'dark') {
-      return stored
-    }
-  } catch {
-    return 'system'
-  }
-  return 'system'
-}
-
-function readServerChoice(): ThemeChoice {
-  return 'system'
-}
-
-function subscribe(onChange: () => void) {
-  window.addEventListener('storage', onChange)
-  window.addEventListener(CHANGE_EVENT, onChange)
-  return function () {
-    window.removeEventListener('storage', onChange)
-    window.removeEventListener(CHANGE_EVENT, onChange)
-  }
-}
-
 export default function ThemeSwitcher() {
-  const choice = useSyncExternalStore(subscribe, readChoice, readServerChoice)
+  const choice = useSyncExternalStore(subscribeToChoice, readChoice, readServerChoice)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-
-  useEffect(
-    function () {
-      applyTheme(choice)
-      if (choice !== 'system') {
-        return
-      }
-      const media = window.matchMedia('(prefers-color-scheme: dark)')
-      function onSystemChange() {
-        applyTheme('system')
-      }
-      media.addEventListener('change', onSystemChange)
-      return function () {
-        media.removeEventListener('change', onSystemChange)
-      }
-    },
-    [choice]
-  )
 
   useEffect(
     function () {
@@ -106,15 +52,15 @@ export default function ThemeSwitcher() {
     setOpen(false)
     try {
       if (next === 'system') {
-        localStorage.removeItem(STORAGE_KEY)
+        localStorage.removeItem(THEME_STORAGE_KEY)
       } else {
-        localStorage.setItem(STORAGE_KEY, next)
+        localStorage.setItem(THEME_STORAGE_KEY, next)
       }
     } catch {
       applyTheme(next)
       return
     }
-    window.dispatchEvent(new Event(CHANGE_EVENT))
+    window.dispatchEvent(new Event(THEME_CHANGE_EVENT))
   }
 
   function toggleOpen() {

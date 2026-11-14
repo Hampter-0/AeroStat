@@ -541,3 +541,7 @@ a.bar {
         left: clamp(52px, var(--bar-center-mobile), calc(100% - 52px));
     }
 }
+
+.status-unavailable .button-secondary {
+    margin-top: 18px;
+}

@@ -2,31 +2,46 @@
 
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
-import { postUpdate } from '@/app/manage/(panel)/incidents/actions'
 import { formatStatus } from '@/lib/format'
-import { INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
 
 const initialState: FormState = { error: null, success: null }
 
-export default function PostUpdateForm({ incidentId, currentStatus }: { incidentId: number; currentStatus: string }) {
-  const [state, formAction, pending] = useActionState(postUpdate, initialState)
+export default function PostUpdateForm({
+  parentId,
+  currentStatus,
+  statuses,
+  hints,
+  action,
+}: {
+  parentId: number
+  currentStatus: string
+  statuses: string[]
+  hints: Record<string, string>
+  action: (state: FormState, formData: FormData) => Promise<FormState>
+}) {
+  const [state, formAction, pending] = useActionState(action, initialState)
 
   let buttonText = 'Post update'
   if (pending) {
     buttonText = 'Posting…'
   }
 
+  let columnsClass = 'status-options'
+  if (statuses.length === 3) {
+    columnsClass = 'status-options three'
+  }
+
   return (
     <form action={formAction} className="manage-form" key={currentStatus}>
-      <input type="hidden" name="id" value={incidentId} />
-      <div className="status-options" role="radiogroup" aria-label="Status">
-        {INCIDENT_STATUSES.map(function (value) {
+      <input type="hidden" name="id" value={parentId} />
+      <div className={columnsClass} role="radiogroup" aria-label="Status">
+        {statuses.map(function (value) {
           return (
             <label className={'status-option status-' + value} key={value}>
-              <input type="radio" name="status" value={value} defaultChecked={value === currentStatus} />
+              <input type="radio" name="status" value={value} defaultChecked={value === currentStatus} required />
               <span>
                 <strong>{formatStatus(value)}</strong>
-                <small>{STATUS_HINTS[value]}</small>
+                <small>{hints[value]}</small>
               </span>
             </label>
           )

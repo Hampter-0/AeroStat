@@ -1,4 +1,5 @@
 mod incidents;
+mod maintenance;
 mod session;
 mod users;
 
@@ -22,5 +23,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/incidents/:id/updates/:update_id",
             patch(incidents::edit_update).delete(incidents::delete_update),
+        )
+        .route("/maintenance", post(maintenance::create))
+        .route("/maintenance/:id", patch(maintenance::update).delete(maintenance::delete))
+        .route("/maintenance/:id/cancel", post(maintenance::cancel))
+        .route("/maintenance/:id/reactivate", post(maintenance::reactivate))
+        .route("/maintenance/:id/updates", post(maintenance::add_update))
+        .route(
+            "/maintenance/:id/updates/:update_id",
+            patch(maintenance::edit_update).delete(maintenance::delete_update),
         )
 }

@@ -21,6 +21,15 @@ export default async function ManageOverviewPage() {
             </em>
           </Link>
         )}
+        {can(user, 'maintenance') && (
+          <Link href="/manage/maintenance" className="manage-card">
+            <strong>Maintenance</strong>
+            <span>Plan work ahead and keep visitors informed.</span>
+            <em>
+              Open <Arrow />
+            </em>
+          </Link>
+        )}
         {user.is_admin && (
           <Link href="/manage/users" className="manage-card">
             <strong>Users</strong>

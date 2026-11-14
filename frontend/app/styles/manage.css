@@ -542,12 +542,20 @@
         order: 3;
         width: 100%;
         display: flex;
-        overflow-x: auto;
-        scrollbar-width: none;
+        flex-wrap: wrap;
+        gap: 4px;
     }
 
     .manage-nav a {
         flex: 0 0 auto;
+        min-height: 32px;
+        padding: 0 9px;
+        gap: 7px;
+        border: 1px solid var(--border-soft);
+    }
+
+    .manage-nav a.active {
+        border-color: var(--link);
     }
 
     .manage-account {
@@ -888,4 +896,89 @@ a.button-secondary {
         flex-direction: column;
         align-items: flex-start;
     }
+}
+
+.status-options.three {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.status-chip.status-scheduled {
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+    background: var(--warning-bg);
+}
+
+.status-chip.status-in_progress {
+    border-color: var(--info-border);
+    color: var(--info);
+    background: var(--info-bg);
+}
+
+.status-chip.status-completed {
+    border-color: var(--success-border);
+    color: var(--success-text);
+    background: var(--success-bg);
+}
+
+.status-chip.status-cancelled {
+    color: var(--muted);
+    border-style: dashed;
+}
+
+.manage-update.status-scheduled {
+    border-left-color: var(--amber);
+}
+
+.manage-update.status-in_progress {
+    border-left-color: var(--info);
+}
+
+.manage-update.status-completed {
+    border-left-color: var(--green);
+}
+
+.manage-update.status-cancelled {
+    border-left-color: var(--subtle);
+}
+
+.manage-form input[type="datetime-local"] {
+    color-scheme: inherit;
+}
+
+@media (max-width: 760px) {
+    .status-options.three {
+        grid-template-columns: 1fr;
+    }
+}
+
+.manage-error {
+    display: grid;
+    gap: 10px;
+    text-align: center;
+}
+
+.manage-error h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: 18px;
+}
+
+.manage-error p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.manage-error-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.manage-login-card .manage-error-actions .button-primary {
+    width: auto;
+    height: 34px;
+    margin-top: 0;
+    font-size: 12px;
 }
