@@ -26,6 +26,20 @@ export interface UptimeStats {
   avg_response_time_ms: number
   total_checks: number
   period_days: number
+  days: DayHistory[]
+}
+
+export interface DayEvent {
+  kind: 'incident' | 'maintenance'
+  id: number
+  title: string
+}
+
+export interface DayHistory {
+  date: string
+  status: 'online' | 'degraded' | 'offline' | 'no_data'
+  downtime_minutes: number
+  events: DayEvent[]
 }
 
 export interface Incident {

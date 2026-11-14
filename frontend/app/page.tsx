@@ -43,10 +43,10 @@ export default async function Home() {
     )
   }
 
-  const uptimeByServiceId = new Map<string, number>()
+  const uptimeByServiceId = new Map<string, UptimeStats>()
   var i = 0
   while (i < services.length) {
-    uptimeByServiceId.set(services[i].id, uptimeResults[i].uptime_percent)
+    uptimeByServiceId.set(services[i].id, uptimeResults[i])
     i = i + 1
   }
 

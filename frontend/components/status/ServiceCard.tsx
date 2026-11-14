@@ -1,4 +1,4 @@
-import type { ServiceStatus } from '@/lib/types'
+import type { DayHistory, ServiceStatus } from '@/lib/types'
 import { Check, X } from '@/components/icons'
 import UptimeBars from './UptimeBars'
 
@@ -6,10 +6,12 @@ export default function ServiceCard({
   service,
   groupName,
   uptimePercent,
+  days,
 }: {
   service: ServiceStatus
   groupName: string
   uptimePercent: number | null
+  days: DayHistory[]
 }) {
   var checkClassName = 'live-check'
   var labelClassName = ''
@@ -45,7 +47,7 @@ export default function ServiceCard({
           <span>Uptime</span>
         </div>
       </div>
-      <UptimeBars down={isDown} />
+      <UptimeBars days={days} />
     </article>
   )
 }

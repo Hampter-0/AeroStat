@@ -163,7 +163,6 @@ main {
     border-radius: 4px;
     background: #fff;
     box-shadow: 0 3px 9px rgba(31, 35, 40, .05);
-    overflow: hidden;
 }
 
 .live-section-heading {
@@ -174,9 +173,14 @@ main {
     align-items: center;
     justify-content: space-between;
     border: 0;
+    border-radius: 3px;
     color: #24292f;
     background: #fff;
     text-align: left;
+}
+
+.live-section-heading[aria-expanded="true"] {
+    border-radius: 3px 3px 0 0;
 }
 
 .live-section-heading:hover {
@@ -225,6 +229,7 @@ main {
     display: grid;
     gap: 12px;
     border-top: 1px solid #e6e9ed;
+    border-radius: 0 0 3px 3px;
     background: #f6f8fa;
 }
 
@@ -302,21 +307,127 @@ main {
 }
 
 .uptime-bars {
+    position: relative;
     height: 38px;
     display: flex;
     gap: 3px;
 }
 
 .bar {
+    display: block;
     min-width: 2px;
     flex: 1;
     border: 0;
     border-radius: 1px;
     background: var(--green);
+    outline: 0;
+    cursor: default;
 }
 
 .bar.down {
     background: var(--red);
+}
+
+.bar.event {
+    background: var(--amber);
+    cursor: pointer;
+}
+
+.bar.no-data {
+    background: var(--border);
+}
+
+.bar:hover,
+.bar:focus-visible {
+    box-shadow: inset 0 0 0 1px rgba(31, 35, 40, .22);
+}
+
+.bar-tooltip {
+    position: absolute;
+    z-index: 20;
+    left: clamp(32px, var(--bar-center), calc(100% - 32px));
+    bottom: calc(100% + 9px);
+    width: 174px;
+    padding: 12px;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(140, 149, 159, .3);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translate(-50%, 4px);
+    transition: .12s ease;
+}
+
+.bar:hover .bar-tooltip,
+.bar:focus-visible .bar-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+}
+
+@media (min-width: 960px) {
+    .bar-tooltip {
+        left: var(--bar-center);
+    }
+}
+
+.bar-tooltip strong {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-bottom: 9px;
+    color: #24292f;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.tooltip-check {
+    width: 17px;
+    height: 17px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--green);
+}
+
+.down .tooltip-check {
+    background: var(--red);
+}
+
+.event .tooltip-check {
+    background: var(--amber);
+}
+
+.no-data .tooltip-check {
+    background: var(--muted);
+}
+
+.tooltip-event {
+    display: block;
+    margin-bottom: 8px;
+    color: #24292f;
+    font-size: 9px;
+}
+
+.downtime-duration {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--red);
+    font-size: 9px;
+}
+
+.bar-tooltip time {
+    display: block;
+    padding-top: 9px;
+    border-top: 1px solid #eaeef2;
+    color: var(--muted);
+    font-size: 9px;
+    text-align: center;
 }
 
 .status-unavailable {

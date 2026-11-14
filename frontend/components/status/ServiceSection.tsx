@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { ServiceStatus, UptimeStats } from '@/lib/types'
+import type { DayHistory, ServiceStatus, UptimeStats } from '@/lib/types'
 import { Check, Chevron, X } from '@/components/icons'
 import ServiceCard from './ServiceCard'
 
@@ -13,7 +13,7 @@ export default function ServiceSection({
 }: {
   groupName: string
   services: ServiceStatus[]
-  uptimeByServiceId: Map<string, number>
+  uptimeByServiceId: Map<string, UptimeStats>
   defaultOpen: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -57,8 +57,11 @@ export default function ServiceSection({
         <div className="live-section-services">
           {services.map(function (service) {
             var uptimePercent = null
+            var days: DayHistory[] = []
             if (uptimeByServiceId.has(service.id)) {
-              uptimePercent = uptimeByServiceId.get(service.id)!
+              const uptime = uptimeByServiceId.get(service.id)!
+              uptimePercent = uptime.uptime_percent
+              days = uptime.days
             }
 
             return (
@@ -66,6 +69,7 @@ export default function ServiceSection({
                 service={service}
                 groupName={groupName}
                 uptimePercent={uptimePercent}
+                days={days}
                 key={service.id}
               />
             )
