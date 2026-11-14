@@ -26,6 +26,11 @@ pub enum Commands {
     Migrate,
     /// Seed services/groups from config/services.yml
     Seed,
+    /// Create an admin account for the /manage panel (or reset an existing one's password)
+    CreateAdmin {
+        #[arg(long)]
+        username: String,
+    },
 }
 
 pub fn print_banner() {

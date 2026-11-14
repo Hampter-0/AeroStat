@@ -1,4 +1,5 @@
 mod incidents;
+pub mod manage;
 mod maintenance;
 mod services;
 mod status;
@@ -28,5 +29,6 @@ pub fn build(state: AppState) -> Router {
         .route("/api/maintenance", get(maintenance::list))
         .route("/api/maintenance/:id", get(maintenance::get))
         .route("/api/uptime/:service_id", get(uptime::get))
+        .nest("/api/manage", manage::router())
         .with_state(state)
 }

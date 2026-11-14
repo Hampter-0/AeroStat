@@ -1,0 +1,585 @@
+.manage-shell {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 232px 1fr;
+    background: var(--panel-soft);
+}
+
+.manage-sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+}
+
+.manage-brand {
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -.02em;
+    text-decoration: none;
+}
+
+.manage-nav {
+    display: grid;
+    gap: 2px;
+}
+
+.manage-nav a {
+    min-height: 34px;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 5px;
+    color: var(--text-soft);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.manage-nav a:hover {
+    color: var(--text);
+    background: var(--panel-soft);
+}
+
+.manage-nav a.active {
+    color: var(--link);
+    background: var(--panel-soft);
+    font-weight: 600;
+}
+
+.manage-account {
+    margin-top: auto;
+    padding: 12px 8px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.manage-account-user {
+    min-width: 0;
+    display: grid;
+}
+
+.manage-account-user strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.manage-account-user span {
+    color: var(--subtle);
+    font-size: 10px;
+}
+
+.manage-account-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.manage-account .dropdown-menu {
+    top: auto;
+    bottom: calc(100% + 6px);
+}
+
+.icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-soft);
+    background: var(--panel);
+}
+
+.icon-button:hover {
+    color: var(--danger-text);
+}
+
+.manage-content {
+    min-width: 0;
+    padding: 40px 32px 80px;
+}
+
+.manage-page {
+    width: min(860px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 20px;
+}
+
+.manage-page-header h1 {
+    margin: 0 0 6px;
+    color: var(--text);
+    font-size: 24px;
+    letter-spacing: -.03em;
+}
+
+.manage-page-header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.manage-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.manage-card {
+    padding: 18px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-soft);
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
+    font-size: 11px;
+    text-decoration: none;
+}
+
+.manage-card:hover {
+    border-color: var(--link);
+}
+
+.manage-card strong {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.manage-card em {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--link);
+    font-style: normal;
+}
+
+.manage-panel {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    box-shadow: 0 3px 9px var(--shadow);
+}
+
+.manage-panel h2 {
+    margin: 0 0 16px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.manage-form {
+    display: grid;
+    gap: 14px;
+}
+
+.manage-form label {
+    display: grid;
+    gap: 6px;
+}
+
+.manage-form label>span {
+    color: var(--text-soft);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.manage-form input:not([type="checkbox"]) {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font-size: 12px;
+}
+
+.manage-form input:not([type="checkbox"]):focus {
+    border-color: var(--link);
+    outline: 2px solid var(--info-bg);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.permission-fields {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+    border: 0;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 8px;
+}
+
+.manage-form .check-row {
+    padding: 9px 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    color: var(--text-soft);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.manage-form .check-row input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--link);
+}
+
+.manage-form .admin-row span {
+    display: grid;
+    gap: 2px;
+}
+
+.manage-form .admin-row strong {
+    color: var(--text);
+}
+
+.manage-form .admin-row small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.form-error,
+.form-success {
+    margin: 0;
+    padding: 9px 11px;
+    border-radius: 5px;
+    font-size: 11px;
+}
+
+.form-error {
+    border: 1px solid var(--danger-border);
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}
+
+.form-success {
+    border: 1px solid var(--success-border);
+    color: var(--success-text);
+    background: var(--success-bg);
+}
+
+.button-primary,
+.button-secondary,
+.button-danger {
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.button-primary {
+    border: 1px solid var(--link);
+    color: #fff;
+    background: var(--link);
+}
+
+.button-primary:hover {
+    filter: brightness(1.08);
+}
+
+.button-secondary {
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--panel);
+}
+
+.button-secondary:hover {
+    color: var(--text);
+    background: var(--panel-soft);
+}
+
+.button-danger {
+    border: 1px solid var(--danger-border);
+    color: var(--danger-text);
+    background: transparent;
+}
+
+.button-danger:hover {
+    background: var(--danger-bg);
+}
+
+.button-primary:disabled,
+.button-danger:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.user-list {
+    display: grid;
+    gap: 10px;
+}
+
+.user-row {
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+}
+
+.user-row-summary {
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 2fr auto;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-row-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-row-name strong {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.you-tag {
+    padding: 2px 7px;
+    border-radius: 20px;
+    color: var(--muted);
+    background: var(--chip-bg);
+    font-size: 9px;
+}
+
+.user-row-access {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-soft);
+    font-size: 10px;
+}
+
+.chip.admin {
+    border-color: var(--info-border);
+    color: var(--info);
+    background: var(--info-bg);
+}
+
+.chip.muted {
+    color: var(--muted);
+    border-style: dashed;
+}
+
+.user-row-edit {
+    padding: 16px 14px;
+    display: grid;
+    gap: 16px;
+    border-top: 1px solid var(--border-soft);
+    background: var(--panel-soft);
+}
+
+.danger-zone {
+    padding-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.manage-login {
+    min-height: 100vh;
+    padding: 32px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel-soft);
+}
+
+.manage-login-inner {
+    width: min(400px, 100%);
+    display: grid;
+    align-content: start;
+    gap: 22px;
+}
+
+.manage-login-brand {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+}
+
+.manage-login-heading h1 {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-size: 26px;
+    letter-spacing: -.03em;
+}
+
+.manage-login-heading p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.manage-login-card {
+    padding: 22px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+.manage-login-card .manage-form label>span {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.manage-login-card .button-primary {
+    width: 100%;
+    height: 42px;
+    margin-top: 4px;
+    font-size: 14px;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon svg {
+    position: absolute;
+    left: 12px;
+    color: var(--subtle);
+    pointer-events: none;
+}
+
+.manage-form .input-with-icon input {
+    width: 100%;
+    height: 42px;
+    padding-left: 38px;
+    font-size: 13px;
+}
+
+.manage-login-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.manage-login-footer a {
+    color: var(--link);
+    text-decoration: none;
+}
+
+@media (max-width: 760px) {
+    .manage-shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+    }
+
+    .manage-sidebar {
+        position: static;
+        height: auto;
+        padding: 12px 14px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        align-content: flex-start;
+        gap: 10px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .manage-nav {
+        order: 3;
+        width: 100%;
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .manage-nav a {
+        flex: 0 0 auto;
+    }
+
+    .manage-account {
+        margin: 0 0 0 auto;
+        padding: 0;
+        border-top: 0;
+    }
+
+    .manage-account .dropdown-menu {
+        top: calc(100% + 6px);
+        bottom: auto;
+    }
+
+    .manage-content {
+        padding: 24px 14px 60px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .user-row-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+    }
+
+    .user-row-summary .button-secondary {
+        margin-left: auto;
+    }
+}
+
+body:has(.manage-shell),
+body:has(.manage-login) {
+    min-height: 100vh;
+}

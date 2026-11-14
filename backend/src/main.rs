@@ -1,6 +1,8 @@
-﻿mod cli;
+﻿mod auth;
+mod cli;
 mod config;
 mod db;
+mod error;
 mod models;
 mod routes;
 mod services;
@@ -38,6 +40,23 @@ async fn main() -> anyhow::Result<()> {
             db::migrate(&pool).await?;
             db::seed_from_file(&pool, "config/services.yml").await?;
             tracing::info!("Seed complete, exiting");
+            return Ok(());
+        }
+        Some(Commands::CreateAdmin { username }) => {
+            db::migrate(&pool).await?;
+            let password = match std::env::var("ADMIN_PASSWORD") {
+                Ok(password) => password,
+                Err(_) => {
+                    let password = rpassword::prompt_password("Password: ")?;
+                    let confirm = rpassword::prompt_password("Repeat password: ")?;
+                    if password != confirm {
+                        anyhow::bail!("Passwords do not match");
+                    }
+                    password
+                }
+            };
+            routes::manage::create_admin_from_cli(&pool, &username, password).await?;
+            println!("Admin '{}' is ready. Sign in at /manage.", username.trim().to_lowercase());
             return Ok(());
         }
         None => {}
