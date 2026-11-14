@@ -17,8 +17,8 @@ function formatFullDate(iso: string) {
 }
 
 function IncidentEntry({ incident }: { incident: Incident }) {
-  var tagClassName = 'scheduled-tag'
-  var tagLabel = capitalize(incident.status)
+  let tagClassName = 'scheduled-tag'
+  let tagLabel = capitalize(incident.status)
   if (incident.status === 'resolved') {
     tagClassName = 'resolved-tag'
     tagLabel = 'Resolved'
@@ -40,12 +40,12 @@ function IncidentEntry({ incident }: { incident: Incident }) {
 }
 
 export default async function IncidentsPage() {
-  var incidents: Incident[] = []
-  var backendIsDown = false
+  let incidents: Incident[] = []
+  let backendIsDown = false
 
   try {
     incidents = await getIncidents()
-  } catch (error) {
+  } catch {
     backendIsDown = true
   }
 
@@ -60,7 +60,7 @@ export default async function IncidentsPage() {
 
   const now = new Date()
   const windowMonths: Date[] = []
-  var offset = 2
+  let offset = 2
   while (offset >= 0) {
     const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1))
     windowMonths.push(monthDate)
@@ -70,7 +70,7 @@ export default async function IncidentsPage() {
 
   const oldestLabel = formatMonthLabel(windowMonths[0])
   const newestLabel = formatMonthLabel(windowMonths[2])
-  var rangeLabel = oldestLabel + ' to ' + newestLabel
+  let rangeLabel = oldestLabel + ' to ' + newestLabel
   if (oldestLabel === newestLabel) {
     rangeLabel = newestLabel
   }
@@ -96,7 +96,7 @@ export default async function IncidentsPage() {
 
           const monthIncidents = incidents.filter(function (incident) {
             const incidentDate = new Date(incident.created_at)
-            var sameMonth = false
+            let sameMonth = false
             if (
               incidentDate.getUTCFullYear() === monthDate.getUTCFullYear() &&
               incidentDate.getUTCMonth() === monthDate.getUTCMonth()

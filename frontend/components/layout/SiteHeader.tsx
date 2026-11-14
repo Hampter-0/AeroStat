@@ -13,19 +13,10 @@ const links = [
   { href: '/maintenance', label: 'Maintenance' },
 ]
 
-const contactHref = 'https://portfolio.hampternom.nl/#contact'
-
-export default function SiteHeader({ siteName }: { siteName: string }) {
+export default function SiteHeader({ siteName, contactUrl }: { siteName: string; contactUrl: string | null }) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(
-    function () {
-      setMenuOpen(false)
-    },
-    [pathname]
-  )
 
   useEffect(
     function () {
@@ -62,11 +53,15 @@ export default function SiteHeader({ siteName }: { siteName: string }) {
     return ''
   }
 
+  function closeMenu() {
+    setMenuOpen(false)
+  }
+
   function toggleMenu() {
     setMenuOpen(!menuOpen)
   }
 
-  var menuLabel = 'Open menu'
+  let menuLabel = 'Open menu'
   if (menuOpen) {
     menuLabel = 'Close menu'
   }
@@ -87,9 +82,8 @@ export default function SiteHeader({ siteName }: { siteName: string }) {
                 </Link>
               )
             })}
-            <a href={contactHref} target="_blank">Contact</a>
+            {contactUrl && <a href={contactUrl} target="_blank">Contact</a>}
           </nav>
-          <ThemeSwitcher />
           <div className="dropdown mobile-menu" ref={menuRef}>
             <button
               type="button"
@@ -106,15 +100,16 @@ export default function SiteHeader({ siteName }: { siteName: string }) {
               <nav className="dropdown-menu" aria-label="Status navigation">
                 {links.map(function (link) {
                   return (
-                    <Link href={link.href} className={navClass(link.href)} key={link.href}>
+                    <Link href={link.href} className={navClass(link.href)} key={link.href} onClick={closeMenu}>
                       {link.label}
                     </Link>
                   )
                 })}
-                <a href={contactHref} target="_blank">Contact</a>
+                {contactUrl && <a href={contactUrl} target="_blank">Contact</a>}
               </nav>
             )}
           </div>
+          <ThemeSwitcher />
         </div>
       </div>
     </header>

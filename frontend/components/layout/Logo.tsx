@@ -1,5 +1,5 @@
 export default function Logo({ size }: { size?: number }) {
-  var finalSize = size
+  let finalSize = size
   if (finalSize === undefined) {
     finalSize = 30
   }

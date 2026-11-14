@@ -21,8 +21,8 @@ function formatTimeRange(startIso: string, endIso: string) {
 }
 
 function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: MaintenanceWindow }) {
-  var tagClassName = 'scheduled-tag'
-  var tagLabel = 'Scheduled'
+  let tagClassName = 'scheduled-tag'
+  let tagLabel = 'Scheduled'
   if (maintenanceWindow.status === 'in_progress') {
     tagClassName = 'in-progress-tag'
     tagLabel = 'In progress'
@@ -54,12 +54,12 @@ function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: Maintenanc
 }
 
 export default async function MaintenancePage() {
-  var maintenanceWindows: MaintenanceWindow[] = []
-  var backendIsDown = false
+  let maintenanceWindows: MaintenanceWindow[] = []
+  let backendIsDown = false
 
   try {
     maintenanceWindows = await getAllMaintenance()
-  } catch (error) {
+  } catch {
     backendIsDown = true
   }
 
@@ -74,7 +74,7 @@ export default async function MaintenancePage() {
 
   const now = new Date()
   const windowMonths: Date[] = []
-  var offset = -1
+  let offset = -1
   while (offset <= 1) {
     const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1))
     windowMonths.push(monthDate)
@@ -83,7 +83,7 @@ export default async function MaintenancePage() {
 
   const oldestLabel = formatMonthLabel(windowMonths[0])
   const newestLabel = formatMonthLabel(windowMonths[2])
-  var rangeLabel = oldestLabel + ' to ' + newestLabel
+  let rangeLabel = oldestLabel + ' to ' + newestLabel
   if (oldestLabel === newestLabel) {
     rangeLabel = newestLabel
   }
@@ -109,7 +109,7 @@ export default async function MaintenancePage() {
 
           const monthWindows = maintenanceWindows.filter(function (maintenanceWindow) {
             const startDate = new Date(maintenanceWindow.scheduled_start)
-            var sameMonth = false
+            let sameMonth = false
             if (
               startDate.getUTCFullYear() === monthDate.getUTCFullYear() &&
               startDate.getUTCMonth() === monthDate.getUTCMonth()

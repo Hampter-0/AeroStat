@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
-import { getAllMaintenance, getServiceNames } from '@/lib/api'
+import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
+import { getMaintenance, getServiceNames } from '@/lib/api'
 
 function formatFullDate(iso: string) {
   const date = new Date(iso)
@@ -16,6 +17,11 @@ function formatTimeRange(startIso: string, endIso: string) {
   return startTime + '-' + endTime + ' UTC'
 }
 
+function formatStatus(status: string) {
+  const text = status.replace('_', ' ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 function formatDateTime(iso: string) {
   const date = new Date(iso)
   const dateText = formatFullDate(iso)
@@ -25,30 +31,16 @@ function formatDateTime(iso: string) {
 
 export default async function MaintenanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const maintenanceId = Number(id)
-
-  const maintenanceWindows = await getAllMaintenance()
-
-  var maintenanceWindow = null
-  for (const candidate of maintenanceWindows) {
-    if (candidate.id === maintenanceId) {
-      maintenanceWindow = candidate
-    }
-  }
+  const maintenanceWindow = await getMaintenance(id)
 
   if (!maintenanceWindow) {
     notFound()
   }
 
-  const now = new Date()
-  const start = new Date(maintenanceWindow.scheduled_start)
-  const end = new Date(maintenanceWindow.scheduled_end)
-
-  var tagClassName = 'scheduled-tag'
-  var tagLabel = 'Scheduled'
-  var isCompleted = false
-  var isOngoing = false
-  var isCancelled = false
+  let tagClassName = 'scheduled-tag'
+  let tagLabel = 'Scheduled'
+  let isCompleted = false
+  let isOngoing = false
 
   if (maintenanceWindow.status === 'in_progress') {
     tagClassName = 'in-progress-tag'
@@ -61,24 +53,62 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
   } else if (maintenanceWindow.status === 'cancelled') {
     tagClassName = 'cancelled-tag'
     tagLabel = 'Cancelled'
-    isCancelled = true
-  }
-
-  var topMarkerClassName = 'update-marker pending'
-  if (isCompleted) {
-    topMarkerClassName = 'update-marker done'
-  }
-  if (isOngoing) {
-    topMarkerClassName = 'update-marker ongoing-maintenance'
-  }
-  if (isCancelled) {
-    topMarkerClassName = 'update-marker pending'
   }
 
   const serviceNames = await getServiceNames()
-  var affectedServices: string[] = []
+  let affectedServices: string[] = []
   if (maintenanceWindow.affected_services) {
     affectedServices = maintenanceWindow.affected_services
+  }
+
+  const entries: TimelineEntry[] = []
+  if (maintenanceWindow.updates.length > 0) {
+    maintenanceWindow.updates.forEach(function (update, index) {
+      let markerClassName = 'update-marker pending'
+      let icon = <PendingRing />
+      if (update.status === 'completed') {
+        markerClassName = 'update-marker done'
+        icon = <Check size={11} />
+      } else if (index === 0 && isOngoing) {
+        markerClassName = 'update-marker ongoing-maintenance'
+        icon = <Tool size={11} />
+      }
+      entries.push({
+        key: 'update-' + update.id,
+        label: formatStatus(update.status),
+        time: formatDateTime(update.created_at),
+        message: update.message,
+        markerClassName: markerClassName,
+        icon: icon,
+      })
+    })
+  } else {
+    let topMarkerClassName = 'update-marker pending'
+    let topIcon = <PendingRing />
+    if (isCompleted) {
+      topMarkerClassName = 'update-marker done'
+      topIcon = <Check size={11} />
+    }
+    if (isOngoing) {
+      topMarkerClassName = 'update-marker ongoing-maintenance'
+      topIcon = <Tool size={11} />
+    }
+    entries.push({
+      key: 'status',
+      label: tagLabel,
+      time: formatDateTime(maintenanceWindow.scheduled_start),
+      message: maintenanceWindow.description,
+      markerClassName: topMarkerClassName,
+      icon: topIcon,
+    })
+    entries.push({
+      key: 'created',
+      label: 'Created',
+      time: formatDateTime(maintenanceWindow.created_at),
+      message: null,
+      markerClassName: 'update-marker pending',
+      icon: <PendingRing />,
+    })
   }
 
   return (
@@ -108,35 +138,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
           </div>
         </div>
 
-        <div className="detail-updates">
-          <div className="detail-update">
-            <span className={topMarkerClassName}>
-              {isCompleted && <Check size={11} />}
-              {isOngoing && <Tool size={11} />}
-              {!isCompleted && !isOngoing && <PendingRing />}
-            </span>
-            <div className="update-card">
-              <div>
-                <strong>{tagLabel}</strong>
-                <time>{formatDateTime(maintenanceWindow.scheduled_start)}</time>
-              </div>
-              <p>{maintenanceWindow.description}</p>
-            </div>
-          </div>
-
-          <div className="detail-update">
-            <span className="update-marker pending">
-              <PendingRing />
-            </span>
-            <div className="update-card">
-              <div>
-                <strong>Created</strong>
-                <time>{formatDateTime(maintenanceWindow.created_at)}</time>
-              </div>
-              <p>{maintenanceWindow.description}</p>
-            </div>
-          </div>
-        </div>
+        <Timeline entries={entries} />
       </article>
     </div>
   )

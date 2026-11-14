@@ -11,7 +11,7 @@ function formatDay(dateText: string) {
 }
 
 function formatMinutes(minutes: number) {
-  var text = minutes + ' minutes'
+  let text = minutes + ' minutes'
   if (minutes === 1) {
     text = '1 minute'
   }
@@ -24,10 +24,10 @@ function formatMinutes(minutes: number) {
 }
 
 export default function UptimeBars({ days }: { days: DayHistory[] }) {
-  var shownDays = days
+  let shownDays = days
   if (shownDays.length === 0) {
     shownDays = []
-    var i = 0
+    let i = 0
     while (i < HISTORY_DAYS) {
       shownDays.push({ date: '', status: 'no_data', downtime_minutes: 0, events: [] })
       i = i + 1
@@ -38,21 +38,21 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
     <>
       <div className="uptime-bars" aria-label="Uptime history">
         {shownDays.map(function (day, index) {
-          var isDown = false
+          let isDown = false
           if (day.status === 'offline' || day.status === 'degraded') {
             isDown = true
           }
 
-          var stateClassName = ''
-          var label = 'Operational'
-          var icon = <Check size={11} />
+          let stateClassName = ''
+          let label = 'Operational'
+          let icon = <Check size={11} />
           if (day.status === 'no_data') {
             stateClassName = ' no-data'
             label = 'No data'
           }
 
-          var hasEvents = false
-          var href = ''
+          let hasEvents = false
+          let href = ''
           if (day.events.length > 0) {
             hasEvents = true
             const firstEvent = day.events[0]
@@ -61,6 +61,7 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
             label = 'Incident'
             icon = <X size={11} />
             if (firstEvent.kind === 'maintenance') {
+              stateClassName = ' maintenance'
               href = '/maintenance/' + firstEvent.id
               label = 'Maintenance'
               icon = <Tool size={11} />
@@ -81,12 +82,12 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
             '--bar-center-mobile': mobileCenterPercent + '%',
           } as CSSProperties
 
-          var showDowntime = false
+          let showDowntime = false
           if (day.downtime_minutes > 0 && day.status !== 'online') {
             showDowntime = true
           }
 
-          var dateText = ''
+          let dateText = ''
           if (day.date) {
             dateText = formatDay(day.date)
           }

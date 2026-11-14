@@ -1,18 +1,24 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import type { ReactNode } from 'react'
 import './globals.css'
 import SiteHeader from '@/components/layout/SiteHeader'
 import PoweredBy from '@/components/layout/PoweredBy'
 import { themeInitScript } from '@/lib/theme'
 
-var siteName: string = 'AeroStat'
+let siteName: string = 'AeroStat'
 if (process.env.SITE_NAME) {
   siteName = process.env.SITE_NAME
 }
 
-var accentColor: string = '#1678c2'
+let accentColor: string = '#1678c2'
 if (process.env.PRIMARY_COLOR) {
   accentColor = process.env.PRIMARY_COLOR
+}
+
+let contactUrl: string | null = null
+if (process.env.CONTACT_URL) {
+  contactUrl = process.env.CONTACT_URL
 }
 
 export const metadata: Metadata = {
@@ -26,10 +32,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
       </head>
       <body style={bodyStyle}>
-        <SiteHeader siteName={siteName} />
+        <SiteHeader siteName={siteName} contactUrl={contactUrl} />
         <main>{children}</main>
         <PoweredBy siteName={siteName} />
       </body>

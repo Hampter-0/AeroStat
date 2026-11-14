@@ -18,15 +18,15 @@ export default function ServiceSection({
 }) {
   const [open, setOpen] = useState(defaultOpen)
 
-  var allOnline = true
+  let allOnline = true
   for (const service of services) {
     if (service.status !== 'online') {
       allOnline = false
     }
   }
 
-  var statusClassName = 'live-section-status'
-  var statusText = 'Operational'
+  let statusClassName = 'live-section-status'
+  let statusText = 'Operational'
   if (!allOnline) {
     statusClassName = 'live-section-status down'
     statusText = 'Degraded'
@@ -36,7 +36,7 @@ export default function ServiceSection({
     setOpen(!open)
   }
 
-  var serviceCountLabel = services.length + ' services'
+  let serviceCountLabel = services.length + ' services'
   if (services.length === 1) {
     serviceCountLabel = '1 service'
   }
@@ -56,8 +56,8 @@ export default function ServiceSection({
       {open && (
         <div className="live-section-services">
           {services.map(function (service) {
-            var uptimePercent = null
-            var days: DayHistory[] = []
+            let uptimePercent = null
+            let days: DayHistory[] = []
             if (uptimeByServiceId.has(service.id)) {
               const uptime = uptimeByServiceId.get(service.id)!
               uptimePercent = uptime.uptime_percent

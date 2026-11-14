@@ -11,10 +11,10 @@ export default function ServiceCard({
   uptimePercent: number | null
   days: DayHistory[]
 }) {
-  var checkClassName = 'live-check'
-  var labelClassName = ''
-  var statusText = 'Operational'
-  var isDown = false
+  let checkClassName = 'live-check'
+  let labelClassName = ''
+  let statusText = 'Operational'
+  let isDown = false
   if (service.status !== 'online') {
     checkClassName = 'live-check down'
     labelClassName = 'down'
@@ -22,7 +22,7 @@ export default function ServiceCard({
     isDown = true
   }
 
-  var uptimeText = '-'
+  let uptimeText = '-'
   if (uptimePercent !== null) {
     uptimeText = uptimePercent + '%'
   }

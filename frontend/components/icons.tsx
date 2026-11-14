@@ -1,5 +1,5 @@
 export function Check({ size }: { size?: number }) {
-    var finalSize = size
+    let finalSize = size
     if (finalSize === undefined) {
         finalSize = 16
     }
@@ -28,7 +28,7 @@ export function Arrow() {
 }
 
 export function Chevron({ open }: { open: boolean }) {
-    var className = 'chevron'
+    let className = 'chevron'
     if (open) {
         className = 'chevron open'
     }
@@ -40,7 +40,7 @@ export function Chevron({ open }: { open: boolean }) {
 }
 
 export function X({ size }: { size?: number }) {
-  var finalSize = size
+  let finalSize = size
   if (finalSize === undefined) {
     finalSize = 16
   }
@@ -86,7 +86,7 @@ export function PendingRing() {
 }
 
 export function AlertTriangle({ size }: { size?: number }) {
-  var finalSize = size
+  let finalSize = size
   if (finalSize === undefined) {
     finalSize = 18
   }
@@ -100,7 +100,7 @@ export function AlertTriangle({ size }: { size?: number }) {
 }
 
 export function Tool({ size }: { size?: number }) {
-  var finalSize = size
+  let finalSize = size
   if (finalSize === undefined) {
     finalSize = 18
   }
@@ -112,7 +112,7 @@ export function Tool({ size }: { size?: number }) {
 }
 
 export function AlertSmall({ size }: { size?: number }) {
-  var finalSize = size
+  let finalSize = size
   if (finalSize === undefined) {
     finalSize = 18
   }

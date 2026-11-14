@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Chevron, Monitor, Moon, Sun } from '@/components/icons'
 
 type ThemeChoice = 'system' | 'light' | 'dark'
@@ -14,34 +14,50 @@ const options: { value: ThemeChoice; label: string; icon: React.ReactNode }[] = 
 ]
 
 function applyTheme(choice: ThemeChoice) {
-  var dark = false
+  let dark = false
   if (choice === 'dark') {
     dark = true
   } else if (choice === 'system') {
     dark = window.matchMedia('(prefers-color-scheme: dark)').matches
   }
-  var theme = 'light'
+  let theme = 'light'
   if (dark) {
     theme = 'dark'
   }
   document.documentElement.dataset.theme = theme
 }
 
+const CHANGE_EVENT = 'themechoicechange'
+
+function readChoice(): ThemeChoice {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored === 'light' || stored === 'dark') {
+      return stored
+    }
+  } catch {
+    return 'system'
+  }
+  return 'system'
+}
+
+function readServerChoice(): ThemeChoice {
+  return 'system'
+}
+
+function subscribe(onChange: () => void) {
+  window.addEventListener('storage', onChange)
+  window.addEventListener(CHANGE_EVENT, onChange)
+  return function () {
+    window.removeEventListener('storage', onChange)
+    window.removeEventListener(CHANGE_EVENT, onChange)
+  }
+}
+
 export default function ThemeSwitcher() {
-  const [choice, setChoice] = useState<ThemeChoice>('system')
+  const choice = useSyncExternalStore(subscribe, readChoice, readServerChoice)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-
-  useEffect(function () {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored === 'light' || stored === 'dark') {
-        setChoice(stored)
-      }
-    } catch (error) {
-      return
-    }
-  }, [])
 
   useEffect(
     function () {
@@ -87,7 +103,6 @@ export default function ThemeSwitcher() {
   )
 
   function choose(next: ThemeChoice) {
-    setChoice(next)
     setOpen(false)
     try {
       if (next === 'system') {
@@ -95,16 +110,18 @@ export default function ThemeSwitcher() {
       } else {
         localStorage.setItem(STORAGE_KEY, next)
       }
-    } catch (error) {
+    } catch {
+      applyTheme(next)
       return
     }
+    window.dispatchEvent(new Event(CHANGE_EVENT))
   }
 
   function toggleOpen() {
     setOpen(!open)
   }
 
-  var current = options[0]
+  let current = options[0]
   for (const option of options) {
     if (option.value === choice) {
       current = option
@@ -127,7 +144,7 @@ export default function ThemeSwitcher() {
       {open && (
         <div className="dropdown-menu" role="menu">
           {options.map(function (option) {
-            var className = ''
+            let className = ''
             if (option.value === choice) {
               className = 'active'
             }

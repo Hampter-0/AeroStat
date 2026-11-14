@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AlertSmall, Check, ChevronLeft, PendingRing } from '@/components/icons'
-import { getIncidents, getServiceNames } from '@/lib/api'
+import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
+import { getIncident, getServiceNames } from '@/lib/api'
 
 function formatFullDate(iso: string) {
   const date = new Date(iso)
@@ -21,44 +22,76 @@ function capitalize(text: string) {
 
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const incidentId = Number(id)
-
-  const incidents = await getIncidents()
-
-  var incident = null
-  for (const candidate of incidents) {
-    if (candidate.id === incidentId) {
-      incident = candidate
-    }
-  }
+  const incident = await getIncident(id)
 
   if (!incident) {
     notFound()
   }
 
-  var tagClassName = 'scheduled-tag'
-  var tagLabel = capitalize(incident.status)
+  let tagClassName = 'scheduled-tag'
+  let tagLabel = capitalize(incident.status)
   if (incident.status === 'resolved') {
     tagClassName = 'resolved-tag'
     tagLabel = 'Resolved'
   }
 
   const serviceNames = await getServiceNames()
-  var affectedServices: string[] = []
+  let affectedServices: string[] = []
   if (incident.affected_services) {
     affectedServices = incident.affected_services
   }
 
-  var hasResolvedEntry = false
-  if (incident.status === 'resolved' && incident.resolved_at) {
-    hasResolvedEntry = true
-  }
-
-  var isOngoing = false
-  var reportedMarkerClassName = 'update-marker pending'
+  let isOngoing = false
   if (incident.status !== 'resolved') {
     isOngoing = true
-    reportedMarkerClassName = 'update-marker ongoing-incident'
+  }
+
+  const entries: TimelineEntry[] = []
+  if (incident.updates.length > 0) {
+    incident.updates.forEach(function (update, index) {
+      let markerClassName = 'update-marker pending'
+      let icon = <PendingRing />
+      if (update.status === 'resolved') {
+        markerClassName = 'update-marker done'
+        icon = <Check size={11} />
+      } else if (index === 0 && isOngoing) {
+        markerClassName = 'update-marker ongoing-incident'
+        icon = <AlertSmall />
+      }
+      entries.push({
+        key: 'update-' + update.id,
+        label: capitalize(update.status),
+        time: formatDateTime(update.created_at),
+        message: update.message,
+        markerClassName: markerClassName,
+        icon: icon,
+      })
+    })
+  } else {
+    if (incident.status === 'resolved' && incident.resolved_at) {
+      entries.push({
+        key: 'resolved',
+        label: 'Resolved',
+        time: formatDateTime(incident.resolved_at),
+        message: null,
+        markerClassName: 'update-marker done',
+        icon: <Check size={11} />,
+      })
+    }
+    let reportedMarkerClassName = 'update-marker pending'
+    let reportedIcon = <PendingRing />
+    if (isOngoing) {
+      reportedMarkerClassName = 'update-marker ongoing-incident'
+      reportedIcon = <AlertSmall />
+    }
+    entries.push({
+      key: 'reported',
+      label: 'Reported',
+      time: formatDateTime(incident.created_at),
+      message: incident.description,
+      markerClassName: reportedMarkerClassName,
+      icon: reportedIcon,
+    })
   }
 
   return (
@@ -86,36 +119,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
           </div>
         </div>
 
-        <div className="detail-updates">
-          {hasResolvedEntry && incident.resolved_at && (
-            <div className="detail-update">
-              <span className="update-marker done">
-                <Check size={11} />
-              </span>
-              <div className="update-card">
-                <div>
-                  <strong>Resolved</strong>
-                  <time>{formatDateTime(incident.resolved_at)}</time>
-                </div>
-                <p>{incident.description}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="detail-update">
-            <span className={reportedMarkerClassName}>
-              {isOngoing && <AlertSmall />}
-              {!isOngoing && <PendingRing />}
-            </span>
-            <div className="update-card">
-              <div>
-                <strong>Reported</strong>
-                <time>{formatDateTime(incident.created_at)}</time>
-              </div>
-              <p>{incident.description}</p>
-            </div>
-          </div>
-        </div>
+        <Timeline entries={entries} />
       </article>
     </div>
   )

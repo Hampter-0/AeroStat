@@ -26,6 +26,10 @@ main {
     background: var(--red);
 }
 
+.operational-check.degraded {
+    background: var(--amber);
+}
+
 .operational-hero h1 {
     margin: 16px 0 2px;
     color: var(--text);
@@ -332,6 +336,10 @@ main {
     background: var(--amber);
 }
 
+.bar.maintenance {
+    background: var(--info);
+}
+
 a.bar {
     cursor: pointer;
 }
@@ -404,6 +412,10 @@ a.bar {
 
 .event .tooltip-check {
     background: var(--amber);
+}
+
+.maintenance .tooltip-check {
+    background: var(--info);
 }
 
 .no-data .tooltip-check {

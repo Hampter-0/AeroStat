@@ -1,4 +1,4 @@
-import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from './types'
+import type { Incident, IncidentDetail, MaintenanceDetail, MaintenanceWindow, ServiceStatus, UptimeStats } from './types'
 
 const API_URL = process.env.API_URL
 
@@ -17,7 +17,7 @@ export async function getServiceNames(): Promise<Map<string, string>> {
     for (const service of services) {
       names.set(service.id, service.name)
     }
-  } catch (error) {
+  } catch {
     return names
   }
   return names
@@ -51,6 +51,27 @@ export async function getAllMaintenance(): Promise<MaintenanceWindow[]> {
   const res = await fetch(`${API_URL}/api/maintenance`, { cache: 'no-store' })
   if (!res.ok) {
     throw new Error(`Failed to fetch maintenance: ${res.status}`)
+  }
+  return res.json()
+}
+export async function getIncident(id: string): Promise<IncidentDetail | null> {
+  const res = await fetch(`${API_URL}/api/incidents/${encodeURIComponent(id)}`, { cache: 'no-store' })
+  if (res.status === 404 || res.status === 400) {
+    return null
+  }
+  if (!res.ok) {
+    throw new Error(`Failed to fetch incident ${id}: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function getMaintenance(id: string): Promise<MaintenanceDetail | null> {
+  const res = await fetch(`${API_URL}/api/maintenance/${encodeURIComponent(id)}`, { cache: 'no-store' })
+  if (res.status === 404 || res.status === 400) {
+    return null
+  }
+  if (!res.ok) {
+    throw new Error(`Failed to fetch maintenance ${id}: ${res.status}`)
   }
   return res.json()
 }

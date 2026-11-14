@@ -52,3 +52,18 @@ export interface Incident {
   created_at: string
   resolved_at: string | null
 }
+
+export interface StatusUpdate {
+  id: number
+  status: string
+  message: string
+  created_at: string
+}
+
+export interface IncidentDetail extends Incident {
+  updates: StatusUpdate[]
+}
+
+export interface MaintenanceDetail extends MaintenanceWindow {
+  updates: StatusUpdate[]
+}
