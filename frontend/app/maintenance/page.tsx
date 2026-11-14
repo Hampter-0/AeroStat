@@ -21,19 +21,23 @@ function formatTimeRange(startIso: string, endIso: string) {
 }
 
 function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: MaintenanceWindow }) {
-  const now = new Date()
-  const end = new Date(maintenanceWindow.scheduled_end)
-
   var tagClassName = 'scheduled-tag'
   var tagLabel = 'Scheduled'
-  if (end < now) {
+  if (maintenanceWindow.status === 'in_progress') {
+    tagClassName = 'in-progress-tag'
+    tagLabel = 'In progress'
+  } else if (maintenanceWindow.status === 'completed') {
     tagClassName = 'completed-tag'
     tagLabel = 'Completed'
+  } else if (maintenanceWindow.status === 'cancelled') {
+    tagClassName = 'cancelled-tag'
+    tagLabel = 'Cancelled'
   }
 
   return (
     <Link href={'/maintenance/' + maintenanceWindow.id} className="event-preview-link">
       <div className="event-preview">
+        <span className="event-marker">!</span>
         <span className="event-title-row">
           <strong>{maintenanceWindow.title}</strong>
           <span className={tagClassName}>{tagLabel}</span>

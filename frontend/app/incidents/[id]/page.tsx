@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Check, ChevronLeft, PendingRing } from '@/components/icons'
+import { AlertSmall, Check, ChevronLeft, PendingRing } from '@/components/icons'
 import { getIncidents } from '@/lib/api'
 
 function formatFullDate(iso: string) {
@@ -53,6 +53,13 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     hasResolvedEntry = true
   }
 
+  var isOngoing = false
+  var reportedMarkerClassName = 'update-marker pending'
+  if (incident.status !== 'resolved') {
+    isOngoing = true
+    reportedMarkerClassName = 'update-marker ongoing-incident'
+  }
+
   return (
     <div className="detail-page">
       <Link href="/incidents" className="back-button">
@@ -95,8 +102,9 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
           )}
 
           <div className="detail-update">
-            <span className="update-marker pending">
-              <PendingRing />
+            <span className={reportedMarkerClassName}>
+              {isOngoing && <AlertSmall />}
+              {!isOngoing && <PendingRing />}
             </span>
             <div className="update-card">
               <div>

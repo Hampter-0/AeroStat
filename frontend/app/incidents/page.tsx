@@ -27,6 +27,7 @@ function IncidentEntry({ incident }: { incident: Incident }) {
   return (
     <Link href={'/incidents/' + incident.id} className="event-preview-link">
       <div className="event-preview">
+        <span className="event-marker">!</span>
         <span className="event-title-row">
           <strong>{incident.title}</strong>
           <span className={tagClassName}>{tagLabel}</span>

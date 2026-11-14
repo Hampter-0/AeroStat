@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Check, ChevronLeft, PendingRing } from '@/components/icons'
+import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import { getAllMaintenance } from '@/lib/api'
 
 function formatFullDate(iso: string) {
@@ -41,20 +41,38 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
   }
 
   const now = new Date()
+  const start = new Date(maintenanceWindow.scheduled_start)
   const end = new Date(maintenanceWindow.scheduled_end)
 
   var tagClassName = 'scheduled-tag'
   var tagLabel = 'Scheduled'
   var isCompleted = false
-  if (end < now) {
+  var isOngoing = false
+  var isCancelled = false
+
+  if (maintenanceWindow.status === 'in_progress') {
+    tagClassName = 'in-progress-tag'
+    tagLabel = 'In progress'
+    isOngoing = true
+  } else if (maintenanceWindow.status === 'completed') {
     tagClassName = 'completed-tag'
     tagLabel = 'Completed'
     isCompleted = true
+  } else if (maintenanceWindow.status === 'cancelled') {
+    tagClassName = 'cancelled-tag'
+    tagLabel = 'Cancelled'
+    isCancelled = true
   }
 
   var topMarkerClassName = 'update-marker pending'
   if (isCompleted) {
     topMarkerClassName = 'update-marker done'
+  }
+  if (isOngoing) {
+    topMarkerClassName = 'update-marker ongoing-maintenance'
+  }
+  if (isCancelled) {
+    topMarkerClassName = 'update-marker pending'
   }
 
   var affectedServices: string[] = []
@@ -93,7 +111,8 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
           <div className="detail-update">
             <span className={topMarkerClassName}>
               {isCompleted && <Check size={11} />}
-              {!isCompleted && <PendingRing />}
+              {isOngoing && <Tool size={11} />}
+              {!isCompleted && !isOngoing && <PendingRing />}
             </span>
             <div className="update-card">
               <div>

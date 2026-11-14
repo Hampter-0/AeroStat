@@ -6,6 +6,7 @@ pub struct Maintenance {
     pub id: i64,
     pub title: String,
     pub description: Option<String>,
+    pub status: String,
     pub affected_services: Option<Vec<String>>,
     pub scheduled_start: DateTime<Utc>,
     pub scheduled_end: DateTime<Utc>,

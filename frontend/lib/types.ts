@@ -13,6 +13,7 @@ export interface MaintenanceWindow {
   id: number
   title: string
   description: string | null
+  status: string
   affected_services: string[] | null
   scheduled_start: string
   scheduled_end: string

@@ -7,7 +7,7 @@ use deadpool_redis::Pool as RedisPool;
 #[derive(sqlx::FromRow)]
 struct DayCounts {
     total_checks: i64,
-    offline_checks: i64,
+    offline_checks: Option<i64>,
 }
 
 /// Computes yesterday's rollup status for every service and stores
@@ -42,9 +42,11 @@ pub async fn rollup_yesterday(db: &PgPool, redis: &RedisPool) -> anyhow::Result<
             continue;
         }
 
-        let status = if counts.offline_checks == counts.total_checks {
+        let offline_checks = counts.offline_checks.unwrap_or(0);
+
+        let status = if offline_checks == counts.total_checks {
             "offline"
-        } else if counts.offline_checks > 0 {
+        } else if offline_checks > 0 {
             "degraded"
         } else {
             "online"
