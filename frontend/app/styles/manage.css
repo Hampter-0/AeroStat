@@ -521,7 +521,7 @@
 
 @media (max-width: 760px) {
     .manage-shell {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto 1fr;
     }
 
@@ -543,6 +543,7 @@
         width: 100%;
         display: flex;
         overflow-x: auto;
+        scrollbar-width: none;
     }
 
     .manage-nav a {
@@ -582,4 +583,309 @@
 body:has(.manage-shell),
 body:has(.manage-login) {
     min-height: 100vh;
+}
+
+.manage-form textarea,
+.manage-form select {
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font: inherit;
+    font-size: 12px;
+}
+
+.manage-form select {
+    height: 36px;
+    padding: 0 8px;
+}
+
+.manage-form textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 72px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.manage-form textarea:focus,
+.manage-form select:focus {
+    border-color: var(--link);
+    outline: 2px solid var(--info-bg);
+}
+
+.manage-page-header.with-action {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.manage-page-header .status-chip {
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+a.button-primary,
+a.button-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    text-decoration: none;
+}
+
+.manage-page .back-button {
+    justify-self: start;
+}
+
+.manage-empty {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.manage-list {
+    display: grid;
+    gap: 8px;
+}
+
+.manage-list-row {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+.manage-list-row:hover {
+    border-color: var(--link);
+}
+
+.manage-list-row div {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.manage-list-row strong {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.manage-list-row div span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.status-chip {
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-soft);
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-chip.status-investigating {
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}
+
+.status-chip.status-identified {
+    border-color: var(--warning-border);
+    color: var(--warning-text);
+    background: var(--warning-bg);
+}
+
+.status-chip.status-monitoring {
+    border-color: var(--info-border);
+    color: var(--info);
+    background: var(--info-bg);
+}
+
+.status-chip.status-resolved {
+    border-color: var(--success-border);
+    color: var(--success-text);
+    background: var(--success-bg);
+}
+
+.status-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.manage-form .status-option {
+    padding: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.manage-form .status-option input {
+    margin: 2px 0 0;
+    accent-color: var(--link);
+}
+
+.manage-form .status-option span {
+    display: grid;
+    gap: 2px;
+}
+
+.manage-form .status-option strong {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.manage-form .status-option small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.manage-form .status-option:has(input:checked) {
+    border-color: var(--link);
+    background: var(--info-bg);
+}
+
+.service-picker {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+    border: 0;
+}
+
+.service-picker legend {
+    margin-bottom: 6px;
+    padding: 0;
+    color: var(--text-soft);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.service-picker-group {
+    display: grid;
+    gap: 6px;
+}
+
+.service-picker-group>span {
+    color: var(--subtle);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.manage-timeline {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 10px;
+    list-style: none;
+}
+
+.manage-update {
+    padding: 12px 14px;
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--border);
+    border-radius: 6px;
+}
+
+.manage-update.status-investigating {
+    border-left-color: var(--red);
+}
+
+.manage-update.status-identified {
+    border-left-color: var(--amber);
+}
+
+.manage-update.status-monitoring {
+    border-left-color: var(--info);
+}
+
+.manage-update.status-resolved {
+    border-left-color: var(--green);
+}
+
+.manage-update-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.manage-update-head time {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.manage-update-head .link-button {
+    margin-left: auto;
+}
+
+.manage-update>p {
+    margin: 10px 0 0;
+    color: var(--text-soft);
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.manage-update-edit {
+    margin-top: 12px;
+}
+
+.link-button {
+    padding: 0;
+    border: 0;
+    color: var(--link);
+    background: none;
+    font-size: 11px;
+}
+
+.form-actions.spread {
+    justify-content: space-between;
+}
+
+.form-actions.spread .button-primary:only-child {
+    margin-left: auto;
+}
+
+.manage-panel.danger {
+    border-color: var(--danger-border);
+}
+
+.manage-panel.danger .danger-zone {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.danger-zone p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+@media (max-width: 760px) {
+    .manage-page-header.with-action {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .status-options {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .danger-zone {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }

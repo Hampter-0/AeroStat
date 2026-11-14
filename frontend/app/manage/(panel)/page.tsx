@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Arrow } from '@/components/icons'
-import { requireUser } from '@/lib/manage'
+import { can, requireUser } from '@/lib/manage'
 
 export default async function ManageOverviewPage() {
   const user = await requireUser()
@@ -12,6 +12,15 @@ export default async function ManageOverviewPage() {
       </header>
 
       <div className="manage-cards">
+        {can(user, 'incidents') && (
+          <Link href="/manage/incidents" className="manage-card">
+            <strong>Incidents</strong>
+            <span>Report problems and post updates for visitors.</span>
+            <em>
+              Open <Arrow />
+            </em>
+          </Link>
+        )}
         {user.is_admin && (
           <Link href="/manage/users" className="manage-card">
             <strong>Users</strong>

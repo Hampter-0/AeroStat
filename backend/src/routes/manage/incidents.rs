@@ -1,0 +1,287 @@
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use axum::Json;
+use serde::Deserialize;
+use sqlx::PgPool;
+
+use crate::auth::CurrentUser;
+use crate::error::ApiError;
+use crate::models::{Incident, StatusUpdate};
+use crate::state::AppState;
+
+const PERMISSION: &str = "incidents";
+const STATUSES: [&str; 4] = ["investigating", "identified", "monitoring", "resolved"];
+const SEVERITIES: [&str; 3] = ["minor", "major", "critical"];
+
+#[derive(Deserialize)]
+pub struct CreateIncident {
+    title: String,
+    description: Option<String>,
+    severity: String,
+    affected_services: Vec<String>,
+    status: String,
+    message: String,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateIncident {
+    title: String,
+    description: Option<String>,
+    severity: String,
+    affected_services: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateBody {
+    status: String,
+    message: String,
+}
+
+fn clean_title(title: &str) -> Result<String, ApiError> {
+    let title = title.trim();
+    if title.is_empty() || title.chars().count() > 200 {
+        return Err(ApiError::BadRequest("Title must be 1-200 characters".into()));
+    }
+    Ok(title.to_string())
+}
+
+fn clean_message(message: &str) -> Result<String, ApiError> {
+    let message = message.trim();
+    if message.is_empty() {
+        return Err(ApiError::BadRequest("Message can't be empty".into()));
+    }
+    Ok(message.to_string())
+}
+
+fn clean_description(description: Option<String>) -> Option<String> {
+    description
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
+}
+
+fn check_status(status: &str) -> Result<(), ApiError> {
+    if STATUSES.contains(&status) {
+        return Ok(());
+    }
+    Err(ApiError::BadRequest(format!("Unknown status: {status}")))
+}
+
+fn check_severity(severity: &str) -> Result<(), ApiError> {
+    if SEVERITIES.contains(&severity) {
+        return Ok(());
+    }
+    Err(ApiError::BadRequest(format!("Unknown severity: {severity}")))
+}
+
+async fn check_services(db: &PgPool, ids: &[String]) -> Result<(), ApiError> {
+    if ids.is_empty() {
+        return Err(ApiError::BadRequest("Pick at least one affected service".into()));
+    }
+    let (known,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM services WHERE id = ANY($1)")
+        .bind(ids)
+        .fetch_one(db)
+        .await?;
+    if known as usize != ids.len() {
+        return Err(ApiError::BadRequest("One or more services don't exist".into()));
+    }
+    Ok(())
+}
+
+async fn find_incident(db: &PgPool, id: i64) -> Result<Incident, ApiError> {
+    let incident: Option<Incident> = sqlx::query_as("SELECT * FROM incidents WHERE id = $1")
+        .bind(id)
+        .fetch_optional(db)
+        .await?;
+    incident.ok_or(ApiError::NotFound)
+}
+
+/// The incident's status always mirrors its newest update; resolved_at is the
+/// time of that update when it is "resolved".
+async fn sync_status(db: &PgPool, id: i64) -> Result<(), ApiError> {
+    sqlx::query(
+        r#"
+        UPDATE incidents i
+        SET status = latest.status,
+            resolved_at = CASE WHEN latest.status = 'resolved' THEN latest.created_at ELSE NULL END
+        FROM (
+            SELECT status, created_at FROM incident_updates
+            WHERE incident_id = $1
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+        ) latest
+        WHERE i.id = $1
+        "#,
+    )
+    .bind(id)
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn create(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(body): Json<CreateIncident>,
+) -> Result<(StatusCode, Json<Incident>), ApiError> {
+    user.require(PERMISSION)?;
+    let title = clean_title(&body.title)?;
+    let message = clean_message(&body.message)?;
+    check_status(&body.status)?;
+    check_severity(&body.severity)?;
+    check_services(&state.db, &body.affected_services).await?;
+
+    let mut tx = state.db.begin().await?;
+    let (id,): (i64,) = sqlx::query_as(
+        r#"
+        INSERT INTO incidents (title, description, status, severity, affected_services)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        "#,
+    )
+    .bind(&title)
+    .bind(clean_description(body.description))
+    .bind(&body.status)
+    .bind(&body.severity)
+    .bind(&body.affected_services)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query("INSERT INTO incident_updates (incident_id, status, message) VALUES ($1, $2, $3)")
+        .bind(id)
+        .bind(&body.status)
+        .bind(&message)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+
+    sync_status(&state.db, id).await?;
+    Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)))
+}
+
+pub async fn update(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+    Json(body): Json<UpdateIncident>,
+) -> Result<Json<Incident>, ApiError> {
+    user.require(PERMISSION)?;
+    find_incident(&state.db, id).await?;
+    let title = clean_title(&body.title)?;
+    check_severity(&body.severity)?;
+    check_services(&state.db, &body.affected_services).await?;
+
+    sqlx::query(
+        "UPDATE incidents SET title = $1, description = $2, severity = $3, affected_services = $4 WHERE id = $5",
+    )
+    .bind(&title)
+    .bind(clean_description(body.description))
+    .bind(&body.severity)
+    .bind(&body.affected_services)
+    .bind(id)
+    .execute(&state.db)
+    .await?;
+
+    Ok(Json(find_incident(&state.db, id).await?))
+}
+
+pub async fn delete(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+) -> Result<StatusCode, ApiError> {
+    user.require(PERMISSION)?;
+    find_incident(&state.db, id).await?;
+    sqlx::query("DELETE FROM incidents WHERE id = $1")
+        .bind(id)
+        .execute(&state.db)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn add_update(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+    Json(body): Json<UpdateBody>,
+) -> Result<(StatusCode, Json<StatusUpdate>), ApiError> {
+    user.require(PERMISSION)?;
+    find_incident(&state.db, id).await?;
+    check_status(&body.status)?;
+    let message = clean_message(&body.message)?;
+
+    let created: StatusUpdate = sqlx::query_as(
+        r#"
+        INSERT INTO incident_updates (incident_id, status, message)
+        VALUES ($1, $2, $3)
+        RETURNING id, status, message, created_at
+        "#,
+    )
+    .bind(id)
+    .bind(&body.status)
+    .bind(&message)
+    .fetch_one(&state.db)
+    .await?;
+
+    sync_status(&state.db, id).await?;
+    Ok((StatusCode::CREATED, Json(created)))
+}
+
+pub async fn edit_update(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((id, update_id)): Path<(i64, i64)>,
+    Json(body): Json<UpdateBody>,
+) -> Result<Json<StatusUpdate>, ApiError> {
+    user.require(PERMISSION)?;
+    check_status(&body.status)?;
+    let message = clean_message(&body.message)?;
+
+    let edited: Option<StatusUpdate> = sqlx::query_as(
+        r#"
+        UPDATE incident_updates SET status = $1, message = $2
+        WHERE id = $3 AND incident_id = $4
+        RETURNING id, status, message, created_at
+        "#,
+    )
+    .bind(&body.status)
+    .bind(&message)
+    .bind(update_id)
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?;
+    let edited = edited.ok_or(ApiError::NotFound)?;
+
+    sync_status(&state.db, id).await?;
+    Ok(Json(edited))
+}
+
+pub async fn delete_update(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path((id, update_id)): Path<(i64, i64)>,
+) -> Result<StatusCode, ApiError> {
+    user.require(PERMISSION)?;
+
+    let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM incident_updates WHERE incident_id = $1")
+        .bind(id)
+        .fetch_one(&state.db)
+        .await?;
+    if count <= 1 {
+        return Err(ApiError::BadRequest(
+            "An incident needs at least one update. Delete the incident instead".into(),
+        ));
+    }
+
+    let deleted = sqlx::query("DELETE FROM incident_updates WHERE id = $1 AND incident_id = $2")
+        .bind(update_id)
+        .bind(id)
+        .execute(&state.db)
+        .await?
+        .rows_affected();
+    if deleted == 0 {
+        return Err(ApiError::NotFound);
+    }
+
+    sync_status(&state.db, id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}

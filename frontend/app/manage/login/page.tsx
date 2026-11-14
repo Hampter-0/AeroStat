@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Logo from '@/components/layout/Logo'
 import LoginForm from '@/components/manage/LoginForm'
@@ -35,7 +36,7 @@ export default async function LoginPage() {
 
         <footer className="manage-login-footer">
           <Logo size={14} />
-          <a href="/">{siteName}</a>
+          <Link href="/">{siteName}</Link>
           <span>© {year}</span>
         </footer>
       </div>

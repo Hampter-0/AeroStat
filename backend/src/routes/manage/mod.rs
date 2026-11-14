@@ -1,3 +1,4 @@
+mod incidents;
 mod session;
 mod users;
 
@@ -15,4 +16,11 @@ pub fn router() -> Router<AppState> {
         .route("/me", get(session::me))
         .route("/users", get(users::list).post(users::create))
         .route("/users/:id", patch(users::update).delete(users::delete))
+        .route("/incidents", post(incidents::create))
+        .route("/incidents/:id", patch(incidents::update).delete(incidents::delete))
+        .route("/incidents/:id/updates", post(incidents::add_update))
+        .route(
+            "/incidents/:id/updates/:update_id",
+            patch(incidents::edit_update).delete(incidents::delete_update),
+        )
 }

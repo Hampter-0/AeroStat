@@ -3,7 +3,7 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { ManageApiError, SESSION_COOKIE, manageFetch } from '@/lib/manage'
+import { SESSION_COOKIE, errorMessage, manageFetch } from '@/lib/manage'
 
 export interface FormState {
   error: string | null
@@ -13,13 +13,6 @@ export interface FormState {
 interface LoginResponse {
   token: string
   expires_at: string
-}
-
-function errorMessage(error: unknown): string {
-  if (error instanceof ManageApiError) {
-    return error.message
-  }
-  return 'Could not reach the server. Try again in a moment.'
 }
 
 async function isHttps(): Promise<boolean> {

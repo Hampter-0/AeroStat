@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { ExternalLink, Home, LogOut, Users } from '@/components/icons'
+import { AlertTriangle, ExternalLink, Home, LogOut, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
 
@@ -19,6 +19,9 @@ export default function ManageSidebar({ siteName, user }: { siteName: string; us
   const pathname = usePathname()
 
   const items: NavItem[] = [{ href: '/manage', label: 'Overview', icon: <Home /> }]
+  if (user.is_admin || user.permissions.includes('incidents')) {
+    items.push({ href: '/manage/incidents', label: 'Incidents', icon: <AlertTriangle size={16} /> })
+  }
   if (user.is_admin) {
     items.push({ href: '/manage/users', label: 'Users', icon: <Users /> })
   }

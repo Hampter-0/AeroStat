@@ -92,3 +92,10 @@ export function can(user: ManageUser, permission: string): boolean {
   }
   return user.permissions.includes(permission)
 }
+
+export function errorMessage(error: unknown): string {
+  if (error instanceof ManageApiError) {
+    return error.message
+  }
+  return 'Could not reach the server. Try again in a moment.'
+}
