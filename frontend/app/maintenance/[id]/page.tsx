@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
-import { getAllMaintenance } from '@/lib/api'
+import { getAllMaintenance, getServiceNames } from '@/lib/api'
 
 function formatFullDate(iso: string) {
   const date = new Date(iso)
@@ -75,6 +75,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
     topMarkerClassName = 'update-marker pending'
   }
 
+  const serviceNames = await getServiceNames()
   var affectedServices: string[] = []
   if (maintenanceWindow.affected_services) {
     affectedServices = maintenanceWindow.affected_services
@@ -100,7 +101,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
             {affectedServices.map(function (serviceId) {
               return (
                 <span className="service-chip" key={serviceId}>
-                  {serviceId}
+                  {serviceNames.get(serviceId) || serviceId}
                 </span>
               )
             })}

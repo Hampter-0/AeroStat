@@ -330,6 +330,9 @@ main {
 
 .bar.event {
     background: var(--amber);
+}
+
+a.bar {
     cursor: pointer;
 }
 

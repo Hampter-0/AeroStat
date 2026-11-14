@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { AlertSmall, Check, ChevronLeft, PendingRing } from '@/components/icons'
-import { getIncidents } from '@/lib/api'
+import { getIncidents, getServiceNames } from '@/lib/api'
 
 function formatFullDate(iso: string) {
   const date = new Date(iso)
@@ -43,6 +43,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     tagLabel = 'Resolved'
   }
 
+  const serviceNames = await getServiceNames()
   var affectedServices: string[] = []
   if (incident.affected_services) {
     affectedServices = incident.affected_services
@@ -78,7 +79,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
             {affectedServices.map(function (serviceId) {
               return (
                 <span className="service-chip" key={serviceId}>
-                  {serviceId}
+                  {serviceNames.get(serviceId) || serviceId}
                 </span>
               )
             })}

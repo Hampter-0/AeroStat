@@ -92,6 +92,32 @@ export default async function Home() {
     }
   }
 
+  const explainedServiceIds = new Set<string>()
+  for (const incident of ongoingIncidents) {
+    for (const serviceId of incident.affected_services || []) {
+      explainedServiceIds.add(serviceId)
+    }
+  }
+  for (const maintenanceWindow of ongoingMaintenanceWindows) {
+    for (const serviceId of maintenanceWindow.affected_services || []) {
+      explainedServiceIds.add(serviceId)
+    }
+  }
+
+  const unexplainedDownNames: string[] = []
+  for (const service of services) {
+    if (service.status === 'offline' && !explainedServiceIds.has(service.id)) {
+      unexplainedDownNames.push(service.name)
+    }
+  }
+
+  var downNoticeText = ''
+  if (unexplainedDownNames.length === 1) {
+    downNoticeText = unexplainedDownNames[0] + ' is not responding'
+  } else if (unexplainedDownNames.length > 1) {
+    downNoticeText = unexplainedDownNames.join(', ') + ' are not responding'
+  }
+
   var upcomingMaintenanceWindow: MaintenanceWindow | null = null
   for (const maintenanceWindow of maintenanceWindows) {
     if (maintenanceWindow.status === 'scheduled') {
@@ -119,6 +145,18 @@ export default async function Home() {
         <h1>{heroText}</h1>
         <a href="/incidents">Incident history <Arrow /></a>
       </section>
+
+      {downNoticeText && (
+        <section className="notice incident">
+          <span className="notice-icon incident">
+            <AlertSmall />
+          </span>
+          <div className="notice-copy">
+            <h2>Service disruption</h2>
+            <p className="incident-text">{downNoticeText}</p>
+          </div>
+        </section>
+      )}
 
       {ongoingIncidents.map(function (incident) {
         return (

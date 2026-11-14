@@ -10,6 +10,19 @@ export async function getStatus(): Promise<ServiceStatus[]> {
   return res.json()
 }
 
+export async function getServiceNames(): Promise<Map<string, string>> {
+  const names = new Map<string, string>()
+  try {
+    const services = await getStatus()
+    for (const service of services) {
+      names.set(service.id, service.name)
+    }
+  } catch (error) {
+    return names
+  }
+  return names
+}
+
 export async function getUpcomingMaintenance(): Promise<MaintenanceWindow[]> {
   const res = await fetch(`${API_URL}/api/maintenance`, { cache: 'no-store' })
   if (!res.ok) {

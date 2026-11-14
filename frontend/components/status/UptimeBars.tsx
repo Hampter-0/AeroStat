@@ -36,14 +36,14 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
   return (
     <div className="uptime-bars" aria-label="60 day uptime history">
       {shownDays.map(function (day, index) {
+        var isDown = false
+        if (day.status === 'offline' || day.status === 'degraded') {
+          isDown = true
+        }
+
         var stateClassName = ''
         var label = 'Operational'
         var icon = <Check size={11} />
-        if (day.status === 'offline' || day.status === 'degraded') {
-          stateClassName = ' down'
-          label = 'Downtime'
-          icon = <X size={11} />
-        }
         if (day.status === 'no_data') {
           stateClassName = ' no-data'
           label = 'No data'
@@ -63,6 +63,12 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
             label = 'Maintenance'
             icon = <Tool size={11} />
           }
+        }
+
+        if (isDown) {
+          stateClassName = ' down'
+          label = 'Downtime'
+          icon = <X size={11} />
         }
 
         const centerPercent = ((index + 0.5) / shownDays.length) * 100
