@@ -1,6 +1,7 @@
 use std::env;
 
 use crate::login_guard::LoginLimits;
+use crate::mailer::SmtpConfig;
 
 #[derive(Debug, Clone)]
 pub struct Settings {
@@ -12,6 +13,7 @@ pub struct Settings {
     pub login_limits: LoginLimits,
     pub session_days: i32,
     pub update_check: bool,
+    pub smtp: Option<SmtpConfig>,
 }
 
 impl Settings {
@@ -47,6 +49,8 @@ impl Settings {
             "false" | "0" | "no" | "off"
         );
 
+        let smtp = SmtpConfig::from_env()?;
+
         Ok(Self {
             host,
             port,
@@ -56,6 +60,7 @@ impl Settings {
             login_limits,
             session_days: session_days as i32,
             update_check,
+            smtp,
         })
     }
 }

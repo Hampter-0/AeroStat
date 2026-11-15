@@ -6,6 +6,7 @@ mod console;
 mod db;
 mod error;
 mod login_guard;
+mod mailer;
 mod notifications;
 mod models;
 mod routes;
@@ -88,6 +89,11 @@ async fn main() -> anyhow::Result<()> {
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
 
+    match &settings.smtp {
+        Some(smtp) => tracing::info!("Email is sent through {}:{}", smtp.host, smtp.port),
+        None => tracing::info!("Email is off, set SMTP_HOST to turn it on"),
+    }
+    mailer::init(settings.smtp.clone());
     notifications::spawn_maintenance_watcher(pool.clone());
 
     let update_state = services::update_checker::UpdateCache::default();

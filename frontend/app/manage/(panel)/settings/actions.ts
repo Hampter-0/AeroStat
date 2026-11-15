@@ -124,6 +124,16 @@ export async function saveNotifications(_state: FormState, formData: FormData): 
   return { error: null, success: 'Saved' }
 }
 
+export async function sendTestEmail(_state: FormState, formData: FormData): Promise<FormState> {
+  const to = String(formData.get('to') || '').trim()
+  try {
+    await manageFetch('/email/test', { method: 'POST', body: JSON.stringify({ to: to }) })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  return { error: null, success: 'Sent to ' + to + '. It can take a minute to arrive.' }
+}
+
 export async function sendTestNotification(): Promise<FormState> {
   try {
     await manageFetch('/notifications/test', { method: 'POST' })

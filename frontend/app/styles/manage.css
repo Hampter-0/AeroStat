@@ -2373,3 +2373,53 @@ a.page-button:hover {
     flex-basis: 100%;
     margin: 0;
 }
+
+.email-test .form-error,
+.email-test .form-success {
+    margin: 10px 0 0;
+}
+
+.config-list {
+    margin: 0;
+    border-top: 1px solid var(--border-soft);
+}
+
+.config-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 200px) 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 12px;
+}
+
+.config-row dt {
+    color: var(--muted);
+}
+
+.config-row dd {
+    margin: 0;
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.config-row dd.muted {
+    color: var(--muted);
+}
+
+.config-footnote {
+    margin: 14px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.config-example {
+    margin: 0;
+    padding: 12px 14px;
+    overflow-x: auto;
+    border-radius: 6px;
+    color: var(--text-soft);
+    background: var(--chip-bg);
+    font-size: 12px;
+    line-height: 1.6;
+}

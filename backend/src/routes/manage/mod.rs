@@ -1,5 +1,6 @@
 mod activity;
 mod dashboard;
+mod email;
 mod incidents;
 mod maintenance;
 mod notifications;
@@ -28,6 +29,10 @@ pub fn router() -> Router<AppState> {
         .route("/system", get(system::get))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
+        .route(
+            "/profile/notifications",
+            get(email::my_notifications).put(email::update_my_notifications),
+        )
         .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))
         .route("/avatar/:id", get(profile::avatar))
         .route("/dashboard", get(dashboard::get))
@@ -48,6 +53,8 @@ pub fn router() -> Router<AppState> {
         .route("/settings", get(settings::get).patch(settings::update))
         .route("/notifications", get(notifications::get).put(notifications::update))
         .route("/notifications/test", post(notifications::test))
+        .route("/email", get(email::get))
+        .route("/email/test", post(email::test))
         .route("/brand/:name", put(settings::upload_asset).delete(settings::delete_asset))
         .route("/groups", post(services::create_group))
         .route("/groups/:id", patch(services::update_group).delete(services::delete_group))

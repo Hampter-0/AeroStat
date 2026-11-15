@@ -205,6 +205,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         </section>
       )}
 
+      {activeTab === 'notifications' && (
+        <section className="manage-panel">
+          <h2>Email</h2>
+          <p className="panel-intro">
+            Everyone picks their own email notifications on their <Link href="/manage/profile">Profile</Link>, and only gets the ones they have
+            access to.
+          </p>
+        </section>
+      )}
+
       {activeTab === 'time' && (
         <section className="manage-panel">
           <h2>Time & region</h2>

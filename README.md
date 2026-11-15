@@ -33,7 +33,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
-- Discord notifications when a service goes down or comes back, and for incidents and maintenance
+- Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
 - Link previews for Discord, Slack and social media that show the live status, incident or maintenance
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
 
@@ -172,6 +172,21 @@ In the panel under **Settings → Notifications**, paste a Discord webhook URL (
 
 Set the status page address there too, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.
 
+## Email notifications
+
+Panel users can get the same notifications by email. Add your mail server to `.env`:
+
+```env
+SMTP_HOST=mail.example.com
+SMTP_PORT=465
+SMTP_ENCRYPTION=tls
+SMTP_USERNAME=noreply@example.com
+SMTP_PASSWORD=your-password
+SMTP_FROM_ADDRESS=noreply@example.com
+```
+
+Restart with `docker compose up -d`. Admins see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones they have permission for: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
+
 ## Status API and badges
 
 Every AeroStat site has a small public API, so other sites and tools can show your status. Both endpoints allow cross-origin requests and are cached for a short time.
@@ -259,6 +274,13 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before a block |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
 | `UPDATE_CHECK` | `true` | Show admins when a newer release is out |
+| `SMTP_HOST` | | Mail server for email notifications. Empty turns email off |
+| `SMTP_PORT` | `465` or `587` | Mail server port, follows `SMTP_ENCRYPTION` |
+| `SMTP_ENCRYPTION` | `starttls`, or `tls` on port 465 | `tls`, `starttls` or `none` |
+| `SMTP_USERNAME` | | Mail server login |
+| `SMTP_PASSWORD` | | Mail server password. Never shown in the panel |
+| `SMTP_FROM_ADDRESS` | `SMTP_USERNAME` | Address emails are sent from |
+| `SMTP_FROM_NAME` | Site name | Name emails are sent from |
 | `RUST_LOG` | `info` | Backend log level |
 
 ## Command line

@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { AlertTriangle, Check, Clock, Cpu, Database, ExternalLink, Layers, MemoryChip, Package, Terminal } from '@/components/icons'
+import EmailTest from '@/components/manage/system/EmailTest'
 import UpdateCheck from '@/components/manage/system/UpdateCheck'
 import { getSiteConfig } from '@/lib/branding'
+import { ENCRYPTION_LABELS, type EmailInfo } from '@/lib/email'
 import { manageFetch, requireUser } from '@/lib/manage'
 import { formatBytes, formatCount, formatMs, type SystemInfo } from '@/lib/system'
 import { currentTimeMs, formatAgo, formatDateTimeShort, formatDuration } from '@/lib/time'
@@ -17,7 +19,32 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'updates', label: 'Updates' },
   { id: 'health', label: 'Health' },
+  { id: 'email', label: 'Email' },
 ]
+
+const SMTP_EXAMPLE = [
+  'SMTP_HOST=mail.example.com',
+  'SMTP_PORT=465',
+  'SMTP_ENCRYPTION=tls',
+  'SMTP_USERNAME=noreply@example.com',
+  'SMTP_PASSWORD=…',
+  'SMTP_FROM_ADDRESS=noreply@example.com',
+].join('\n')
+
+function ConfigRow({ label, value }: { label: string; value: string | null }) {
+  let shown = 'Not set'
+  let className = 'config-value muted'
+  if (value) {
+    shown = value
+    className = 'config-value'
+  }
+  return (
+    <div className="config-row">
+      <dt>{label}</dt>
+      <dd className={className}>{shown}</dd>
+    </div>
+  )
+}
 
 const CHECK_STALE_MS = 30 * 60000
 
@@ -66,7 +93,11 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
     }
   }
 
-  const { timezone } = await getSiteConfig()
+  const { timezone, siteName } = await getSiteConfig()
+  let email: EmailInfo | null = null
+  if (activeTab === 'email') {
+    email = await manageFetch<EmailInfo>('/email')
+  }
   const system = await manageFetch<SystemInfo>('/system')
   const version = await getVersionInfo()
   const now = currentTimeMs()
@@ -270,6 +301,10 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
         </>
       )}
 
+      {activeTab === 'email' && email && (
+        <EmailTab email={email} siteName={siteName} defaultTo={user.email} />
+      )}
+
       {activeTab === 'health' && (
         <section className="manage-panel">
           <h2>Health</h2>
@@ -297,5 +332,71 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
         </section>
       )}
     </div>
+  )
+}
+
+function EmailTab({ email, siteName, defaultTo }: { email: EmailInfo; siteName: string; defaultTo: string | null }) {
+  if (!email.configured) {
+    return (
+      <section className="manage-panel">
+        <h2>Email is off</h2>
+        <p className="panel-intro">
+          Add your mail server to the .env file of AeroStat and restart it with docker compose up -d. The password stays in .env and is never
+          shown here.
+        </p>
+        <pre className="config-example">{SMTP_EXAMPLE}</pre>
+      </section>
+    )
+  }
+
+  let encryption = null
+  if (email.encryption) {
+    encryption = ENCRYPTION_LABELS[email.encryption] || email.encryption
+  }
+  let port = null
+  if (email.port !== null) {
+    port = String(email.port)
+  }
+  let password = null
+  if (email.password_set) {
+    password = 'Set'
+  }
+  let fromName = siteName + ' (site name)'
+  if (email.from_name) {
+    fromName = email.from_name
+  }
+  let to = ''
+  if (defaultTo) {
+    to = defaultTo
+  }
+  let recipientsText = 'Nobody gets notifications by email yet. Everyone picks theirs on their Profile.'
+  if (email.recipients === 1) {
+    recipientsText = '1 person gets notifications by email.'
+  } else if (email.recipients > 1) {
+    recipientsText = email.recipients + ' people get notifications by email.'
+  }
+
+  return (
+    <>
+      <section className="manage-panel">
+        <h2>Send test email</h2>
+        <EmailTest defaultTo={to} />
+      </section>
+
+      <section className="manage-panel">
+        <h2>Configuration</h2>
+        <p className="panel-intro">These come from the SMTP settings in .env. Change them there and restart AeroStat.</p>
+        <dl className="config-list">
+          <ConfigRow label="Host" value={email.host} />
+          <ConfigRow label="Port" value={port} />
+          <ConfigRow label="Encryption" value={encryption} />
+          <ConfigRow label="Username" value={email.username} />
+          <ConfigRow label="Password" value={password} />
+          <ConfigRow label="From address" value={email.from_address} />
+          <ConfigRow label="From name" value={fromName} />
+        </dl>
+        <p className="config-footnote">{recipientsText}</p>
+      </section>
+    </>
   )
 }

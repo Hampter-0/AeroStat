@@ -29,6 +29,20 @@ export async function updateProfile(_state: FormState, formData: FormData): Prom
   return { error: null, success: 'Saved' }
 }
 
+export async function saveEmailNotifications(_state: FormState, formData: FormData): Promise<FormState> {
+  const events: string[] = []
+  for (const value of formData.getAll('events')) {
+    events.push(String(value))
+  }
+  try {
+    await manageFetch('/profile/notifications', { method: 'PUT', body: JSON.stringify({ events: events }) })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  revalidatePath('/manage/profile')
+  return { error: null, success: 'Saved' }
+}
+
 export async function changePassword(_state: FormState, formData: FormData): Promise<FormState> {
   const newPassword = text(formData, 'new_password')
   if (newPassword !== text(formData, 'repeat_password')) {

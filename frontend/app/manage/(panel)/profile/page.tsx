@@ -1,7 +1,9 @@
 import AccountForm from '@/components/manage/profile/AccountForm'
 import AvatarForm from '@/components/manage/profile/AvatarForm'
+import EmailNotificationsForm from '@/components/manage/profile/EmailNotificationsForm'
 import PasswordForm from '@/components/manage/profile/PasswordForm'
-import { PERMISSION_LABELS, requireUser } from '@/lib/manage'
+import type { MyNotifications } from '@/lib/email'
+import { manageFetch, PERMISSION_LABELS, requireUser } from '@/lib/manage'
 
 export const metadata = {
   title: 'Profile',
@@ -9,6 +11,7 @@ export const metadata = {
 
 export default async function ProfilePage() {
   const user = await requireUser()
+  const notifications = await manageFetch<MyNotifications>('/profile/notifications')
 
   const access: string[] = []
   if (!user.is_admin) {
@@ -37,6 +40,11 @@ export default async function ProfilePage() {
       <section className="manage-panel">
         <h2>Password</h2>
         <PasswordForm />
+      </section>
+
+      <section className="manage-panel">
+        <h2>Email notifications</h2>
+        <EmailNotificationsForm settings={notifications} />
       </section>
 
       <section className="manage-panel">
