@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import type { ReactNode } from 'react'
 import './globals.css'
 import ThemeSync from '@/components/layout/ThemeSync'
@@ -25,9 +24,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {themeInitScript}
-        </Script>
+        <script id="theme-init" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body style={bodyStyle}>
         <ThemeSync />
