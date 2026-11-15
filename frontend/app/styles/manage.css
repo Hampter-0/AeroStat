@@ -2090,3 +2090,87 @@ a.page-button:hover {
         min-width: 640px;
     }
 }
+
+.manage-version {
+    margin-top: auto;
+    padding: 0 10px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--subtle);
+    font-size: 11px;
+}
+
+.manage-version + .manage-account {
+    margin-top: 0;
+}
+
+.version-update {
+    padding: 1px 7px;
+    border: 1px solid var(--info-border);
+    border-radius: 20px;
+    color: var(--info);
+    background: var(--info-bg);
+    font-size: 10px;
+    text-decoration: none;
+}
+
+.version-update:hover {
+    filter: brightness(1.1);
+}
+
+.update-notice {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    border: 1px solid var(--info-border);
+    border-radius: 8px;
+    background: var(--info-bg);
+}
+
+.update-notice > div:first-child {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.update-notice strong {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.update-notice span {
+    color: var(--text-soft);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.update-notice code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--panel);
+    font-size: 11px;
+}
+
+.update-notice-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.update-notice-actions .link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+@media (max-width: 760px) {
+    .manage-version {
+        display: none;
+    }
+}

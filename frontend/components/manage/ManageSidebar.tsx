@@ -9,6 +9,7 @@ import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
 import { Activity, AlertTriangle, ExternalLink, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
+import type { VersionInfo } from '@/lib/version'
 
 interface NavItem {
   href: string
@@ -16,7 +17,15 @@ interface NavItem {
   icon: ReactNode
 }
 
-export default function ManageSidebar({ siteName, user }: { siteName: string; user: ManageUser }) {
+export default function ManageSidebar({
+  siteName,
+  user,
+  version,
+}: {
+  siteName: string
+  user: ManageUser
+  version: VersionInfo | null
+}) {
   const pathname = usePathname()
 
   const items: NavItem[] = [{ href: '/manage', label: 'Overview', icon: <Home /> }]
@@ -73,6 +82,17 @@ export default function ManageSidebar({ siteName, user }: { siteName: string; us
           Status page
         </a>
       </nav>
+
+      {version && (
+        <div className="manage-version">
+          <span>AeroStat v{version.current}</span>
+          {user.is_admin && version.update_available && version.release_url && (
+            <a href={version.release_url} target="_blank" rel="noreferrer" className="version-update" title={'v' + version.latest + ' is available'}>
+              Update
+            </a>
+          )}
+        </div>
+      )}
 
       <div className="manage-account">
         <Link href="/manage/profile" className={'manage-account-user ' + linkClass('/manage/profile')} title="Your profile">

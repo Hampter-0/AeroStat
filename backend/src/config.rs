@@ -11,6 +11,7 @@ pub struct Settings {
     pub metrics_retention_days: i32,
     pub login_limits: LoginLimits,
     pub session_days: i32,
+    pub update_check: bool,
 }
 
 impl Settings {
@@ -40,6 +41,12 @@ impl Settings {
             anyhow::bail!("SESSION_DAYS can be at most 365");
         }
 
+        // On unless explicitly turned off.
+        let update_check = !matches!(
+            env::var("UPDATE_CHECK").unwrap_or_default().trim().to_lowercase().as_str(),
+            "false" | "0" | "no" | "off"
+        );
+
         Ok(Self {
             host,
             port,
@@ -48,6 +55,7 @@ impl Settings {
             metrics_retention_days,
             login_limits,
             session_days: session_days as i32,
+            update_check,
         })
     }
 }

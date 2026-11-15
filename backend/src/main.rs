@@ -80,12 +80,20 @@ async fn main() -> anyhow::Result<()> {
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
 
+    let latest_release = services::update_checker::LatestReleaseCache::default();
+    if settings.update_check {
+        services::update_checker::spawn(latest_release.clone());
+        tracing::info!("Update check scheduled");
+    }
+
     let state = AppState {
         db: pool,
         redis: redis_pool,
         default_retention_days: settings.metrics_retention_days,
         login_limits: settings.login_limits,
         session_days: settings.session_days,
+        update_check: settings.update_check,
+        latest_release,
     };
 
     // No CORS layer: browsers never call the backend directly, only the

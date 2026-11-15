@@ -220,6 +220,7 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `LOGIN_MAX_FAILURES_PER_IP` | `10` | Failed sign-ins from one IP before a block |
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before a block |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
+| `UPDATE_CHECK` | `true` | Show admins when a newer release is out |
 | `RUST_LOG` | `info` | Backend log level |
 
 ## Command line
@@ -244,6 +245,19 @@ docker compose --profile postgres up -d
 ```
 
 Leave out `--profile postgres` if you use your own database. Database migrations run automatically on start.
+
+The panel shows the running version at the bottom of the sidebar. When a newer release is out, admins see a notice on the dashboard with a link to the release notes and a button that copies the update command. AeroStat checks GitHub for this every six hours and sends nothing about your installation; set `UPDATE_CHECK=false` to turn it off.
+
+AeroStat can't update itself: that would need access to the Docker socket, which is the same as root on your server. If you want automatic updates, run [Watchtower](https://containrrr.dev/watchtower/) next to it, limited to the AeroStat containers:
+
+```yaml
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup --interval 21600 aerostat-frontend-1 aerostat-backend-1
+```
 
 ## Backups
 

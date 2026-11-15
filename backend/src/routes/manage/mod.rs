@@ -7,6 +7,7 @@ mod services;
 mod session;
 mod settings;
 mod users;
+mod version;
 
 use axum::routing::{get, patch, post, put};
 use axum::Router;
@@ -20,6 +21,7 @@ pub fn router() -> Router<AppState> {
         .route("/login", post(session::login))
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
+        .route("/version", get(version::get))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
         .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))

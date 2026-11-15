@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { AlertSmall, AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '@/components/icons'
 import ActivityList from '@/components/manage/ActivityList'
+import CopyButton from '@/components/manage/CopyButton'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
 import type { ActivityResponse } from '@/lib/activity'
 import type { ManageServicesResponse } from '@/lib/services'
+import { UPDATE_COMMAND, getVersionInfo } from '@/lib/version'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { formatStatus } from '@/lib/format'
@@ -38,6 +40,7 @@ export default async function ManageOverviewPage() {
 
   const services: ServiceStatus[] = await getStatus()
   const dashboard = await manageFetch<DashboardData>('/dashboard')
+  const version = await getVersionInfo()
   const activity = await manageFetch<ActivityResponse>('/activity?per_page=' + RECENT_ACTIVITY)
   const now = currentTimeMs()
 
@@ -124,6 +127,25 @@ export default async function ManageOverviewPage() {
       <header className="manage-page-header">
         <h1>Welcome, {user.username}</h1>
       </header>
+
+      {user.is_admin && version && version.update_available && (
+        <section className="update-notice">
+          <div>
+            <strong>AeroStat v{version.latest} is available</strong>
+            <span>
+              You are on v{version.current}. Run <code>{UPDATE_COMMAND}</code> next to your docker-compose.yml to update.
+            </span>
+          </div>
+          <div className="update-notice-actions">
+            {version.release_url && (
+              <a href={version.release_url} target="_blank" rel="noreferrer" className="link-button">
+                What&apos;s new <ExternalLink />
+              </a>
+            )}
+            <CopyButton text={UPDATE_COMMAND} label="Copy update command" />
+          </div>
+        </section>
+      )}
 
       <section className={statusClass}>
         <span className="dashboard-status-icon">{statusIcon}</span>
