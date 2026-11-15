@@ -3,11 +3,13 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { updateProfile } from '@/app/manage/(panel)/profile/actions'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function AccountForm({ username, email }: { username: string; email: string | null }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let emailValue = ''
   if (email) {
@@ -20,7 +22,7 @@ export default function AccountForm({ username, email }: { username: string; ema
   }
 
   return (
-    <form action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       <div className="form-row">
         <label>
           <span>Username</span>

@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { formatStatus } from '@/lib/format'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -20,6 +21,7 @@ export default function PostUpdateForm({
   action: (state: FormState, formData: FormData) => Promise<FormState>
 }) {
   const [state, formAction, pending] = useActionState(action, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let buttonText = 'Post update'
   if (pending) {
@@ -32,7 +34,7 @@ export default function PostUpdateForm({
   }
 
   return (
-    <form action={formAction} className="manage-form" key={currentStatus}>
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form" key={currentStatus}>
       <input type="hidden" name="id" value={parentId} />
       <div className={columnsClass} role="radiogroup" aria-label="Status">
         {statuses.map(function (value) {

@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { deleteGroup, moveGroup, renameGroup } from '@/app/manage/(panel)/services/actions'
 import MoveButtons from './MoveButtons'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -22,6 +23,7 @@ export default function GroupHeader({
 }) {
   const [editing, setEditing] = useState(false)
   const [renameState, renameAction, renaming] = useActionState(renameGroup, initialState)
+  const { formRef: renameFormRef, onSubmit: renameSubmit } = useFormSubmit(renameAction, renameState)
   const [deleteState, deleteAction, deleting] = useActionState(deleteGroup, initialState)
 
   function toggleEditing() {
@@ -47,7 +49,7 @@ export default function GroupHeader({
     <div className="group-header">
       {!editing && <h2>{name}</h2>}
       {editing && (
-        <form action={renameAction} className="inline-form">
+        <form ref={renameFormRef} action={renameAction} onSubmit={renameSubmit} className="inline-form">
           <input type="hidden" name="id" value={id} />
           <input name="name" defaultValue={name} required maxLength={100} aria-label="Group name" autoFocus />
           <button type="submit" className="button-primary" disabled={renaming}>

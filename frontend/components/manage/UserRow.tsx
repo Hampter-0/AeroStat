@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { deleteUser, updateUser, type FormState } from '@/app/manage/actions'
 import { PERMISSION_LABELS } from '@/lib/permissions'
 import PermissionFields from './PermissionFields'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -27,6 +28,7 @@ export default function UserRow({
 }) {
   const [editing, setEditing] = useState(false)
   const [saveState, saveAction, saving] = useActionState(updateUser, initialState)
+  const { formRef: saveFormRef, onSubmit: saveSubmit } = useFormSubmit(saveAction, saveState)
   const [deleteState, deleteAction, deleting] = useActionState(deleteUser, initialState)
 
   function toggleEditing() {
@@ -89,7 +91,7 @@ export default function UserRow({
 
       {editing && (
         <div className="user-row-edit">
-          <form action={saveAction} className="manage-form">
+          <form ref={saveFormRef} action={saveAction} onSubmit={saveSubmit} className="manage-form">
             <input type="hidden" name="id" value={user.id} />
             <PermissionFields
               permissions={permissions}

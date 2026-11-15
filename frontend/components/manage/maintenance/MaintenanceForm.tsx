@@ -5,6 +5,7 @@ import type { FormState } from '@/app/manage/actions'
 import { createMaintenance, updateMaintenance } from '@/app/manage/(panel)/maintenance/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -31,6 +32,7 @@ export default function MaintenanceForm({
     action = updateMaintenance
   }
   const [state, formAction, pending] = useActionState(action, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let title = ''
   let description = ''
@@ -58,7 +60,7 @@ export default function MaintenanceForm({
   }
 
   return (
-    <form action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {maintenance && <input type="hidden" name="id" value={maintenance.id} />}
       <label>
         <span>Title</span>

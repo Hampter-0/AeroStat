@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { cancelMaintenance, reactivateMaintenance } from '@/app/manage/(panel)/maintenance/actions'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -10,11 +11,11 @@ export default function CancelMaintenanceForm({ id, cancelled }: { id: number; c
   const [cancelState, cancelAction, cancelling] = useActionState(cancelMaintenance, initialState)
   const [reactivateState, reactivateAction, reactivating] = useActionState(reactivateMaintenance, initialState)
 
-  function confirmCancel(event: React.FormEvent<HTMLFormElement>) {
-    if (!window.confirm('Cancel this maintenance? Visitors will see it as cancelled.')) {
-      event.preventDefault()
-    }
+  function confirmCancel() {
+    return window.confirm('Cancel this maintenance? Visitors will see it as cancelled.')
   }
+
+  const { formRef: cancelFormRef, onSubmit: cancelSubmit } = useFormSubmit(cancelAction, cancelState, confirmCancel)
 
   if (cancelled) {
     return (
@@ -30,7 +31,7 @@ export default function CancelMaintenanceForm({ id, cancelled }: { id: number; c
   }
 
   return (
-    <form action={cancelAction} onSubmit={confirmCancel} className="manage-form">
+    <form ref={cancelFormRef} action={cancelAction} onSubmit={cancelSubmit} className="manage-form">
       <input type="hidden" name="id" value={id} />
       <label>
         <span>Reason</span>

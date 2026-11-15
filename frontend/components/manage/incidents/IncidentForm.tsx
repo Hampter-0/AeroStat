@@ -6,6 +6,7 @@ import { createIncident, updateIncident } from '@/app/manage/(panel)/incidents/a
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
 import { formatStatus } from '@/lib/format'
 import { INCIDENT_SEVERITIES, INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -31,6 +32,7 @@ export default function IncidentForm({
     action = updateIncident
   }
   const [state, formAction, pending] = useActionState(action, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let title = ''
   let description = ''
@@ -56,7 +58,7 @@ export default function IncidentForm({
   }
 
   return (
-    <form action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {incident && <input type="hidden" name="id" value={incident.id} />}
       <label>
         <span>Title</span>

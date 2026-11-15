@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createService, updateService } from '@/app/manage/(panel)/services/actions'
 import { INTERVAL_UNITS, splitInterval, type ManageGroup, type ManageService } from '@/lib/services'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -21,6 +22,7 @@ export default function ServiceForm({
     action = updateService
   }
   const [state, formAction, pending] = useActionState(action, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let name = ''
   let url = ''
@@ -49,7 +51,7 @@ export default function ServiceForm({
   }
 
   return (
-    <form action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {service && <input type="hidden" name="id" value={service.id} />}
       <div className="form-row">
         <label>

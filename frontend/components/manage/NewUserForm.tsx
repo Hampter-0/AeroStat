@@ -3,18 +3,20 @@
 import { useActionState } from 'react'
 import { createUser, type FormState } from '@/app/manage/actions'
 import PermissionFields from './PermissionFields'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function NewUserForm({ permissions }: { permissions: string[] }) {
   const [state, formAction, pending] = useActionState(createUser, initialState)
+  const { formRef, onSubmit } = useFormSubmit(formAction, state)
   let buttonText = 'Add user'
   if (pending) {
     buttonText = 'Adding…'
   }
 
   return (
-    <form action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       <div className="form-row">
         <label>
           <span>Username</span>

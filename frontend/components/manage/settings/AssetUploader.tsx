@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { removeAsset, uploadAsset } from '@/app/manage/(panel)/settings/actions'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -20,6 +21,7 @@ export default function AssetUploader({
   isCustom: boolean
 }) {
   const [uploadState, uploadAction, uploading] = useActionState(uploadAsset, initialState)
+  const { formRef: uploadFormRef, onSubmit: uploadSubmit } = useFormSubmit(uploadAction, uploadState)
   const [removeState, removeAction, removing] = useActionState(removeAsset, initialState)
 
   let uploadText = 'Upload'
@@ -43,7 +45,7 @@ export default function AssetUploader({
         <small>
           {statusText} · {hint}
         </small>
-        <form action={uploadAction} className="asset-form">
+        <form ref={uploadFormRef} action={uploadAction} onSubmit={uploadSubmit} className="asset-form">
           <input type="hidden" name="name" value={name} />
           <input type="file" name="file" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif,image/x-icon,.ico" required />
           <button type="submit" className="button-secondary" disabled={uploading}>

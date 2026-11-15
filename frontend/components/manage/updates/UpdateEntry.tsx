@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import type { StatusUpdate } from '@/lib/types'
+import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -28,6 +29,7 @@ export default function UpdateEntry({
 }) {
   const [editing, setEditing] = useState(false)
   const [saveState, saveFormAction, saving] = useActionState(editAction, initialState)
+  const { formRef: saveFormRef, onSubmit: saveSubmit } = useFormSubmit(saveFormAction, saveState)
   const [deleteState, deleteFormAction, deleting] = useActionState(deleteAction, initialState)
 
   function toggleEditing() {
@@ -64,7 +66,7 @@ export default function UpdateEntry({
 
       {editing && (
         <div className="manage-update-edit">
-          <form action={saveFormAction} className="manage-form">
+          <form ref={saveFormRef} action={saveFormAction} onSubmit={saveSubmit} className="manage-form">
             <input type="hidden" name="id" value={parentId} />
             <input type="hidden" name="update_id" value={update.id} />
             <label>
