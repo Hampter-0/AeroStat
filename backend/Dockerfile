@@ -8,6 +8,7 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs \
     && cargo build --release \
     && rm -rf src
 
+COPY build.rs ./
 COPY migrations migrations
 COPY src src
 RUN touch src/main.rs && cargo build --release

@@ -3,7 +3,7 @@ import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 import { getAllMaintenance } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { currentMonth, isInMonth, shiftMonth, type CalendarMonth } from '@/lib/months'
-import { formatDayLong, formatTimeRange } from '@/lib/time'
+import { formatWindow } from '@/lib/time'
 import type { MaintenanceWindow } from '@/lib/types'
 
 function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: MaintenanceWindow; timezone: string }) {
@@ -32,7 +32,7 @@ function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: 
           <span className="event-description">{maintenanceWindow.description}</span>
         )}
         <span className="event-meta">
-          {formatDayLong(maintenanceWindow.scheduled_start, timezone)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end, timezone)}
+          {formatWindow(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end, timezone)}
         </span>
       </div>
     </Link>

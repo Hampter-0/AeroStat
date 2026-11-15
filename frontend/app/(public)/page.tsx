@@ -1,15 +1,11 @@
 import Link from 'next/link'
+import LastChecked from '@/components/status/LastChecked'
 import ServiceSection from '@/components/status/ServiceSection'
-import { AlertSmall, AlertTriangle, Arrow, Check, Tool, X } from '@/components/icons'
+import { AlertSmall, AlertTriangle, Arrow, Check, Server, Tool, X } from '@/components/icons'
 import { getIncidents, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
-import { formatTimeRange, zoneAbbreviation } from '@/lib/time'
+import { currentTimeMs, formatWindow, zoneAbbreviation } from '@/lib/time'
 import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from '@/lib/types'
-
-function formatMaintenanceWindow(startIso: string, endIso: string, timezone: string) {
-  const dateText = new Date(startIso).toLocaleDateString('en-GB', { month: 'long', day: 'numeric', timeZone: timezone })
-  return dateText + ', ' + formatTimeRange(startIso, endIso, timezone)
-}
 
 export default async function Home() {
   const { timezone, siteTimezone } = await getDisplayTime()
@@ -65,9 +61,13 @@ export default async function Home() {
   }
 
   let allOnline = true
+  let lastCheckedAt: string | null = null
   for (const service of services) {
-    if (service.status !== 'online') {
+    if (service.status === 'offline') {
       allOnline = false
+    }
+    if (service.checked_at && (lastCheckedAt === null || service.checked_at > lastCheckedAt)) {
+      lastCheckedAt = service.checked_at
     }
   }
 
@@ -90,6 +90,11 @@ export default async function Home() {
     heroCheckClassName = 'operational-check down'
     heroText = 'Degraded'
     heroIcon = <X size={34} />
+  }
+  if (services.length === 0) {
+    heroCheckClassName = 'operational-check empty'
+    heroText = 'No services yet'
+    heroIcon = <Server size={30} />
   }
 
   const ongoingMaintenanceWindows: MaintenanceWindow[] = []
@@ -149,6 +154,7 @@ export default async function Home() {
           {heroIcon}
         </span>
         <h1>{heroText}</h1>
+        {lastCheckedAt && <LastChecked checkedAt={lastCheckedAt} renderedAt={currentTimeMs()} />}
         <Link href="/incidents">Incident history <Arrow /></Link>
       </section>
 
@@ -206,7 +212,7 @@ export default async function Home() {
           <div className="notice-copy">
             <h2>Scheduled maintenance</h2>
             <p className="scheduled-text">
-              {upcomingMaintenanceWindow.title} - {formatMaintenanceWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
+              {upcomingMaintenanceWindow.title} - {formatWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
             </p>
           </div>
           <a className="text-button" href={'/maintenance/' + upcomingMaintenanceWindow.id}>
@@ -217,6 +223,9 @@ export default async function Home() {
 
       <section className="live-status">
         <h2>Live Status</h2>
+        {services.length === 0 && (
+          <p className="live-status-empty">Nothing is being monitored yet. Services show up here as soon as they are added.</p>
+        )}
         <div className="live-service-list">
           {groupEntries.map(function (entry, index) {
             const groupName = entry[0]

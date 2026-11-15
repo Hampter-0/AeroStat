@@ -4,7 +4,7 @@ import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getMaintenance, getServiceNames } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
-import { formatDateTimeLong, formatDayLong, formatTimeRange as formatZonedTimeRange } from '@/lib/time'
+import { formatDateTimeLong, formatWindow } from '@/lib/time'
 
 function formatStatus(status: string) {
   const text = status.replace('_', ' ')
@@ -15,14 +15,6 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
   const { id } = await params
   const maintenanceWindow = await getMaintenance(id)
   const { timezone } = await getDisplayTime()
-
-  function formatFullDate(iso: string) {
-    return formatDayLong(iso, timezone)
-  }
-
-  function formatTimeRange(startIso: string, endIso: string) {
-    return formatZonedTimeRange(startIso, endIso, timezone)
-  }
 
   function formatDateTime(iso: string) {
     return formatDateTimeLong(iso, timezone)
@@ -116,7 +108,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
           <span className={tagClassName}>{tagLabel}</span>
           <h1>{maintenanceWindow.title}</h1>
           <p>
-            {formatFullDate(maintenanceWindow.scheduled_start)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end)}
+            {formatWindow(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end, timezone)}
           </p>
         </header>
 

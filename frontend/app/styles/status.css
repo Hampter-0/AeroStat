@@ -545,3 +545,32 @@ a.bar {
 .status-unavailable .button-secondary {
     margin-top: 18px;
 }
+
+.operational-check.empty {
+    color: var(--muted);
+    background: var(--chip-bg);
+}
+
+.last-checked {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.live-check.pending {
+    color: var(--muted);
+    background: var(--chip-bg);
+}
+
+.live-service-name>div>span.pending {
+    color: var(--muted);
+}
+
+.live-status-empty {
+    padding: 22px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}

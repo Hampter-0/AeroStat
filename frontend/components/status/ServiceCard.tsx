@@ -1,5 +1,5 @@
 import type { DayHistory, ServiceStatus } from '@/lib/types'
-import { Check, X } from '@/components/icons'
+import { Check, PendingRing, X } from '@/components/icons'
 import UptimeBars from './UptimeBars'
 
 export default function ServiceCard({
@@ -16,12 +16,17 @@ export default function ServiceCard({
   let checkClassName = 'live-check'
   let labelClassName = ''
   let statusText = 'Operational'
-  let isDown = false
-  if (service.status !== 'online') {
+  let icon = <Check size={15} />
+  if (service.status === 'offline') {
     checkClassName = 'live-check down'
     labelClassName = 'down'
     statusText = 'Down'
-    isDown = true
+    icon = <X size={15} />
+  } else if (service.status === null) {
+    checkClassName = 'live-check pending'
+    labelClassName = 'pending'
+    statusText = 'Not checked yet'
+    icon = <PendingRing />
   }
 
   let uptimeText = '-'
@@ -33,10 +38,7 @@ export default function ServiceCard({
     <article className="live-service-card">
       <div className="live-service-heading">
         <div className="live-service-name">
-          <span className={checkClassName}>
-            {isDown && <X size={15} />}
-            {!isDown && <Check size={15} />}
-          </span>
+          <span className={checkClassName}>{icon}</span>
           <div>
             <strong>{service.name}</strong>
             <span className={labelClassName}>{statusText}</span>

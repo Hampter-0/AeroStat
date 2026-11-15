@@ -1,6 +1,27 @@
+<div align="center">
+
+<img src="frontend/public/brand/logo.svg" alt="AeroStat logo" width="120" />
+
 # AeroStat
 
-A self-hosted status page. AeroStat checks your services over HTTP(S), shows their uptime per day for the last 60 days, and lets you post incidents and planned maintenance from a small admin panel.
+[![Rust](https://img.shields.io/badge/Rust-1.80%2B-000000?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Axum](https://img.shields.io/badge/Axum-0.7-6E4A7E)](https://github.com/tokio-rs/axum)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Docker pulls](https://img.shields.io/docker/pulls/hampternom/aerostat-backend?logo=docker&logoColor=white)](https://hub.docker.com/r/hampternom/aerostat-backend)
+[![License](https://img.shields.io/github/license/Hampter-0/AeroStat?color=blue)](https://github.com/Hampter-0/AeroStat/blob/main/LICENSE)
+
+**A self-hosted status page with uptime monitoring, incidents and maintenance.**
+
+AeroStat checks your services over HTTP(S), shows their uptime per day for the last 60 days,
+and lets you post incidents and planned maintenance from a small admin panel.
+
+Runs with Docker Compose next to Postgres and Redis, and is configured with a single `.env` file.
+
+</div>
+
+## Features
 
 - Public status page with daily uptime bars, incidents and maintenance
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
@@ -34,23 +55,51 @@ Create the first admin account:
 docker compose exec -it backend aerostat create-admin --username admin
 ```
 
-The status page is now on `http://your-server:3000` and the panel on `http://your-server:3000/manage`. Add your services under **Services**.
+The status page is now on `http://your-server:3000` and the panel on `http://your-server:3000/manage`. Add your services under **Services**. Port 3000 taken already? Set `AEROSTAT_PORT` in `.env` to a free port; the backend, Redis and Postgres don't use any ports on the server.
 
 ### Using your own Postgres
 
-Leave out `--profile postgres` and point `DATABASE_URL` at your database. For a Postgres on the same server, use `host.docker.internal` as the host:
+Leave out `--profile postgres` and point `DATABASE_URL` at your own database. AeroStat creates its tables on first start, but the database and user must exist. With `psql` as a superuser:
 
-```env
-DATABASE_URL=postgres://aerostat:secret@host.docker.internal:5432/aerostat
+```sql
+CREATE USER aerostat WITH PASSWORD 'a-long-random-password';
+CREATE DATABASE aerostat OWNER aerostat;
 ```
 
-Postgres must accept connections from the Docker network. In `postgresql.conf` set `listen_addresses` to include the Docker bridge address (for example `listen_addresses = 'localhost,172.17.0.1'`), and in `pg_hba.conf` allow the Docker subnet:
+How AeroStat reaches the database depends on where Postgres runs.
+
+**Postgres in another Docker Compose project** (for example next to pgAdmin). Join AeroStat's backend to that project's network with a `docker-compose.override.yml` next to `docker-compose.yml`; Compose reads it automatically:
+
+```yaml
+services:
+  backend:
+    networks:
+      - default
+      - postgresql
+
+networks:
+  postgresql:
+    external: true
+    name: postgresql_default
+```
+
+Find the network name with `docker network ls`, and use the Postgres container name as the host:
+
+```env
+DATABASE_URL=postgres://aerostat:a-long-random-password@postgresql-db-1:5432/aerostat
+```
+
+**Postgres installed directly on the server.** Use `host.docker.internal` as the host:
+
+```env
+DATABASE_URL=postgres://aerostat:a-long-random-password@host.docker.internal:5432/aerostat
+```
+
+Postgres must then accept connections from the Docker network. In `postgresql.conf` set `listen_addresses` to include the Docker bridge address (for example `listen_addresses = 'localhost,172.17.0.1'`), and in `pg_hba.conf` allow the Docker subnet:
 
 ```
 host  aerostat  aerostat  172.16.0.0/12  scram-sha-256
 ```
-
-AeroStat creates its own tables on first start. The database and user must exist already.
 
 ### Redis
 
@@ -78,6 +127,8 @@ server {
     server_name status.example.com;
     # ssl_certificate ... / ssl_certificate_key ...
 
+    client_max_body_size 3m;
+
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -87,7 +138,17 @@ server {
 }
 ```
 
-Use `$remote_addr` rather than `$proxy_add_x_forwarded_for`, so a visitor can't send a made-up IP. Without a proxy in front, the IP-based sign-in limit can be bypassed this way; the per-account limit still applies.
+`client_max_body_size` allows logo and avatar uploads; nginx stops anything over 1 MB by default. Use `$remote_addr` rather than `$proxy_add_x_forwarded_for`, so a visitor can't send a made-up IP. Without a proxy in front, the IP-based sign-in limit can be bypassed this way; the per-account limit still applies.
+
+## Troubleshooting
+
+**A service shows as down with status 403, but it works in your browser.** The site is probably behind Cloudflare or another firewall that blocks automated requests. AeroStat identifies itself as `AeroStat/<version> (+https://github.com/Hampter-0/AeroStat)`, which most setups allow. If it is still blocked, add a rule in the firewall that lets your AeroStat server's IP address through.
+
+**A service is down only from AeroStat.** Checks run from inside the backend container. Test from the same network with:
+
+```bash
+docker compose exec frontend wget -S -O /dev/null https://example.com
+```
 
 ## Configuration
 
@@ -157,4 +218,8 @@ Create an admin with `cargo run -- create-admin --username admin`, or open the C
 
 ### Releasing images
 
-Pushing a tag like `v1.0.0` builds `hampternom/aerostat-backend` and `hampternom/aerostat-frontend` for amd64 and arm64 and pushes them to Docker Hub with the tags `1.0.0`, `1.0` and `latest`. The workflow needs a repository secret `DOCKERHUB_TOKEN` (a Docker Hub access token with read and write access).
+Pushing a tag like `v1.0.0` builds `hampternom/aerostat-backend` and `hampternom/aerostat-frontend` for amd64 and arm64 on native runners and pushes them to Docker Hub with the tags `1.0.0`, `1.0` and `latest`. The workflow needs a repository secret `DOCKERHUB_TOKEN` (a Docker Hub access token with read and write access).
+
+## License
+
+AeroStat is released under the [MIT License](LICENSE).

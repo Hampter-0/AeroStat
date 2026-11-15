@@ -79,6 +79,21 @@ export function formatTimeRange(startIso: string, endIso: string, timezone: stri
   return formatTime(startIso, timezone) + '-' + formatTime(endIso, timezone) + ' ' + zoneAbbreviation(timezone, startIso)
 }
 
+export function formatWindow(startIso: string, endIso: string, timezone: string): string {
+  const startDay = formatDayLong(startIso, timezone)
+  const endDay = formatDayLong(endIso, timezone)
+  if (startDay === endDay) {
+    return startDay + ', ' + formatTimeRange(startIso, endIso, timezone)
+  }
+  const startZone = zoneAbbreviation(timezone, startIso)
+  const endZone = zoneAbbreviation(timezone, endIso)
+  let startText = startDay + ', ' + formatTime(startIso, timezone)
+  if (startZone !== endZone) {
+    startText = startText + ' ' + startZone
+  }
+  return startText + ' – ' + endDay + ', ' + formatTime(endIso, timezone) + ' ' + endZone
+}
+
 export function yearMonth(iso: string, timezone: string): { year: number; month: number } {
   const p = parts(new Date(iso), timezone)
   return { year: Number(p.year), month: Number(p.month) }
@@ -122,6 +137,35 @@ export function formatDuration(ms: number): string {
     return days + 'd'
   }
   return days + 'd ' + restHours + 'h'
+}
+
+export function formatAgo(ms: number): string {
+  const seconds = Math.max(0, Math.floor(ms / 1000))
+  if (seconds < 5) {
+    return 'just now'
+  }
+  if (seconds < 60) {
+    return seconds + ' seconds ago'
+  }
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) {
+    if (minutes === 1) {
+      return '1 minute ago'
+    }
+    return minutes + ' minutes ago'
+  }
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    if (hours === 1) {
+      return '1 hour ago'
+    }
+    return hours + ' hours ago'
+  }
+  const days = Math.floor(hours / 24)
+  if (days === 1) {
+    return '1 day ago'
+  }
+  return days + ' days ago'
 }
 
 export function currentTimeMs(): number {

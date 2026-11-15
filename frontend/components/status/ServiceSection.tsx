@@ -22,7 +22,7 @@ export default function ServiceSection({
 
   let allOnline = true
   for (const service of services) {
-    if (service.status !== 'online') {
+    if (service.status === 'offline') {
       allOnline = false
     }
   }
@@ -62,7 +62,9 @@ export default function ServiceSection({
             let days: DayHistory[] = []
             if (uptimeByServiceId.has(service.id)) {
               const uptime = uptimeByServiceId.get(service.id)!
-              uptimePercent = uptime.uptime_percent
+              if (uptime.total_checks > 0) {
+                uptimePercent = uptime.uptime_percent
+              }
               days = uptime.days
             }
 
