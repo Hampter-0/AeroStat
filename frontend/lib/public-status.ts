@@ -12,12 +12,32 @@ export interface PublicService {
   last_checked: string | null
 }
 
+export interface PublicIncident {
+  id: number
+  title: string
+  status: string
+  started_at: string
+  services: string[]
+}
+
+export interface PublicMaintenance {
+  id: number
+  title: string
+  ends_at: string
+  services: string[]
+}
+
 export interface PublicStatus {
   status: OverallStatus
   last_checked: string | null
   services: PublicService[]
-  ongoing_incidents: { id: number; title: string; status: string; started_at: string }[]
-  maintenance_in_progress: { id: number; title: string; ends_at: string }[]
+  ongoing_incidents: PublicIncident[]
+  maintenance_in_progress: PublicMaintenance[]
+}
+
+export interface PublicServiceDetail extends PublicService {
+  ongoing_incidents: PublicIncident[]
+  maintenance_in_progress: PublicMaintenance[]
 }
 
 export async function getPublicStatus(): Promise<PublicStatus> {
@@ -48,17 +68,28 @@ export async function getPublicStatus(): Promise<PublicStatus> {
     })
   }
 
-  const ongoingIncidents: PublicStatus['ongoing_incidents'] = []
+  const ongoingIncidents: PublicIncident[] = []
   for (const incident of incidents) {
     if (incident.status !== 'resolved') {
-      ongoingIncidents.push({ id: incident.id, title: incident.title, status: incident.status, started_at: incident.created_at })
+      ongoingIncidents.push({
+        id: incident.id,
+        title: incident.title,
+        status: incident.status,
+        started_at: incident.created_at,
+        services: incident.affected_services || [],
+      })
     }
   }
 
-  const maintenanceInProgress: PublicStatus['maintenance_in_progress'] = []
+  const maintenanceInProgress: PublicMaintenance[] = []
   for (const item of maintenance) {
     if (item.status === 'in_progress') {
-      maintenanceInProgress.push({ id: item.id, title: item.title, ends_at: item.scheduled_end })
+      maintenanceInProgress.push({
+        id: item.id,
+        title: item.title,
+        ends_at: item.scheduled_end,
+        services: item.affected_services || [],
+      })
     }
   }
 
@@ -79,5 +110,24 @@ export async function getPublicStatus(): Promise<PublicStatus> {
     services: publicServices,
     ongoing_incidents: ongoingIncidents,
     maintenance_in_progress: maintenanceInProgress,
+  }
+}
+
+/** One service with only the incidents and maintenance that affect it. */
+export function serviceDetail(status: PublicStatus, serviceId: string): PublicServiceDetail | null {
+  const service = status.services.find(function (item) {
+    return item.id === serviceId
+  })
+  if (!service) {
+    return null
+  }
+  return {
+    ...service,
+    ongoing_incidents: status.ongoing_incidents.filter(function (incident) {
+      return incident.services.includes(serviceId)
+    }),
+    maintenance_in_progress: status.maintenance_in_progress.filter(function (item) {
+      return item.services.includes(serviceId)
+    }),
   }
 }
