@@ -1,22 +1,16 @@
 import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 import { getIncidents } from '@/lib/api'
+import { getDisplayTime } from '@/lib/visitor-time'
+import { currentMonth, isInMonth, shiftMonth, type CalendarMonth } from '@/lib/months'
+import { formatDayLong } from '@/lib/time'
 import type { Incident } from '@/lib/types'
 
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-function formatMonthLabel(date: Date) {
-  return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function formatFullDate(iso: string) {
-  const date = new Date(iso)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function IncidentEntry({ incident }: { incident: Incident }) {
+function IncidentEntry({ incident, timezone }: { incident: Incident; timezone: string }) {
   let tagClassName = 'scheduled-tag'
   let tagLabel = capitalize(incident.status)
   if (incident.status === 'resolved') {
@@ -33,13 +27,14 @@ function IncidentEntry({ incident }: { incident: Incident }) {
           <span className={tagClassName}>{tagLabel}</span>
         </span>
         {incident.description && <span className="event-description">{incident.description}</span>}
-        <span className="event-meta">Reported on {formatFullDate(incident.created_at)}</span>
+        <span className="event-meta">Reported on {formatDayLong(incident.created_at, timezone)}</span>
       </div>
     </Link>
   )
 }
 
 export default async function IncidentsPage() {
+  const { timezone } = await getDisplayTime()
   let incidents: Incident[] = []
   let backendIsDown = false
 
@@ -58,18 +53,17 @@ export default async function IncidentsPage() {
     )
   }
 
-  const now = new Date()
-  const windowMonths: Date[] = []
+  const now = currentMonth(timezone)
+  const windowMonths: CalendarMonth[] = []
   let offset = 2
   while (offset >= 0) {
-    const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1))
-    windowMonths.push(monthDate)
+    windowMonths.push(shiftMonth(now.year, now.month, -offset))
     offset = offset - 1
   }
   const orderedMonths = [windowMonths[2], windowMonths[1], windowMonths[0]]
 
-  const oldestLabel = formatMonthLabel(windowMonths[0])
-  const newestLabel = formatMonthLabel(windowMonths[2])
+  const oldestLabel = windowMonths[0].label
+  const newestLabel = windowMonths[2].label
   let rangeLabel = oldestLabel + ' to ' + newestLabel
   if (oldestLabel === newestLabel) {
     rangeLabel = newestLabel
@@ -91,19 +85,11 @@ export default async function IncidentsPage() {
       </div>
 
       <div className="archive-list">
-        {orderedMonths.map(function (monthDate) {
-          const monthLabel = formatMonthLabel(monthDate)
+        {orderedMonths.map(function (month) {
+          const monthLabel = month.label
 
           const monthIncidents = incidents.filter(function (incident) {
-            const incidentDate = new Date(incident.created_at)
-            let sameMonth = false
-            if (
-              incidentDate.getUTCFullYear() === monthDate.getUTCFullYear() &&
-              incidentDate.getUTCMonth() === monthDate.getUTCMonth()
-            ) {
-              sameMonth = true
-            }
-            return sameMonth
+            return isInMonth(incident.created_at, month, timezone)
           })
 
           return (
@@ -115,7 +101,7 @@ export default async function IncidentsPage() {
                 </div>
               )}
               {monthIncidents.map(function (incident) {
-                return <IncidentEntry incident={incident} key={incident.id} />
+                return <IncidentEntry incident={incident} timezone={timezone} key={incident.id} />
               })}
             </section>
           )

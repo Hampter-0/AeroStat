@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Logo from '@/components/layout/Logo'
 import LoginForm from '@/components/manage/LoginForm'
-import { siteName } from '@/lib/branding'
+import { getSiteConfig } from '@/lib/branding'
 import { getCurrentUser } from '@/lib/manage'
 
 export const metadata = {
@@ -15,6 +15,8 @@ export default async function LoginPage() {
     redirect('/manage')
   }
 
+  const config = await getSiteConfig()
+  const siteName = config.siteName
   const year = new Date().getUTCFullYear()
 
   return (

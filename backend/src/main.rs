@@ -7,6 +7,7 @@ mod error;
 mod models;
 mod routes;
 mod services;
+mod site_settings;
 mod state;
 
 use clap::Parser;
@@ -73,10 +74,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Service checker started");
 
     services::spawn_cleanup(pool.clone(), settings.metrics_retention_days);
-    tracing::info!(
-        "Metrics cleanup scheduled (retention: {} days)",
-        settings.metrics_retention_days
-    );
+    tracing::info!("Metrics cleanup scheduled");
 
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
@@ -84,6 +82,7 @@ async fn main() -> anyhow::Result<()> {
     let state = AppState {
         db: pool,
         redis: redis_pool,
+        default_retention_days: settings.metrics_retention_days,
     };
 
     let app = routes::build(state)

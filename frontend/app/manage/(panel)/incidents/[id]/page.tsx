@@ -8,6 +8,7 @@ import UpdateEntry from '@/components/manage/updates/UpdateEntry'
 import { getIncident, getStatus } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import { INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
+import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import { deleteIncident, deleteUpdate, editUpdate, postUpdate } from '../actions'
 
@@ -27,6 +28,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
     notFound()
   }
   const services = await getStatus()
+  const { timezone } = await getSiteConfig()
 
   let canDeleteUpdates = false
   if (incident.updates.length > 1) {
@@ -43,7 +45,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
         <div>
           <span className={'status-chip status-' + incident.status}>{formatStatus(incident.status)}</span>
           <h1>{incident.title}</h1>
-          <p>Reported {formatDateTime(incident.created_at)}</p>
+          <p>Reported {formatDateTime(incident.created_at, timezone)}</p>
         </div>
         <a href={'/incidents/' + incident.id} target="_blank" className="button-secondary">
           <ExternalLink /> View public page
@@ -70,6 +72,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
                 key={update.id + '-' + update.status + '-' + update.message}
                 parentId={incident.id}
                 update={update}
+                timezone={timezone}
                 statuses={INCIDENT_STATUSES}
                 canDelete={canDeleteUpdates}
                 editAction={editUpdate}

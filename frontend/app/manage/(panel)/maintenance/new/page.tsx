@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { ChevronLeft } from '@/components/icons'
 import MaintenanceForm from '@/components/manage/maintenance/MaintenanceForm'
 import { getStatus } from '@/lib/api'
+import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 
 export const metadata = {
@@ -16,6 +17,7 @@ export default async function NewMaintenancePage() {
   }
 
   const services = await getStatus()
+  const { timezone } = await getSiteConfig()
 
   return (
     <div className="manage-page">
@@ -27,7 +29,7 @@ export default async function NewMaintenancePage() {
         <p>It shows on the status page right away. The status follows the start and end time automatically.</p>
       </header>
       <section className="manage-panel">
-        <MaintenanceForm services={services} maintenance={null} />
+        <MaintenanceForm services={services} maintenance={null} timezone={timezone} />
       </section>
     </div>
   )

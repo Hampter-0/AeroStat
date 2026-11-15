@@ -1,8 +1,7 @@
-export function formatDateTime(iso: string) {
-  const date = new Date(iso)
-  const dateText = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-  const timeText = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  return dateText + ', ' + timeText + ' UTC'
+import { formatDateTimeShort } from './time'
+
+export function formatDateTime(iso: string, timezone: string) {
+  return formatDateTimeShort(iso, timezone)
 }
 
 export function formatStatus(status: string) {

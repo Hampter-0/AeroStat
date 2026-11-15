@@ -1,5 +1,8 @@
-use chrono::{Duration, NaiveDate, Utc};
+use chrono::{Duration, NaiveDate};
+use chrono_tz::Tz;
 use sqlx::PgPool;
+
+use crate::site_settings;
 
 use crate::db::redis::set_daily_status;
 use deadpool_redis::Pool as RedisPool;
@@ -25,14 +28,16 @@ impl DayRollup {
     }
 }
 
-/// Computes one service's status for one UTC day from its checks.
+/// Computes one service's status for one day in the site's timezone.
 /// Rule: all checks offline -> "offline", some checks offline ->
 /// "degraded", otherwise -> "online". None if there were no checks.
 pub async fn day_status(
     db: &PgPool,
     service_id: &str,
     date: NaiveDate,
+    tz: Tz,
 ) -> anyhow::Result<Option<DayRollup>> {
+    let (start, end) = site_settings::day_bounds(date, tz);
     let counts: DayCounts = sqlx::query_as(
         r#"
         SELECT
@@ -42,12 +47,13 @@ pub async fn day_status(
         FROM metrics m
         JOIN services s ON s.id = m.service_id
         WHERE m.service_id = $1
-        AND m.checked_at >= $2::date
-        AND m.checked_at < $2::date + interval '1 day'
+        AND m.checked_at >= $2
+        AND m.checked_at < $3
         "#,
     )
     .bind(service_id)
-    .bind(date)
+    .bind(start)
+    .bind(end)
     .fetch_one(db)
     .await?;
 
@@ -73,7 +79,7 @@ pub async fn day_status(
     }))
 }
 
-pub async fn rollup_day(db: &PgPool, redis: &RedisPool, date: NaiveDate) -> anyhow::Result<()> {
+pub async fn rollup_day(db: &PgPool, redis: &RedisPool, date: NaiveDate, tz: Tz) -> anyhow::Result<()> {
     let date_text = date.format("%Y-%m-%d").to_string();
 
     let service_ids: Vec<(String,)> = sqlx::query_as("SELECT id FROM services")
@@ -81,7 +87,7 @@ pub async fn rollup_day(db: &PgPool, redis: &RedisPool, date: NaiveDate) -> anyh
         .await?;
 
     for (service_id,) in service_ids {
-        if let Some(rollup) = day_status(db, &service_id, date).await? {
+        if let Some(rollup) = day_status(db, &service_id, date, tz).await? {
             set_daily_status(redis, &service_id, &date_text, &rollup.to_redis_value()).await?;
         }
     }
@@ -90,17 +96,19 @@ pub async fn rollup_day(db: &PgPool, redis: &RedisPool, date: NaiveDate) -> anyh
 }
 
 pub async fn rollup_yesterday(db: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
-    let yesterday = (Utc::now() - Duration::days(1)).date_naive();
-    rollup_day(db, redis, yesterday).await?;
+    let tz = site_settings::timezone(db).await;
+    let yesterday = site_settings::today(tz) - Duration::days(1);
+    rollup_day(db, redis, yesterday, tz).await?;
     tracing::info!("Rolled up {yesterday} status into Redis");
     Ok(())
 }
 
 pub async fn backfill(db: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
-    let today = Utc::now().date_naive();
+    let tz = site_settings::timezone(db).await;
+    let today = site_settings::today(tz);
     let mut days_back = 1;
     while days_back < HISTORY_DAYS {
-        rollup_day(db, redis, today - Duration::days(days_back)).await?;
+        rollup_day(db, redis, today - Duration::days(days_back), tz).await?;
         days_back += 1;
     }
     tracing::info!("Backfilled {} days of uptime history into Redis", HISTORY_DAYS - 1);

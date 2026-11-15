@@ -3,7 +3,9 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
+import { getSiteConfig } from '@/lib/branding'
 import { errorMessage, manageFetch } from '@/lib/manage'
+import { inputValueToIso } from '@/lib/time'
 
 interface Created {
   id: number
@@ -21,17 +23,14 @@ function selectedServices(formData: FormData): string[] {
   return services
 }
 
-function utc(localValue: string): string {
-  return localValue + ':00Z'
-}
-
-function windowBody(formData: FormData) {
+async function windowBody(formData: FormData) {
+  const { timezone } = await getSiteConfig()
   return {
     title: text(formData, 'title'),
     description: text(formData, 'description'),
     affected_services: selectedServices(formData),
-    scheduled_start: utc(text(formData, 'scheduled_start')),
-    scheduled_end: utc(text(formData, 'scheduled_end')),
+    scheduled_start: inputValueToIso(text(formData, 'scheduled_start'), timezone),
+    scheduled_end: inputValueToIso(text(formData, 'scheduled_end'), timezone),
     message: text(formData, 'message'),
   }
 }
@@ -60,7 +59,7 @@ export async function createMaintenance(_state: FormState, formData: FormData): 
   try {
     created = await manageFetch<Created>('/maintenance', {
       method: 'POST',
-      body: JSON.stringify(windowBody(formData)),
+      body: JSON.stringify(await windowBody(formData)),
     })
   } catch (error) {
     return { error: errorMessage(error), success: null }
@@ -75,7 +74,7 @@ export async function updateMaintenance(_state: FormState, formData: FormData): 
     return { error: 'Pick a start and end time', success: null }
   }
   try {
-    await manageFetch(path(id, ''), { method: 'PATCH', body: JSON.stringify(windowBody(formData)) })
+    await manageFetch(path(id, ''), { method: 'PATCH', body: JSON.stringify(await windowBody(formData)) })
   } catch (error) {
     return { error: errorMessage(error), success: null }
   }

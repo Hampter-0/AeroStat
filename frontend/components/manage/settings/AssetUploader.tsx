@@ -1,0 +1,66 @@
+'use client'
+
+import { useActionState } from 'react'
+import type { FormState } from '@/app/manage/actions'
+import { removeAsset, uploadAsset } from '@/app/manage/(panel)/settings/actions'
+
+const initialState: FormState = { error: null, success: null }
+
+export default function AssetUploader({
+  name,
+  label,
+  hint,
+  previewUrl,
+  isCustom,
+}: {
+  name: string
+  label: string
+  hint: string
+  previewUrl: string | null
+  isCustom: boolean
+}) {
+  const [uploadState, uploadAction, uploading] = useActionState(uploadAsset, initialState)
+  const [removeState, removeAction, removing] = useActionState(removeAsset, initialState)
+
+  let uploadText = 'Upload'
+  if (uploading) {
+    uploadText = 'Uploading…'
+  }
+
+  let statusText = 'Using the default'
+  if (isCustom) {
+    statusText = 'Custom file'
+  }
+
+  return (
+    <div className="asset-uploader">
+      <div className="asset-preview">
+        {previewUrl && <img src={previewUrl} alt={label + ' preview'} />}
+        {!previewUrl && <span>Default</span>}
+      </div>
+      <div className="asset-body">
+        <strong>{label}</strong>
+        <small>
+          {statusText} · {hint}
+        </small>
+        <form action={uploadAction} className="asset-form">
+          <input type="hidden" name="name" value={name} />
+          <input type="file" name="file" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif,image/x-icon,.ico" required />
+          <button type="submit" className="button-secondary" disabled={uploading}>
+            {uploadText}
+          </button>
+        </form>
+        {isCustom && (
+          <form action={removeAction}>
+            <input type="hidden" name="name" value={name} />
+            <button type="submit" className="link-button danger" disabled={removing}>
+              Remove and use the default
+            </button>
+          </form>
+        )}
+        {uploadState.error && <p className="form-error" role="alert">{uploadState.error}</p>}
+        {removeState.error && <p className="form-error" role="alert">{removeState.error}</p>}
+      </div>
+    </div>
+  )
+}

@@ -34,3 +34,33 @@
     color: var(--text);
     font-weight: 600;
 }
+.public-footer {
+    padding-top: 28px;
+}
+
+.timezone-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 16px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.timezone-picker select {
+    max-width: 220px;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-soft);
+    background: var(--panel);
+    font: inherit;
+    font-size: 11px;
+}
+
+.public-footer .powered-by {
+    padding-top: 12px;
+}

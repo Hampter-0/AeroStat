@@ -1,8 +1,10 @@
 use axum::{extract::Path, extract::State, Json};
 use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono_tz::Tz;
 use serde::Serialize;
 
 use crate::db::{day_status, get_daily_statuses, HISTORY_DAYS};
+use crate::site_settings;
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -50,6 +52,10 @@ pub async fn get(
     State(state): State<AppState>,
     Path(service_id): Path<String>,
 ) -> Json<UptimeStats> {
+    let tz = site_settings::timezone(&state.db).await;
+    let first_day = site_settings::today(tz) - Duration::days(HISTORY_DAYS - 1);
+    let window_start = site_settings::start_of_day(first_day, tz);
+
     let row: UptimeRow = sqlx::query_as(
     r#"
     SELECT
@@ -58,10 +64,11 @@ pub async fn get(
         AVG(CASE WHEN status = 'online' THEN response_time ELSE NULL END)::float8 AS avg_response_time
     FROM metrics
     WHERE service_id = $1
-    AND checked_at >= now() - interval '90 days'
+    AND checked_at >= $2
     "#,
 )
     .bind(&service_id)
+    .bind(window_start)
     .fetch_one(&state.db)
     .await
     .unwrap_or(UptimeRow {
@@ -89,14 +96,15 @@ pub async fn get(
         uptime_percent: (uptime_percent * 100.0).round() / 100.0,
         avg_response_time_ms: row.avg_response_time.unwrap_or(0.0).round() as i64,
         total_checks: total,
-        period_days: 90,
+        period_days: HISTORY_DAYS as i32,
         days,
     })
 }
 
 /// Past days come from Redis, today is computed live, events come straight from Postgres.
 async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<DayHistory>> {
-    let today = Utc::now().date_naive();
+    let tz = site_settings::timezone(&state.db).await;
+    let today = site_settings::today(tz);
     let first_day = today - Duration::days(HISTORY_DAYS - 1);
 
     let mut dates: Vec<NaiveDate> = Vec::new();
@@ -112,12 +120,12 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         .collect();
 
     let mut statuses = get_daily_statuses(&state.redis, service_id, &date_texts).await?;
-    let today_status = day_status(&state.db, service_id, today).await?;
+    let today_status = day_status(&state.db, service_id, today, tz).await?;
     if let Some(last) = statuses.last_mut() {
         *last = today_status.map(|rollup| rollup.to_redis_value());
     }
 
-    let window_start = first_day.and_hms_opt(0, 0, 0).unwrap().and_utc();
+    let window_start = site_settings::start_of_day(first_day, tz);
 
     let incidents: Vec<EventRow> = sqlx::query_as(
         r#"
@@ -153,7 +161,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
     for (i, date) in dates.iter().enumerate() {
         let mut events = Vec::new();
         for incident in &incidents {
-            if covers_day(incident, *date) {
+            if covers_day(incident, *date, tz) {
                 events.push(DayEvent {
                     kind: "incident",
                     id: incident.id,
@@ -162,7 +170,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
             }
         }
         for window in &maintenance {
-            if covers_day(window, *date) {
+            if covers_day(window, *date, tz) {
                 events.push(DayEvent {
                     kind: "maintenance",
                     id: window.id,
@@ -194,6 +202,6 @@ fn parse_rollup(value: Option<&str>) -> (String, i64) {
     }
 }
 
-fn covers_day(event: &EventRow, date: NaiveDate) -> bool {
-    event.starts_at.date_naive() <= date && event.ends_at.date_naive() >= date
+fn covers_day(event: &EventRow, date: NaiveDate, tz: Tz) -> bool {
+    event.starts_at.with_timezone(&tz).date_naive() <= date && event.ends_at.with_timezone(&tz).date_naive() >= date
 }

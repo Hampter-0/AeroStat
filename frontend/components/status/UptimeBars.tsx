@@ -23,7 +23,7 @@ function formatMinutes(minutes: number) {
   return text
 }
 
-export default function UptimeBars({ days }: { days: DayHistory[] }) {
+export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayNote: string }) {
   let shownDays = days
   if (shownDays.length === 0) {
     shownDays = []
@@ -89,7 +89,7 @@ export default function UptimeBars({ days }: { days: DayHistory[] }) {
 
           let dateText = ''
           if (day.date) {
-            dateText = formatDay(day.date)
+            dateText = formatDay(day.date) + dayNote
           }
 
           const className = 'bar' + stateClassName

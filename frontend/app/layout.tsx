@@ -3,16 +3,24 @@ import Script from 'next/script'
 import type { ReactNode } from 'react'
 import './globals.css'
 import ThemeSync from '@/components/layout/ThemeSync'
-import { accentColor, siteName } from '@/lib/branding'
+import { getSiteConfig } from '@/lib/branding'
 import { themeInitScript } from '@/lib/theme'
 
-export const metadata: Metadata = {
-  title: siteName,
-  description: 'Status page',
+export async function generateMetadata(): Promise<Metadata> {
+  const config = await getSiteConfig()
+  const metadata: Metadata = {
+    title: { default: config.siteName, template: '%s · ' + config.siteName },
+    description: 'Status page',
+  }
+  if (config.faviconUrl) {
+    metadata.icons = { icon: config.faviconUrl }
+  }
+  return metadata
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const bodyStyle = { '--blue': accentColor } as React.CSSProperties
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const config = await getSiteConfig()
+  const bodyStyle = { '--blue': config.accentColor } as React.CSSProperties
 
   return (
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>

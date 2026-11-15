@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use crate::error::ApiError;
 use crate::state::AppState;
 
-pub const PERMISSIONS: [&str; 4] = ["incidents", "maintenance", "services", "branding"];
+pub const PERMISSIONS: [&str; 4] = ["incidents", "maintenance", "services", "settings"];
 
 pub const SESSION_DAYS: i32 = 30;
 

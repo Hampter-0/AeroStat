@@ -120,3 +120,11 @@ main {
 body {
     min-height: 125vh;
 }
+
+body {
+    --link: var(--blue);
+}
+
+:root[data-theme="dark"] body {
+    --link: color-mix(in srgb, var(--blue) 65%, white);
+}

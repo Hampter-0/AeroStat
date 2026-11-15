@@ -2,20 +2,21 @@ import Link from 'next/link'
 import ServiceSection from '@/components/status/ServiceSection'
 import { AlertSmall, AlertTriangle, Arrow, Check, Tool, X } from '@/components/icons'
 import { getIncidents, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
+import { getDisplayTime } from '@/lib/visitor-time'
+import { formatTimeRange, zoneAbbreviation } from '@/lib/time'
 import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from '@/lib/types'
 
-function formatMaintenanceWindow(startIso: string, endIso: string) {
-  const start = new Date(startIso)
-  const end = new Date(endIso)
-
-  const dateText = start.toLocaleDateString('en-GB', { month: 'long', day: 'numeric', timeZone: 'UTC' })
-  const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-
-  return dateText + ', ' + startTime + '-' + endTime + ' UTC'
+function formatMaintenanceWindow(startIso: string, endIso: string, timezone: string) {
+  const dateText = new Date(startIso).toLocaleDateString('en-GB', { month: 'long', day: 'numeric', timeZone: timezone })
+  return dateText + ', ' + formatTimeRange(startIso, endIso, timezone)
 }
 
 export default async function Home() {
+  const { timezone, siteTimezone } = await getDisplayTime()
+  let dayNote = ''
+  if (timezone !== siteTimezone) {
+    dayNote = ' (' + zoneAbbreviation(siteTimezone) + ')'
+  }
   let services: ServiceStatus[] = []
   let maintenanceWindows: MaintenanceWindow[] = []
   let incidents: Incident[] = []
@@ -205,7 +206,7 @@ export default async function Home() {
           <div className="notice-copy">
             <h2>Scheduled maintenance</h2>
             <p className="scheduled-text">
-              {upcomingMaintenanceWindow.title} - {formatMaintenanceWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end)}
+              {upcomingMaintenanceWindow.title} - {formatMaintenanceWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
             </p>
           </div>
           <a className="text-button" href={'/maintenance/' + upcomingMaintenanceWindow.id}>
@@ -231,6 +232,7 @@ export default async function Home() {
                 services={groupServices}
                 uptimeByServiceId={uptimeByServiceId}
                 defaultOpen={isFirst}
+                dayNote={dayNote}
                 key={groupName}
               />
             )

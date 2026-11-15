@@ -10,11 +10,13 @@ export default function ServiceSection({
   services,
   uptimeByServiceId,
   defaultOpen,
+  dayNote,
 }: {
   groupName: string
   services: ServiceStatus[]
   uptimeByServiceId: Map<string, UptimeStats>
   defaultOpen: boolean
+  dayNote: string
 }) {
   const [open, setOpen] = useState(defaultOpen)
 
@@ -69,6 +71,7 @@ export default function ServiceSection({
                 service={service}
                 uptimePercent={uptimePercent}
                 days={days}
+                dayNote={dayNote}
                 key={service.id}
               />
             )

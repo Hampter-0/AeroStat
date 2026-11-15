@@ -1,26 +1,12 @@
 import Link from 'next/link'
 import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
 import { getAllMaintenance } from '@/lib/api'
+import { getDisplayTime } from '@/lib/visitor-time'
+import { currentMonth, isInMonth, shiftMonth, type CalendarMonth } from '@/lib/months'
+import { formatDayLong, formatTimeRange } from '@/lib/time'
 import type { MaintenanceWindow } from '@/lib/types'
 
-function formatMonthLabel(date: Date) {
-  return date.toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function formatFullDate(iso: string) {
-  const date = new Date(iso)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function formatTimeRange(startIso: string, endIso: string) {
-  const start = new Date(startIso)
-  const end = new Date(endIso)
-  const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  return startTime + '-' + endTime + ' UTC'
-}
-
-function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: MaintenanceWindow }) {
+function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: MaintenanceWindow; timezone: string }) {
   let tagClassName = 'scheduled-tag'
   let tagLabel = 'Scheduled'
   if (maintenanceWindow.status === 'in_progress') {
@@ -46,7 +32,7 @@ function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: Maintenanc
           <span className="event-description">{maintenanceWindow.description}</span>
         )}
         <span className="event-meta">
-          {formatFullDate(maintenanceWindow.scheduled_start)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end)}
+          {formatDayLong(maintenanceWindow.scheduled_start, timezone)}, {formatTimeRange(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end, timezone)}
         </span>
       </div>
     </Link>
@@ -54,6 +40,7 @@ function MaintenanceEntry({ maintenanceWindow }: { maintenanceWindow: Maintenanc
 }
 
 export default async function MaintenancePage() {
+  const { timezone } = await getDisplayTime()
   let maintenanceWindows: MaintenanceWindow[] = []
   let backendIsDown = false
 
@@ -72,17 +59,16 @@ export default async function MaintenancePage() {
     )
   }
 
-  const now = new Date()
-  const windowMonths: Date[] = []
+  const now = currentMonth(timezone)
+  const windowMonths: CalendarMonth[] = []
   let offset = -1
   while (offset <= 1) {
-    const monthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1))
-    windowMonths.push(monthDate)
+    windowMonths.push(shiftMonth(now.year, now.month, offset))
     offset = offset + 1
   }
 
-  const oldestLabel = formatMonthLabel(windowMonths[0])
-  const newestLabel = formatMonthLabel(windowMonths[2])
+  const oldestLabel = windowMonths[0].label
+  const newestLabel = windowMonths[2].label
   let rangeLabel = oldestLabel + ' to ' + newestLabel
   if (oldestLabel === newestLabel) {
     rangeLabel = newestLabel
@@ -104,19 +90,11 @@ export default async function MaintenancePage() {
       </div>
 
       <div className="archive-list">
-        {windowMonths.map(function (monthDate) {
-          const monthLabel = formatMonthLabel(monthDate)
+        {windowMonths.map(function (month) {
+          const monthLabel = month.label
 
           const monthWindows = maintenanceWindows.filter(function (maintenanceWindow) {
-            const startDate = new Date(maintenanceWindow.scheduled_start)
-            let sameMonth = false
-            if (
-              startDate.getUTCFullYear() === monthDate.getUTCFullYear() &&
-              startDate.getUTCMonth() === monthDate.getUTCMonth()
-            ) {
-              sameMonth = true
-            }
-            return sameMonth
+            return isInMonth(maintenanceWindow.scheduled_start, month, timezone)
           })
 
           return (
@@ -128,7 +106,7 @@ export default async function MaintenancePage() {
                 </div>
               )}
               {monthWindows.map(function (maintenanceWindow) {
-                return <MaintenanceEntry maintenanceWindow={maintenanceWindow} key={maintenanceWindow.id} />
+                return <MaintenanceEntry maintenanceWindow={maintenanceWindow} timezone={timezone} key={maintenanceWindow.id} />
               })}
             </section>
           )

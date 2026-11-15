@@ -16,7 +16,7 @@ impl Settings {
         let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".into());
 
         let metrics_retention_days = env::var("METRICS_RETENTION_DAYS")
-            .unwrap_or_else(|_| "90".into())
+            .unwrap_or_else(|_| "60".into())
             .parse()?;
 
         Ok(Self {

@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createMaintenance, updateMaintenance } from '@/app/manage/(panel)/maintenance/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
+import { toInputValue, zoneAbbreviation } from '@/lib/time'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -16,16 +17,14 @@ interface ExistingMaintenance {
   scheduled_end: string
 }
 
-function toInputValue(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 16)
-}
-
 export default function MaintenanceForm({
   services,
   maintenance,
+  timezone,
 }: {
   services: PickerService[]
   maintenance: ExistingMaintenance | null
+  timezone: string
 }) {
   let action = createMaintenance
   if (maintenance) {
@@ -46,8 +45,8 @@ export default function MaintenanceForm({
     if (maintenance.affected_services) {
       selected = maintenance.affected_services
     }
-    start = toInputValue(maintenance.scheduled_start)
-    end = toInputValue(maintenance.scheduled_end)
+    start = toInputValue(maintenance.scheduled_start, timezone)
+    end = toInputValue(maintenance.scheduled_end, timezone)
   }
 
   let buttonText = 'Schedule maintenance'
@@ -71,11 +70,11 @@ export default function MaintenanceForm({
       </label>
       <div className="form-row">
         <label>
-          <span>Start (UTC)</span>
+          <span>Start ({zoneAbbreviation(timezone)})</span>
           <input name="scheduled_start" type="datetime-local" defaultValue={start} required />
         </label>
         <label>
-          <span>End (UTC)</span>
+          <span>End ({zoneAbbreviation(timezone)})</span>
           <input name="scheduled_end" type="datetime-local" defaultValue={end} required />
         </label>
       </div>

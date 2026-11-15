@@ -3,35 +3,30 @@ import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getMaintenance, getServiceNames } from '@/lib/api'
-
-function formatFullDate(iso: string) {
-  const date = new Date(iso)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function formatTimeRange(startIso: string, endIso: string) {
-  const start = new Date(startIso)
-  const end = new Date(endIso)
-  const startTime = start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  const endTime = end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  return startTime + '-' + endTime + ' UTC'
-}
+import { getDisplayTime } from '@/lib/visitor-time'
+import { formatDateTimeLong, formatDayLong, formatTimeRange as formatZonedTimeRange } from '@/lib/time'
 
 function formatStatus(status: string) {
   const text = status.replace('_', ' ')
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-function formatDateTime(iso: string) {
-  const date = new Date(iso)
-  const dateText = formatFullDate(iso)
-  const timeText = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  return dateText + ' at ' + timeText + ' UTC'
-}
-
 export default async function MaintenanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const maintenanceWindow = await getMaintenance(id)
+  const { timezone } = await getDisplayTime()
+
+  function formatFullDate(iso: string) {
+    return formatDayLong(iso, timezone)
+  }
+
+  function formatTimeRange(startIso: string, endIso: string) {
+    return formatZonedTimeRange(startIso, endIso, timezone)
+  }
+
+  function formatDateTime(iso: string) {
+    return formatDateTimeLong(iso, timezone)
+  }
 
   if (!maintenanceWindow) {
     notFound()

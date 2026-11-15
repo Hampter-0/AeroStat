@@ -9,6 +9,7 @@ import UpdateEntry from '@/components/manage/updates/UpdateEntry'
 import { getMaintenance, getStatus } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import { MAINTENANCE_HINTS, MAINTENANCE_UPDATE_STATUSES } from '@/lib/maintenance'
+import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import {
   deleteMaintenance,
@@ -33,6 +34,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
     notFound()
   }
   const services = await getStatus()
+  const { timezone } = await getSiteConfig()
 
   let isCancelled = false
   if (maintenance.status === 'cancelled') {
@@ -55,7 +57,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
           <span className={'status-chip status-' + maintenance.status}>{formatStatus(maintenance.status)}</span>
           <h1>{maintenance.title}</h1>
           <p>
-            {formatDateTime(maintenance.scheduled_start)} – {formatDateTime(maintenance.scheduled_end)}
+            {formatDateTime(maintenance.scheduled_start, timezone)} – {formatDateTime(maintenance.scheduled_end, timezone)}
           </p>
         </div>
         <a href={'/maintenance/' + maintenance.id} target="_blank" className="button-secondary">
@@ -84,6 +86,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
                 key={update.id + '-' + update.status + '-' + update.message}
                 parentId={maintenance.id}
                 update={update}
+                timezone={timezone}
                 statuses={MAINTENANCE_UPDATE_STATUSES}
                 canDelete={true}
                 editAction={editMaintenanceUpdate}
@@ -96,7 +99,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
 
       <section className="manage-panel">
         <h2>Details</h2>
-        <MaintenanceForm services={services} maintenance={maintenance} />
+        <MaintenanceForm services={services} maintenance={maintenance} timezone={timezone} />
       </section>
 
       <section className="manage-panel danger">

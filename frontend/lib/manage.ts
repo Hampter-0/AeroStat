@@ -33,7 +33,9 @@ export async function getSessionToken(): Promise<string | null> {
 export async function manageFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getSessionToken()
   const headers = new Headers(init.headers)
-  headers.set('content-type', 'application/json')
+  if (!headers.has('content-type')) {
+    headers.set('content-type', 'application/json')
+  }
   if (token) {
     headers.set('authorization', 'Bearer ' + token)
   }

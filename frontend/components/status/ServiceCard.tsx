@@ -6,10 +6,12 @@ export default function ServiceCard({
   service,
   uptimePercent,
   days,
+  dayNote,
 }: {
   service: ServiceStatus
   uptimePercent: number | null
   days: DayHistory[]
+  dayNote: string
 }) {
   let checkClassName = 'live-check'
   let labelClassName = ''
@@ -45,7 +47,7 @@ export default function ServiceCard({
           <span>Uptime</span>
         </div>
       </div>
-      <UptimeBars days={days} />
+      <UptimeBars days={days} dayNote={dayNote} />
     </article>
   )
 }

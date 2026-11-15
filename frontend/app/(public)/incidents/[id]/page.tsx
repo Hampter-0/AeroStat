@@ -3,18 +3,8 @@ import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getIncident, getServiceNames } from '@/lib/api'
-
-function formatFullDate(iso: string) {
-  const date = new Date(iso)
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
-}
-
-function formatDateTime(iso: string) {
-  const date = new Date(iso)
-  const dateText = formatFullDate(iso)
-  const timeText = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
-  return dateText + ' at ' + timeText + ' UTC'
-}
+import { getDisplayTime } from '@/lib/visitor-time'
+import { formatDateTimeLong, formatDayLong } from '@/lib/time'
 
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -23,6 +13,15 @@ function capitalize(text: string) {
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const incident = await getIncident(id)
+  const { timezone } = await getDisplayTime()
+
+  function formatFullDate(iso: string) {
+    return formatDayLong(iso, timezone)
+  }
+
+  function formatDateTime(iso: string) {
+    return formatDateTimeLong(iso, timezone)
+  }
 
   if (!incident) {
     notFound()

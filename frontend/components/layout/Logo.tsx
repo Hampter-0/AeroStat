@@ -3,5 +3,5 @@ export default function Logo({ size }: { size?: number }) {
   if (finalSize === undefined) {
     finalSize = 30
   }
-  return <img src="/brand/logo.svg" alt="" width={finalSize} height={finalSize} />
+  return <img src="/branding/logo" alt="" width={finalSize} height={finalSize} style={{ objectFit: 'contain' }} />
 }

@@ -12,6 +12,7 @@ type UpdateAction = (state: FormState, formData: FormData) => Promise<FormState>
 export default function UpdateEntry({
   parentId,
   update,
+  timezone,
   statuses,
   canDelete,
   editAction,
@@ -19,6 +20,7 @@ export default function UpdateEntry({
 }: {
   parentId: number
   update: StatusUpdate
+  timezone: string
   statuses: string[]
   canDelete: boolean
   editAction: UpdateAction
@@ -52,7 +54,7 @@ export default function UpdateEntry({
     <li className={'manage-update status-' + update.status}>
       <div className="manage-update-head">
         <span className={'status-chip status-' + update.status}>{formatStatus(update.status)}</span>
-        <time>{formatDateTime(update.created_at)}</time>
+        <time>{formatDateTime(update.created_at, timezone)}</time>
         <button type="button" className="link-button" onClick={toggleEditing}>
           {editLabel}
         </button>

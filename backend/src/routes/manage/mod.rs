@@ -2,9 +2,10 @@ mod incidents;
 mod maintenance;
 mod services;
 mod session;
+mod settings;
 mod users;
 
-use axum::routing::{get, patch, post};
+use axum::routing::{get, patch, post, put};
 use axum::Router;
 
 use crate::state::AppState;
@@ -29,6 +30,8 @@ pub fn router() -> Router<AppState> {
         .route("/services/check-now", post(services::check_now))
         .route("/services/:id", patch(services::update).delete(services::delete))
         .route("/services/:id/move", post(services::move_service))
+        .route("/settings", get(settings::get).patch(settings::update))
+        .route("/brand/:name", put(settings::upload_asset).delete(settings::delete_asset))
         .route("/groups", post(services::create_group))
         .route("/groups/:id", patch(services::update_group).delete(services::delete_group))
         .route("/groups/:id/move", post(services::move_group))
