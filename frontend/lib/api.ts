@@ -47,6 +47,25 @@ export async function getIncidents(): Promise<Incident[]> {
   return res.json()
 }
 
+export async function getIncidentsBetween(fromIso: string, toIso: string): Promise<Incident[]> {
+  const params = new URLSearchParams({ from: fromIso, to: toIso, limit: '500' })
+  const res = await fetch(`${API_URL}/api/incidents?` + params.toString(), { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch incidents: ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function hasIncidentsBefore(iso: string): Promise<boolean> {
+  const params = new URLSearchParams({ to: iso, limit: '1' })
+  const res = await fetch(`${API_URL}/api/incidents?` + params.toString(), { cache: 'no-store' })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch incidents: ${res.status}`)
+  }
+  const rows: Incident[] = await res.json()
+  return rows.length > 0
+}
+
 export async function getAllMaintenance(): Promise<MaintenanceWindow[]> {
   const res = await fetch(`${API_URL}/api/maintenance`, { cache: 'no-store' })
   if (!res.ok) {

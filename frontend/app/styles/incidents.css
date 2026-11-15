@@ -21,7 +21,7 @@
     font-size: 12px;
 }
 
-.range-picker button {
+.range-picker .range-button {
     width: 30px;
     height: 30px;
     padding: 0;
@@ -33,7 +33,12 @@
     background: var(--panel-soft);
 }
 
-.range-picker button:disabled {
+a.range-button:hover {
+    border-color: var(--link);
+    color: var(--text);
+}
+
+.range-picker .range-button.disabled {
     opacity: .45;
     cursor: default;
 }

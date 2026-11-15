@@ -1,4 +1,4 @@
-import { yearMonth } from './time'
+import { inputValueToIso, yearMonth } from './time'
 
 export interface CalendarMonth {
   year: number
@@ -19,6 +19,37 @@ export function shiftMonth(year: number, month: number, offset: number): Calenda
 
 export function currentMonth(timezone: string): { year: number; month: number } {
   return yearMonth(new Date().toISOString(), timezone)
+}
+
+export function monthStartIso(month: CalendarMonth, timezone: string): string {
+  let monthText = String(month.month)
+  if (month.month < 10) {
+    monthText = '0' + monthText
+  }
+  return inputValueToIso(month.year + '-' + monthText + '-01T00:00', timezone)
+}
+
+export function readPage(value: string | undefined): number {
+  if (value && /^-?\d{1,3}$/.test(value)) {
+    return Number(value)
+  }
+  return 0
+}
+
+export function pageHref(path: string, page: number): string {
+  if (page === 0) {
+    return path
+  }
+  return path + '?page=' + page
+}
+
+export function rangeLabel(months: CalendarMonth[]): string {
+  const first = months[0].label
+  const last = months[months.length - 1].label
+  if (first === last) {
+    return first
+  }
+  return first + ' to ' + last
 }
 
 export function isInMonth(iso: string, target: CalendarMonth, timezone: string): boolean {

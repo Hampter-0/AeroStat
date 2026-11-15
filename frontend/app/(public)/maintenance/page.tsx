@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
+import { Check } from '@/components/icons'
+import RangePicker from '@/components/status/RangePicker'
 import { getAllMaintenance } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
-import { currentMonth, isInMonth, shiftMonth, type CalendarMonth } from '@/lib/months'
+import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage, shiftMonth, type CalendarMonth } from '@/lib/months'
 import { formatWindow } from '@/lib/time'
 import type { MaintenanceWindow } from '@/lib/types'
 
@@ -39,8 +40,9 @@ function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: 
   )
 }
 
-export default async function MaintenancePage() {
+export default async function MaintenancePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { timezone } = await getDisplayTime()
+  const page = readPage((await searchParams).page)
   let maintenanceWindows: MaintenanceWindow[] = []
   let backendIsDown = false
 
@@ -63,30 +65,39 @@ export default async function MaintenancePage() {
   const windowMonths: CalendarMonth[] = []
   let offset = -1
   while (offset <= 1) {
-    windowMonths.push(shiftMonth(now.year, now.month, offset))
+    windowMonths.push(shiftMonth(now.year, now.month, page * 3 + offset))
     offset = offset + 1
   }
+  const lastMonth = windowMonths[2]
+  const windowStart = new Date(monthStartIso(windowMonths[0], timezone)).getTime()
+  const windowEnd = new Date(monthStartIso(shiftMonth(lastMonth.year, lastMonth.month, 1), timezone)).getTime()
 
-  const oldestLabel = windowMonths[0].label
-  const newestLabel = windowMonths[2].label
-  let rangeLabel = oldestLabel + ' to ' + newestLabel
-  if (oldestLabel === newestLabel) {
-    rangeLabel = newestLabel
+  let hasEarlier = false
+  let hasLater = false
+  for (const maintenanceWindow of maintenanceWindows) {
+    const start = new Date(maintenanceWindow.scheduled_start).getTime()
+    if (start < windowStart) {
+      hasEarlier = true
+    }
+    if (start >= windowEnd) {
+      hasLater = true
+    }
+  }
+
+  let previousHref: string | null = null
+  if (hasEarlier) {
+    previousHref = pageHref('/maintenance', page - 1)
+  }
+  let nextHref: string | null = null
+  if (hasLater) {
+    nextHref = pageHref('/maintenance', page + 1)
   }
 
   return (
     <>
       <div className="archive-heading">
         <h1>Maintenance</h1>
-        <div className="range-picker">
-          <button aria-label="Previous months" disabled>
-            <ChevronLeft />
-          </button>
-          <span>{rangeLabel}</span>
-          <button aria-label="Next months" disabled>
-            <ChevronRight />
-          </button>
-        </div>
+        <RangePicker label={rangeLabel(windowMonths)} previousHref={previousHref} nextHref={nextHref} />
       </div>
 
       <div className="archive-list">

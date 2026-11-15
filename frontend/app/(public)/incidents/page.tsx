@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { Check, ChevronLeft, ChevronRight } from '@/components/icons'
-import { getIncidents } from '@/lib/api'
+import { Check } from '@/components/icons'
+import RangePicker from '@/components/status/RangePicker'
+import { getIncidentsBetween, hasIncidentsBefore } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
-import { currentMonth, isInMonth, shiftMonth, type CalendarMonth } from '@/lib/months'
+import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage, shiftMonth, type CalendarMonth } from '@/lib/months'
 import { formatDayLong } from '@/lib/time'
 import type { Incident } from '@/lib/types'
 
@@ -33,13 +34,31 @@ function IncidentEntry({ incident, timezone }: { incident: Incident; timezone: s
   )
 }
 
-export default async function IncidentsPage() {
+export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { timezone } = await getDisplayTime()
+  let page = readPage((await searchParams).page)
+  if (page > 0) {
+    page = 0
+  }
+
+  const now = currentMonth(timezone)
+  const windowMonths: CalendarMonth[] = []
+  let offset = 2
+  while (offset >= 0) {
+    windowMonths.push(shiftMonth(now.year, now.month, page * 3 - offset))
+    offset = offset - 1
+  }
+  const lastMonth = windowMonths[2]
+  const windowStart = monthStartIso(windowMonths[0], timezone)
+  const windowEnd = monthStartIso(shiftMonth(lastMonth.year, lastMonth.month, 1), timezone)
+
   let incidents: Incident[] = []
+  let hasOlder = false
   let backendIsDown = false
 
   try {
-    incidents = await getIncidents()
+    incidents = await getIncidentsBetween(windowStart, windowEnd)
+    hasOlder = await hasIncidentsBefore(windowStart)
   } catch {
     backendIsDown = true
   }
@@ -53,35 +72,22 @@ export default async function IncidentsPage() {
     )
   }
 
-  const now = currentMonth(timezone)
-  const windowMonths: CalendarMonth[] = []
-  let offset = 2
-  while (offset >= 0) {
-    windowMonths.push(shiftMonth(now.year, now.month, -offset))
-    offset = offset - 1
-  }
   const orderedMonths = [windowMonths[2], windowMonths[1], windowMonths[0]]
 
-  const oldestLabel = windowMonths[0].label
-  const newestLabel = windowMonths[2].label
-  let rangeLabel = oldestLabel + ' to ' + newestLabel
-  if (oldestLabel === newestLabel) {
-    rangeLabel = newestLabel
+  let previousHref: string | null = null
+  if (hasOlder) {
+    previousHref = pageHref('/incidents', page - 1)
+  }
+  let nextHref: string | null = null
+  if (page < 0) {
+    nextHref = pageHref('/incidents', page + 1)
   }
 
   return (
     <>
       <div className="archive-heading">
         <h1>Previous incidents</h1>
-        <div className="range-picker">
-          <button aria-label="Previous months" disabled>
-            <ChevronLeft />
-          </button>
-          <span>{rangeLabel}</span>
-          <button aria-label="Next months" disabled>
-            <ChevronRight />
-          </button>
-        </div>
+        <RangePicker label={rangeLabel(windowMonths)} previousHref={previousHref} nextHref={nextHref} />
       </div>
 
       <div className="archive-list">
