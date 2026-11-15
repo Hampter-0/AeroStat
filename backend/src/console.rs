@@ -14,20 +14,18 @@ struct MenuItem {
     description: &'static str,
 }
 
-const MENU: [MenuItem; 7] = [
+const MENU: [MenuItem; 6] = [
     MenuItem { number: "1", name: "help", description: "Show all commands" },
     MenuItem { number: "2", name: "migrate", description: "Run database migrations" },
-    MenuItem { number: "3", name: "seed", description: "Import services from config/services.yml" },
-    MenuItem { number: "4", name: "create-admin", description: "Create an admin account (or reset one)" },
-    MenuItem { number: "5", name: "users", description: "List all accounts" },
-    MenuItem { number: "6", name: "reset-password", description: "Set a new password for an account" },
+    MenuItem { number: "3", name: "create-admin", description: "Create an admin account (or reset one)" },
+    MenuItem { number: "4", name: "users", description: "List all accounts" },
+    MenuItem { number: "5", name: "reset-password", description: "Set a new password for an account" },
     MenuItem { number: "0", name: "exit", description: "Leave the CLI" },
 ];
 
 enum Action {
     Help,
     Migrate,
-    Seed,
     CreateAdmin,
     Users,
     ResetPassword,
@@ -38,10 +36,9 @@ fn parse_action(input: &str) -> Option<Action> {
     match input {
         "1" | "help" | "h" | "?" => Some(Action::Help),
         "2" | "migrate" => Some(Action::Migrate),
-        "3" | "seed" => Some(Action::Seed),
-        "4" | "create-admin" => Some(Action::CreateAdmin),
-        "5" | "users" => Some(Action::Users),
-        "6" | "reset-password" => Some(Action::ResetPassword),
+        "3" | "create-admin" => Some(Action::CreateAdmin),
+        "4" | "users" => Some(Action::Users),
+        "5" | "reset-password" => Some(Action::ResetPassword),
         "0" | "exit" | "quit" | "q" => Some(Action::Exit),
         _ => None,
     }
@@ -78,7 +75,6 @@ pub async fn run(pool: &PgPool) -> anyhow::Result<()> {
                 Ok(())
             }
             Action::Migrate => migrate(pool).await,
-            Action::Seed => seed(pool).await,
             Action::CreateAdmin => create_admin(pool).await,
             Action::Users => list_users(pool).await,
             Action::ResetPassword => reset_password(pool).await,
@@ -144,12 +140,6 @@ fn success(message: &str) {
 async fn migrate(pool: &PgPool) -> anyhow::Result<()> {
     db::migrate(pool).await?;
     success("Database is up to date");
-    Ok(())
-}
-
-async fn seed(pool: &PgPool) -> anyhow::Result<()> {
-    db::seed_from_file(pool, "config/services.yml").await?;
-    success("Services imported from config/services.yml");
     Ok(())
 }
 

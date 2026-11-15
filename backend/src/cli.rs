@@ -26,8 +26,6 @@ pub enum Commands {
     Cli,
     /// Run pending database migrations
     Migrate,
-    /// Seed services/groups from config/services.yml
-    Seed,
     /// Create an admin account for the /manage panel (or reset an existing one's password)
     CreateAdmin {
         #[arg(long)]

@@ -12,7 +12,7 @@ export default function DeleteForm({
   description,
   confirmText,
 }: {
-  id: number
+  id: number | string
   action: (state: FormState, formData: FormData) => Promise<FormState>
   buttonText: string
   description: string

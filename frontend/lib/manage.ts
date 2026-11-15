@@ -57,10 +57,11 @@ export async function manageFetch<T>(path: string, init: RequestInit = {}): Prom
     throw new ManageApiError(res.status, message)
   }
 
-  if (res.status === 204) {
+  const body = await res.text()
+  if (!body) {
     return undefined as T
   }
-  return res.json()
+  return JSON.parse(body) as T
 }
 
 export async function getCurrentUser(): Promise<ManageUser | null> {

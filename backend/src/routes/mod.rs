@@ -22,7 +22,6 @@ pub fn build(state: AppState) -> Router {
         .route("/", get(root))
         .route("/health", get(health))
         .route("/api/services", get(services::list))
-        .route("/api/check-now", get(services::check_now))
         .route("/api/status", get(status::get))
         .route("/api/incidents", get(incidents::list))
         .route("/api/incidents/:id", get(incidents::get))

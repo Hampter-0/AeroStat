@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { AlertTriangle, ExternalLink, Home, LogOut, Tool, Users } from '@/components/icons'
+import { AlertTriangle, ExternalLink, Home, LogOut, Server, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
 
@@ -24,6 +24,9 @@ export default function ManageSidebar({ siteName, user }: { siteName: string; us
   }
   if (user.is_admin || user.permissions.includes('maintenance')) {
     items.push({ href: '/manage/maintenance', label: 'Maintenance', icon: <Tool size={16} /> })
+  }
+  if (user.is_admin || user.permissions.includes('services')) {
+    items.push({ href: '/manage/services', label: 'Services', icon: <Server /> })
   }
   if (user.is_admin) {
     items.push({ href: '/manage/users', label: 'Users', icon: <Users /> })

@@ -46,12 +46,6 @@ async fn main() -> anyhow::Result<()> {
             tracing::info!("Migrations applied, exiting");
             return Ok(());
         }
-        Some(Commands::Seed) => {
-            db::migrate(&pool).await?;
-            db::seed_from_file(&pool, "config/services.yml").await?;
-            tracing::info!("Seed complete, exiting");
-            return Ok(());
-        }
         Some(Commands::CreateAdmin { username }) => {
             db::migrate(&pool).await?;
             let password = match std::env::var("ADMIN_PASSWORD") {
@@ -75,14 +69,8 @@ async fn main() -> anyhow::Result<()> {
     db::migrate(&pool).await?;
     tracing::info!("Connected to Postgres and ran migrations");
 
-    if settings.seed_on_startup {
-        db::seed_from_file(&pool, "config/services.yml").await?;
-    } else {
-        tracing::info!("SEED_ON_STARTUP=false, skipping automatic seeding");
-    }
-
-    services::spawn_all(pool.clone()).await?;
-    tracing::info!("Service checkers started");
+    services::spawn_all(pool.clone());
+    tracing::info!("Service checker started");
 
     services::spawn_cleanup(pool.clone(), settings.metrics_retention_days);
     tracing::info!(
