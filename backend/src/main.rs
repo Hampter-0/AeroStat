@@ -20,7 +20,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    cli::print_banner();
+    cli::print_version();
     dotenvy::dotenv().ok();
 
     let cli = cli::Cli::parse();

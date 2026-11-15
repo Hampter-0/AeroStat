@@ -1,18 +1,6 @@
 use clap::{Parser, Subcommand};
 use owo_colors::OwoColorize;
 
-pub const BANNER: &str = r#"
-   █████████                                █████████   █████               █████   
-  ███▒▒▒▒▒███                              ███▒▒▒▒▒███ ▒▒███               ▒▒███    
- ▒███    ▒███   ██████  ████████   ██████ ▒███    ▒▒▒  ███████    ██████   ███████  
- ▒███████████  ███▒▒███▒▒███▒▒███ ███▒▒███▒▒█████████ ▒▒▒███▒    ▒▒▒▒▒███ ▒▒▒███▒   
- ▒███▒▒▒▒▒███ ▒███████  ▒███ ▒▒▒ ▒███ ▒███ ▒▒▒▒▒▒▒▒███  ▒███      ███████   ▒███    
- ▒███    ▒███ ▒███▒▒▒   ▒███     ▒███ ▒███ ███    ▒███  ▒███ ███ ███▒▒███   ▒███ ███
- █████   █████▒▒██████  █████    ▒▒██████ ▒▒█████████   ▒▒█████ ▒▒████████  ▒▒█████ 
-▒▒▒▒▒   ▒▒▒▒▒  ▒▒▒▒▒▒  ▒▒▒▒▒      ▒▒▒▒▒▒   ▒▒▒▒▒▒▒▒▒     ▒▒▒▒▒   ▒▒▒▒▒▒▒▒    ▒▒▒▒▒      
-
-"#;
-
 #[derive(Parser)]
 #[command(name = "aerostat", version, about, long_about = None)]
 pub struct Cli {
@@ -33,8 +21,7 @@ pub enum Commands {
     },
 }
 
-pub fn print_banner() {
-    println!("{}", BANNER.truecolor(255, 255, 255));
+pub fn print_version() {
     println!(
         "  {} {}",
         "AeroStat — self-hosted monitoring".bold(),
