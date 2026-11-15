@@ -19,6 +19,12 @@ and lets you post incidents and planned maintenance from a small admin panel.
 
 Runs with Docker Compose next to Postgres and Redis, and is configured with a single `.env` file.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/status-page.png" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/screenshots/status-page-light.png" />
+  <img src="docs/screenshots/status-page.png" alt="AeroStat status page" width="720" />
+</picture>
+
 </div>
 
 ## Features
@@ -27,6 +33,19 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
 - Light and dark mode, visitor-chosen timezone
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
+
+## Screenshots
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/dashboard.png" alt="Admin dashboard with response times" /></td>
+    <td><img src="docs/screenshots/incident.png" alt="Incident with its update timeline" /></td>
+  </tr>
+  <tr>
+    <td align="center">Admin dashboard</td>
+    <td align="center">Incident timeline</td>
+  </tr>
+</table>
 
 ## Install with Docker
 
