@@ -15,6 +15,7 @@ pub const BRAND_ASSETS: [&str; 2] = ["logo", "favicon"];
 #[derive(Serialize)]
 pub struct PublicSettings {
     site_name: Option<String>,
+    site_description: Option<String>,
     contact_url: Option<String>,
     primary_color: Option<String>,
     timezone: String,
@@ -47,6 +48,7 @@ pub async fn get(State(state): State<AppState>) -> Result<Json<PublicSettings>, 
 
     Ok(Json(PublicSettings {
         site_name: values.remove(site_settings::SITE_NAME),
+        site_description: values.remove(site_settings::SITE_DESCRIPTION),
         contact_url: values.remove(site_settings::CONTACT_URL),
         primary_color: values.remove(site_settings::PRIMARY_COLOR),
         timezone: tz.name().to_string(),

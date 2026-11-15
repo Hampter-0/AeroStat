@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::activity;
 use crate::auth::CurrentUser;
+use crate::notifications::{self, Event};
 use crate::error::ApiError;
 use crate::models::StatusUpdate;
 use crate::state::AppState;
@@ -147,6 +148,16 @@ pub async fn create(
 
     let details = activity::created(snapshot(&state, "maintenance", id).await);
     log(&state, &user, "scheduled maintenance", Some(id), &title, details).await;
+    notifications::notify(
+        &state.db,
+        Event::MaintenanceScheduled {
+            id,
+            title: title.clone(),
+            start: body.scheduled_start,
+            end: body.scheduled_end,
+            services: body.affected_services.clone(),
+        },
+    );
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
 
@@ -166,7 +177,9 @@ pub async fn update(
     sqlx::query(
         r#"
         UPDATE maintenance
-        SET title = $1, description = $2, affected_services = $3, scheduled_start = $4, scheduled_end = $5
+        SET title = $1, description = $2, affected_services = $3, scheduled_start = $4, scheduled_end = $5,
+            start_notified = start_notified AND $4 <= now(),
+            end_notified = end_notified AND $5 <= now()
         WHERE id = $6
         "#,
     )
@@ -210,6 +223,19 @@ pub async fn cancel(
     let mut details = activity::changes(before, snapshot(&state, "maintenance", id).await).unwrap_or_else(|| json!({}));
     details["message"] = json!(message);
     log(&state, &user, "cancelled maintenance", Some(id), &title, Some(details)).await;
+    let services: Option<(Option<Vec<String>>,)> = sqlx::query_as("SELECT affected_services FROM maintenance WHERE id = $1")
+        .bind(id)
+        .fetch_optional(&state.db)
+        .await?;
+    notifications::notify(
+        &state.db,
+        Event::MaintenanceCancelled {
+            id,
+            title: title.clone(),
+            message: message.clone(),
+            services: services.and_then(|(list,)| list).unwrap_or_default(),
+        },
+    );
     Ok(StatusCode::NO_CONTENT)
 }
 

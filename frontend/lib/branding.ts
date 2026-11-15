@@ -2,6 +2,7 @@ import { cache } from 'react'
 
 export interface SiteConfig {
   siteName: string
+  description: string
   contactUrl: string | null
   accentColor: string
   timezone: string
@@ -10,11 +11,16 @@ export interface SiteConfig {
 
 interface PublicSettings {
   site_name: string | null
+  site_description: string | null
   contact_url: string | null
   primary_color: string | null
   timezone: string
   logo_version: number | null
   favicon_version: number | null
+}
+
+export function defaultDescription(siteName: string): string {
+  return 'Live status, incidents and planned maintenance for ' + siteName + '.'
 }
 
 export function envDefaults(): SiteConfig {
@@ -30,7 +36,7 @@ export function envDefaults(): SiteConfig {
   if (process.env.CONTACT_URL) {
     contactUrl = process.env.CONTACT_URL
   }
-  return { siteName, contactUrl, accentColor, timezone: 'UTC', faviconUrl: null }
+  return { siteName, description: defaultDescription(siteName), contactUrl, accentColor, timezone: 'UTC', faviconUrl: null }
 }
 
 export const getSiteConfig = cache(async function (): Promise<SiteConfig> {
@@ -48,6 +54,10 @@ export const getSiteConfig = cache(async function (): Promise<SiteConfig> {
 
   if (settings.site_name) {
     config.siteName = settings.site_name
+    config.description = defaultDescription(settings.site_name)
+  }
+  if (settings.site_description) {
+    config.description = settings.site_description
   }
   if (settings.contact_url) {
     config.contactUrl = settings.contact_url

@@ -1,14 +1,34 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getMaintenance, getServiceNames } from '@/lib/api'
+import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatWindow } from '@/lib/time'
 
 function formatStatus(status: string) {
   const text = status.replace('_', ' ')
   return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const maintenance = await getMaintenance(id)
+  const config = await getSiteConfig()
+  if (!maintenance) {
+    return { title: 'Maintenance not found' }
+  }
+  let description = formatWindow(maintenance.scheduled_start, maintenance.scheduled_end, config.timezone)
+  if (maintenance.description) {
+    description = maintenance.description + ' · ' + description
+  }
+  return {
+    title: maintenance.title,
+    description: description,
+    openGraph: { type: 'article', siteName: config.siteName, title: maintenance.title + ' | ' + config.siteName, description: description },
+  }
 }
 
 export default async function MaintenanceDetailPage({ params }: { params: Promise<{ id: string }> }) {

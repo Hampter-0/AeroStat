@@ -6,6 +6,7 @@ mod console;
 mod db;
 mod error;
 mod login_guard;
+mod notifications;
 mod models;
 mod routes;
 mod services;
@@ -86,6 +87,8 @@ async fn main() -> anyhow::Result<()> {
 
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
+
+    notifications::spawn_maintenance_watcher(pool.clone());
 
     let update_state = services::update_checker::UpdateCache::default();
     if settings.update_check {

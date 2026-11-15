@@ -5,12 +5,13 @@ use chrono_tz::Tz;
 use sqlx::PgPool;
 
 pub const SITE_NAME: &str = "site_name";
+pub const SITE_DESCRIPTION: &str = "site_description";
 pub const CONTACT_URL: &str = "contact_url";
 pub const PRIMARY_COLOR: &str = "primary_color";
 pub const TIMEZONE: &str = "timezone";
 pub const METRICS_RETENTION_DAYS: &str = "metrics_retention_days";
 
-pub const KEYS: [&str; 5] = [SITE_NAME, CONTACT_URL, PRIMARY_COLOR, TIMEZONE, METRICS_RETENTION_DAYS];
+pub const KEYS: [&str; 6] = [SITE_NAME, SITE_DESCRIPTION, CONTACT_URL, PRIMARY_COLOR, TIMEZONE, METRICS_RETENTION_DAYS];
 
 pub async fn all(db: &PgPool) -> anyhow::Result<HashMap<String, String>> {
     let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value FROM settings")

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
 
-const KEYS = ['site_name', 'contact_url', 'primary_color', 'timezone', 'metrics_retention_days']
+const KEYS = ['site_name', 'site_description', 'contact_url', 'primary_color', 'timezone', 'metrics_retention_days']
 const ASSETS = ['logo', 'favicon']
 
 function refreshEverything() {
@@ -97,4 +97,38 @@ export async function checkForUpdates(): Promise<FormState> {
   }
   revalidatePath('/manage', 'layout')
   return { error: null, success: null }
+}
+
+export async function saveNotifications(_state: FormState, formData: FormData): Promise<FormState> {
+  const events: string[] = []
+  for (const value of formData.getAll('events')) {
+    events.push(String(value))
+  }
+  const body: { events: string[]; public_url: string; discord_webhook_url?: string } = {
+    events: events,
+    public_url: String(formData.get('public_url') || ''),
+  }
+  const webhook = String(formData.get('discord_webhook_url') || '').trim()
+  if (formData.get('remove_webhook') === 'on') {
+    body.discord_webhook_url = ''
+  } else if (webhook) {
+    body.discord_webhook_url = webhook
+  }
+
+  try {
+    await manageFetch('/notifications', { method: 'PUT', body: JSON.stringify(body) })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  revalidatePath('/manage/settings')
+  return { error: null, success: 'Saved' }
+}
+
+export async function sendTestNotification(): Promise<FormState> {
+  try {
+    await manageFetch('/notifications/test', { method: 'POST' })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  return { error: null, success: 'Sent. Check your Discord channel.' }
 }

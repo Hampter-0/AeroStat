@@ -7,6 +7,7 @@ use sqlx::PgPool;
 
 use crate::activity;
 use crate::auth::CurrentUser;
+use crate::notifications::{self, Event};
 use crate::error::ApiError;
 use crate::models::{Incident, StatusUpdate};
 use crate::state::AppState;
@@ -167,6 +168,17 @@ pub async fn create(
     sync_status(&state.db, id).await?;
     let details = activity::created(snapshot(&state, "incidents", id).await);
     log(&state, &user, "created incident", Some(id), &title, details).await;
+    notifications::notify(
+        &state.db,
+        Event::IncidentCreated {
+            id,
+            title: title.clone(),
+            status: body.status.clone(),
+            severity: body.severity.clone(),
+            message: message.clone(),
+            services: body.affected_services.clone(),
+        },
+    );
     Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)))
 }
 
@@ -247,6 +259,16 @@ pub async fn add_update(
     };
     let details = Some(json!({ "update": created }));
     log(&state, &user, action, Some(id), &incident.title, details).await;
+    notifications::notify(
+        &state.db,
+        Event::IncidentUpdated {
+            id,
+            title: incident.title.clone(),
+            status: body.status.clone(),
+            message: message.clone(),
+            services: incident.affected_services.clone().unwrap_or_default(),
+        },
+    );
     Ok((StatusCode::CREATED, Json(created)))
 }
 

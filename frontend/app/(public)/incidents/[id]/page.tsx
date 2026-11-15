@@ -1,13 +1,35 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getIncident, getServiceNames } from '@/lib/api'
+import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatDayLong } from '@/lib/time'
 
 function capitalize(text: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const incident = await getIncident(id)
+  const config = await getSiteConfig()
+  if (!incident) {
+    return { title: 'Incident not found' }
+  }
+  let description = config.description
+  if (incident.updates.length > 0) {
+    description = incident.updates[0].message
+  } else if (incident.description) {
+    description = incident.description
+  }
+  return {
+    title: incident.title,
+    description: description,
+    openGraph: { type: 'article', siteName: config.siteName, title: incident.title + ' | ' + config.siteName, description: description },
+  }
 }
 
 export default async function IncidentDetailPage({ params }: { params: Promise<{ id: string }> }) {

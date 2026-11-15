@@ -2,9 +2,11 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import AssetUploader from '@/components/manage/settings/AssetUploader'
 import ColorField from '@/components/manage/settings/ColorField'
+import NotificationsForm from '@/components/manage/settings/NotificationsForm'
 import SettingsForm from '@/components/manage/settings/SettingsForm'
-import { envDefaults } from '@/lib/branding'
+import { defaultDescription, envDefaults } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
+import type { NotificationSettings } from '@/lib/notifications'
 import { formatDateTimeLong } from '@/lib/time'
 
 export const metadata = {
@@ -23,6 +25,7 @@ const TABS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'monitoring', label: 'Monitoring' },
   { id: 'time', label: 'Time & region' },
+  { id: 'notifications', label: 'Notifications' },
 ]
 
 function value(settings: ManageSettings, key: string): string {
@@ -48,6 +51,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     if (option.id === tab) {
       activeTab = option.id
     }
+  }
+
+  let notifications: NotificationSettings | null = null
+  if (activeTab === 'notifications') {
+    notifications = await manageFetch<NotificationSettings>('/notifications')
   }
 
   let timezone = settings.defaults.timezone
@@ -105,6 +113,18 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 placeholder={defaults.siteName}
               />
               <small className="field-hint">Shown in the header, the browser tab and the footer.</small>
+            </label>
+            <label>
+              <span>Description</span>
+              <textarea
+                key={'site_description-' + value(settings, 'site_description')}
+                name="site_description"
+                defaultValue={value(settings, 'site_description')}
+                maxLength={200}
+                rows={2}
+                placeholder={defaultDescription(value(settings, 'site_name') || defaults.siteName)}
+              />
+              <small className="field-hint">Shown under the link when someone shares your status page, for example in Discord.</small>
             </label>
             <label>
               <span>Contact link</span>
@@ -174,6 +194,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               </small>
             </label>
           </SettingsForm>
+        </section>
+      )}
+
+      {activeTab === 'notifications' && notifications && (
+        <section className="manage-panel">
+          <h2>Discord</h2>
+          <p className="panel-intro">Post a message in a Discord channel when something happens. Only people with access to Settings can see or change this.</p>
+          <NotificationsForm settings={notifications} />
         </section>
       )}
 

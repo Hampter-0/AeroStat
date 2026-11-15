@@ -33,6 +33,8 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
+- Discord notifications when a service goes down or comes back, and for incidents and maintenance
+- Link previews for Discord, Slack and social media that show the live status, incident or maintenance
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
 
 ## Screenshots
@@ -159,6 +161,16 @@ server {
 ```
 
 `client_max_body_size` allows logo and avatar uploads; nginx stops anything over 1 MB by default. Use `$remote_addr` rather than `$proxy_add_x_forwarded_for`, so a visitor can't send a made-up IP. Without a proxy in front, the IP-based sign-in limit can be bypassed this way; the per-account limit still applies.
+
+## Discord notifications
+
+In the panel under **Settings → Notifications**, paste a Discord webhook URL (in Discord: Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL) and pick which events to post:
+
+- a service goes down (after two failed checks in a row) or comes back up, with how long it was down
+- an incident is posted, updated or resolved
+- maintenance is planned, starts, ends or is cancelled
+
+Set the status page address there too, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.
 
 ## Status API and badges
 

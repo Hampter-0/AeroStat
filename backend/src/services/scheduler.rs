@@ -3,6 +3,7 @@ use std::time::Duration;
 use sqlx::PgPool;
 
 use crate::db;
+use crate::notifications;
 use crate::services::checker::{check_service, CheckableService};
 
 const TICK: Duration = Duration::from_secs(5);
@@ -67,4 +68,6 @@ async fn run_check(pool: PgPool, client: reqwest::Client, service: CheckableServ
         result.status,
         result.response_time_ms
     );
+
+    notifications::after_check(&pool, &service.id).await;
 }

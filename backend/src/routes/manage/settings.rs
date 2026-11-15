@@ -11,7 +11,7 @@ use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
-use crate::site_settings::{self, CONTACT_URL, METRICS_RETENTION_DAYS, PRIMARY_COLOR, SITE_NAME, TIMEZONE};
+use crate::site_settings::{self, CONTACT_URL, METRICS_RETENTION_DAYS, PRIMARY_COLOR, SITE_DESCRIPTION, SITE_NAME, TIMEZONE};
 use crate::state::AppState;
 
 const PERMISSION: &str = "settings";
@@ -45,6 +45,11 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
         SITE_NAME => {
             if value.chars().count() > 60 {
                 return Err(ApiError::BadRequest("Site name can be at most 60 characters".into()));
+            }
+        }
+        SITE_DESCRIPTION => {
+            if value.chars().count() > 200 {
+                return Err(ApiError::BadRequest("Description can be at most 200 characters".into()));
             }
         }
         CONTACT_URL => {

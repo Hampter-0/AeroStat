@@ -2,6 +2,7 @@ mod activity;
 mod dashboard;
 mod incidents;
 mod maintenance;
+mod notifications;
 mod profile;
 mod services;
 mod session;
@@ -45,6 +46,8 @@ pub fn router() -> Router<AppState> {
         .route("/services/:id", patch(services::update).delete(services::delete))
         .route("/services/:id/move", post(services::move_service))
         .route("/settings", get(settings::get).patch(settings::update))
+        .route("/notifications", get(notifications::get).put(notifications::update))
+        .route("/notifications/test", post(notifications::test))
         .route("/brand/:name", put(settings::upload_asset).delete(settings::delete_asset))
         .route("/groups", post(services::create_group))
         .route("/groups/:id", patch(services::update_group).delete(services::delete_group))
