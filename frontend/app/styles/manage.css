@@ -1919,6 +1919,7 @@ a.page-button:hover {
 }
 
 .activity-table-wrap {
+    position: relative;
     overflow-x: auto;
 }
 
