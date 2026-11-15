@@ -195,6 +195,22 @@ fn link(settings: &NotificationSettings, path: &str) -> Option<String> {
         .map(|base| format!("{}{}", base.trim_end_matches('/'), path))
 }
 
+/// The share card for a page, with a version so Discord does not reuse an old image.
+fn image(settings: &NotificationSettings, path: &str) -> Option<String> {
+    link(settings, &format!("{path}?v={}", Utc::now().timestamp()))
+}
+
+fn image_path(event: &Event) -> String {
+    match event {
+        Event::ServiceDown { .. } | Event::ServiceUp { .. } => "/og/status".to_string(),
+        Event::IncidentCreated { id, .. } | Event::IncidentUpdated { id, .. } => format!("/og/incidents/{id}"),
+        Event::MaintenanceScheduled { id, .. }
+        | Event::MaintenanceStarted { id, .. }
+        | Event::MaintenanceCompleted { id, .. }
+        | Event::MaintenanceCancelled { id, .. } => format!("/og/maintenance/{id}"),
+    }
+}
+
 fn discord_time(at: DateTime<Utc>) -> String {
     format!("<t:{}:f>", at.timestamp())
 }
@@ -328,6 +344,9 @@ pub async fn discord_payload(db: &PgPool, settings: &NotificationSettings, event
     if let Some(url) = url {
         embed["url"] = json!(url);
     }
+    if let Some(image) = image(settings, &image_path(event)) {
+        embed["image"] = json!({ "url": image });
+    }
 
     Ok(json!({ "username": site, "embeds": [embed] }))
 }
@@ -344,6 +363,9 @@ pub async fn test_payload(db: &PgPool, settings: &NotificationSettings) -> Value
     });
     if let Some(url) = link(settings, "/") {
         embed["url"] = json!(url);
+    }
+    if let Some(image) = image(settings, "/og/status") {
+        embed["image"] = json!({ "url": image });
     }
     json!({ "username": site, "embeds": [embed] })
 }

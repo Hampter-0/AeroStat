@@ -50,9 +50,9 @@ export function ogCard({
   if (headline.length > 70) {
     headlineSize = 42
   }
-  let footer = siteName + ' · Powered by AeroStat'
+  let footerPrefix = siteName + ' · Powered by'
   if (siteName === 'AeroStat') {
-    footer = 'Powered by AeroStat'
+    footerPrefix = 'Powered by'
   }
   let shortHeadline = headline
   if (headline.length > 110) {
@@ -115,7 +115,11 @@ export function ogCard({
             color: '#94a3b8',
           }}
         >
-          {footer}
+          <span>{footerPrefix}</span>
+          <svg width="24" height="24" viewBox="0 0 36 36" style={{ marginLeft: 10, marginRight: 6 }}>
+            <path d="M18 3 L32 31 H23 L18 21 L13 31 H4 Z M18 12 L13 24 H23 Z" fill="#56c7e4" fillRule="evenodd" />
+          </svg>
+          <span style={{ color: '#64748b' }}>AeroStat</span>
         </div>
       </div>
     ),

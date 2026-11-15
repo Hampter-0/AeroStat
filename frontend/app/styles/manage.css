@@ -222,7 +222,7 @@
     font-weight: 500;
 }
 
-.manage-form input:not([type="checkbox"]) {
+.manage-form input:not([type="checkbox"]):not([type="radio"]) {
     height: 36px;
     padding: 0 10px;
     border: 1px solid var(--border);
@@ -232,7 +232,7 @@
     font-size: 12px;
 }
 
-.manage-form input:not([type="checkbox"]):focus {
+.manage-form input:not([type="checkbox"]):not([type="radio"]):focus {
     border-color: var(--link);
     outline: 2px solid var(--info-bg);
 }
