@@ -7,12 +7,22 @@ use crate::services::checker::{check_service, CheckableService};
 
 const TICK: Duration = Duration::from_secs(5);
 
+/// Sent with every check. Firewalls such as Cloudflare often refuse requests
+/// without a user agent, which would show a healthy site as down.
+const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
+
 /// One loop for all services: every tick it claims the services whose
 /// `next_check_at` has passed and checks them. Services added, edited or
 /// deleted in the panel are picked up on the next tick, no restart needed.
 pub fn spawn_all(pool: PgPool) {
     tokio::spawn(async move {
-        let client = reqwest::Client::new();
+        let client = match reqwest::Client::builder().user_agent(USER_AGENT).build() {
+            Ok(client) => client,
+            Err(e) => {
+                tracing::error!("Could not set up the HTTP client, checks are not running: {e}");
+                return;
+            }
+        };
         loop {
             match claim_due(&pool).await {
                 Ok(services) => {
