@@ -11,9 +11,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: config.siteName, template: '%s · ' + config.siteName },
     description: 'Status page',
   }
+  let favicon = '/brand/logo.svg'
   if (config.faviconUrl) {
-    metadata.icons = { icon: config.faviconUrl }
+    favicon = config.faviconUrl
   }
+  metadata.icons = { icon: favicon }
   return metadata
 }
 
