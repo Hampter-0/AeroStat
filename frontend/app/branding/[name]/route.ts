@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 const ASSETS = ['logo', 'favicon']
 
-export async function GET(request: Request, { params }: { params: Promise<{ name: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params
   if (!ASSETS.includes(name)) {
     return new NextResponse(null, { status: 404 })
@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ name
 
   if (!upstream || !upstream.ok) {
     if (name === 'logo') {
-      return NextResponse.redirect(new URL('/brand/logo.svg', request.url), 307)
+      return new NextResponse(null, { status: 307, headers: { location: '/brand/logo.svg' } })
     }
     return new NextResponse(null, { status: 404 })
   }

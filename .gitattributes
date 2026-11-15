@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# sqlx checksums the exact bytes, so migrations must be LF everywhere
+backend/migrations/*.sql text eol=lf

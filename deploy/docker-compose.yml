@@ -1,0 +1,66 @@
+name: aerostat
+
+services:
+  frontend:
+    image: hampternom/aerostat-frontend:${AEROSTAT_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${AEROSTAT_BIND:-0.0.0.0}:${AEROSTAT_PORT:-3000}:3000"
+    environment:
+      API_URL: http://backend:3004
+      SITE_NAME: ${SITE_NAME:-AeroStat}
+      CONTACT_URL: ${CONTACT_URL:-}
+      PRIMARY_COLOR: ${PRIMARY_COLOR:-#1678c2}
+      NEXT_SERVER_ACTIONS_ENCRYPTION_KEY: ${NEXT_SERVER_ACTIONS_ENCRYPTION_KEY:?Set NEXT_SERVER_ACTIONS_ENCRYPTION_KEY in .env (openssl rand -base64 32)}
+
+  backend:
+    image: hampternom/aerostat-backend:${AEROSTAT_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+        required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      REDIS_URL: redis://redis:6379
+      METRICS_RETENTION_DAYS: ${METRICS_RETENTION_DAYS:-60}
+      SESSION_DAYS: ${SESSION_DAYS:-30}
+      LOGIN_MAX_FAILURES_PER_IP: ${LOGIN_MAX_FAILURES_PER_IP:-10}
+      LOGIN_MAX_FAILURES_PER_ACCOUNT: ${LOGIN_MAX_FAILURES_PER_ACCOUNT:-30}
+      LOGIN_LOCKOUT_MINUTES: ${LOGIN_LOCKOUT_MINUTES:-15}
+      RUST_LOG: ${RUST_LOG:-info}
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    profiles: ["postgres"]
+    environment:
+      POSTGRES_USER: ${DB_USER:-aerostat}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me}
+      POSTGRES_DB: ${DB_NAME:-aerostat}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

@@ -14,7 +14,7 @@ pub const BANNER: &str = r#"
 "#;
 
 #[derive(Parser)]
-#[command(name = "statuspage-backend", version, about, long_about = None)]
+#[command(name = "aerostat", version, about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Option<Commands>,

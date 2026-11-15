@@ -67,3 +67,53 @@ CREATE TABLE maintenance_updates (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX idx_maintenance_updates_maintenance ON maintenance_updates (maintenance_id, created_at DESC);
+
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    is_admin BOOLEAN NOT NULL DEFAULT false,
+    permissions TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    email TEXT,
+    avatar BYTEA,
+    avatar_type TEXT,
+    avatar_updated_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX idx_users_email ON users (lower(email)) WHERE email IS NOT NULL;
+
+CREATE TABLE sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_sessions_user ON sessions (user_id);
+
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE brand_assets (
+    name TEXT PRIMARY KEY,
+    content_type TEXT NOT NULL,
+    data BYTEA NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE activity_log (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    username TEXT NOT NULL,
+    category TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_id TEXT,
+    target_label TEXT,
+    ip TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    details JSONB
+);
+CREATE INDEX idx_activity_log_category ON activity_log (category, id DESC);
+CREATE INDEX idx_activity_log_created_at ON activity_log (created_at);
