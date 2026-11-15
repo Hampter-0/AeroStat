@@ -9,13 +9,20 @@ export const metadata = {
   title: 'New incident',
 }
 
-export default async function NewIncidentPage() {
+export default async function NewIncidentPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const user = await requireUser()
   if (!can(user, 'incidents')) {
     redirect('/manage')
   }
 
   const services = await getStatus()
+  const { service } = await searchParams
+  const preselected: string[] = []
+  for (const candidate of services) {
+    if (candidate.id === service) {
+      preselected.push(candidate.id)
+    }
+  }
 
   return (
     <div className="manage-page">
@@ -27,7 +34,7 @@ export default async function NewIncidentPage() {
         <p>It shows up on the status page as soon as you create it.</p>
       </header>
       <section className="manage-panel">
-        <IncidentForm services={services} incident={null} />
+        <IncidentForm services={services} incident={null} preselected={preselected} />
       </section>
     </div>
   )

@@ -1,3 +1,4 @@
+mod dashboard;
 mod incidents;
 mod maintenance;
 mod services;
@@ -17,6 +18,7 @@ pub fn router() -> Router<AppState> {
         .route("/login", post(session::login))
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
+        .route("/dashboard", get(dashboard::get))
         .route("/users", get(users::list).post(users::create))
         .route("/users/:id", patch(users::update).delete(users::delete))
         .route("/incidents", post(incidents::create))

@@ -20,9 +20,11 @@ interface ExistingIncident {
 export default function IncidentForm({
   services,
   incident,
+  preselected = [],
 }: {
   services: PickerService[]
   incident: ExistingIncident | null
+  preselected?: string[]
 }) {
   let action = createIncident
   if (incident) {
@@ -33,7 +35,7 @@ export default function IncidentForm({
   let title = ''
   let description = ''
   let severity = 'minor'
-  let selected: string[] = []
+  let selected: string[] = preselected
   if (incident) {
     title = incident.title
     if (incident.description) {

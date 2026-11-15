@@ -5,7 +5,7 @@ import AddGroupForm from '@/components/manage/services/AddGroupForm'
 import CheckNowButton from '@/components/manage/services/CheckNowButton'
 import GroupHeader from '@/components/manage/services/GroupHeader'
 import MoveButtons from '@/components/manage/services/MoveButtons'
-import { getStatus } from '@/lib/api'
+import { getStatus, getUptime } from '@/lib/api'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { intervalLabel, type ManageService, type ManageServicesResponse } from '@/lib/services'
 import { moveService } from './actions'
@@ -14,7 +14,21 @@ export const metadata = {
   title: 'Services',
 }
 
-function ServiceRows({ services, liveStatus }: { services: ManageService[]; liveStatus: Map<string, string | null> }) {
+interface ServiceStats {
+  uptime: number
+  avgMs: number
+  checks: number
+}
+
+function ServiceRows({
+  services,
+  liveStatus,
+  stats,
+}: {
+  services: ManageService[]
+  liveStatus: Map<string, string | null>
+  stats: Map<string, ServiceStats>
+}) {
   if (services.length === 0) {
     return <p className="manage-empty">No services in this group yet.</p>
   }
@@ -47,6 +61,7 @@ function ServiceRows({ services, liveStatus }: { services: ManageService[]; live
                 {service.url} · {intervalLabel(service.check_interval_seconds).toLowerCase()}
               </span>
             </Link>
+            <ServiceStatsCell stats={stats.get(service.id)} />
             <MoveButtons
               id={service.id}
               label={service.name}
@@ -57,6 +72,26 @@ function ServiceRows({ services, liveStatus }: { services: ManageService[]; live
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function ServiceStatsCell({ stats }: { stats: ServiceStats | undefined }) {
+  if (!stats || stats.checks === 0) {
+    return (
+      <div className="service-stats">
+        <span>No data yet</span>
+      </div>
+    )
+  }
+  return (
+    <div className="service-stats" title="Last 60 days">
+      <span>
+        <b>{stats.uptime}%</b> uptime
+      </span>
+      <span>
+        <b>{stats.avgMs} ms</b> avg
+      </span>
     </div>
   )
 }
@@ -73,6 +108,24 @@ export default async function ManageServicesPage() {
   const liveStatus = new Map<string, string | null>()
   for (const service of status) {
     liveStatus.set(service.id, service.status)
+  }
+
+  const stats = new Map<string, ServiceStats>()
+  const uptimes = await Promise.all(
+    data.services.map(function (service) {
+      return getUptime(service.id).catch(function () {
+        return null
+      })
+    })
+  )
+  for (const uptime of uptimes) {
+    if (uptime) {
+      stats.set(uptime.service_id, {
+        uptime: uptime.uptime_percent,
+        avgMs: uptime.avg_response_time_ms,
+        checks: uptime.total_checks,
+      })
+    }
   }
 
   const servicesByGroup = new Map<string, ManageService[]>()
@@ -117,7 +170,7 @@ export default async function ManageServicesPage() {
               isFirst={index === 0}
               isLast={index === data.groups.length - 1}
             />
-            <ServiceRows services={services} liveStatus={liveStatus} />
+            <ServiceRows services={services} liveStatus={liveStatus} stats={stats} />
             <Link href={'/manage/services/new?group=' + encodeURIComponent(group.id)} className="link-button add-to-group">
               + Add service to {group.name}
             </Link>
@@ -130,7 +183,7 @@ export default async function ManageServicesPage() {
           <div className="group-header">
             <h2>Other</h2>
           </div>
-          <ServiceRows services={ungrouped} liveStatus={liveStatus} />
+          <ServiceRows services={ungrouped} liveStatus={liveStatus} stats={stats} />
         </section>
       )}
 

@@ -99,3 +99,31 @@ export function inputValueToIso(value: string, timezone: string): string {
   const second = guess - offsetMs(new Date(first), timezone)
   return new Date(second).toISOString()
 }
+
+export function formatDuration(ms: number): string {
+  const minutes = Math.max(0, Math.round(ms / 60000))
+  if (minutes < 1) {
+    return 'less than a minute'
+  }
+  if (minutes < 60) {
+    return minutes + 'm'
+  }
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) {
+    const rest = minutes % 60
+    if (rest === 0) {
+      return hours + 'h'
+    }
+    return hours + 'h ' + rest + 'm'
+  }
+  const days = Math.floor(hours / 24)
+  const restHours = hours % 24
+  if (restHours === 0) {
+    return days + 'd'
+  }
+  return days + 'd ' + restHours + 'h'
+}
+
+export function currentTimeMs(): number {
+  return Date.now()
+}
