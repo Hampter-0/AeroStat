@@ -2106,17 +2106,13 @@ a.page-button:hover {
 }
 
 .version-update {
-    padding: 1px 7px;
-    border: 1px solid var(--info-border);
-    border-radius: 20px;
-    color: var(--info);
-    background: var(--info-bg);
-    font-size: 10px;
+    color: var(--link);
+    font-size: 11px;
     text-decoration: none;
 }
 
 .version-update:hover {
-    filter: brightness(1.1);
+    text-decoration: underline;
 }
 
 .update-notice {
@@ -2173,4 +2169,145 @@ a.page-button:hover {
     .manage-version {
         display: none;
     }
+}
+
+.update-check {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+}
+
+.update-check-info {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.update-check-info strong {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.update-check-info span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.update-check-info a {
+    color: var(--link);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.update-check-info a:hover {
+    text-decoration: underline;
+}
+
+.update-check .form-error {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.info-tile,
+.health-tile {
+    min-width: 0;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+}
+
+.info-tile-icon {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: #fff;
+    background: var(--blue);
+}
+
+.info-tile > div,
+.health-tile > div {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+}
+
+.info-tile > div > span,
+.health-tile > div > span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.info-tile strong,
+.health-tile strong {
+    color: var(--text);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.info-tile small,
+.health-tile small {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.health-tile-icon {
+    width: 26px;
+    height: 26px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+}
+
+.health-tile.ok .health-tile-icon {
+    background: var(--green);
+}
+
+.health-tile.warn {
+    border-color: var(--warning-border);
+}
+
+.health-tile.warn .health-tile-icon {
+    background: var(--amber);
+}
+
+.count-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+.history-table code {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.history-table .chip {
+    margin-left: 8px;
+}
+
+.history-table .history-link {
+    text-align: right;
+}
+
+.history-table .link-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
 }

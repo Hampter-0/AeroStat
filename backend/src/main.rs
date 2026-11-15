@@ -11,6 +11,7 @@ mod routes;
 mod services;
 mod site_settings;
 mod state;
+mod system_info;
 
 use clap::Parser;
 use cli::Commands;
@@ -71,6 +72,12 @@ async fn main() -> anyhow::Result<()> {
     db::migrate(&pool).await?;
     tracing::info!("Connected to Postgres and ran migrations");
 
+    // Remembers when this install first ran each version, for the System page.
+    sqlx::query("INSERT INTO version_history (version) VALUES ($1) ON CONFLICT (version) DO NOTHING")
+        .bind(services::update_checker::CURRENT_VERSION)
+        .execute(&pool)
+        .await?;
+
     services::spawn_all(pool.clone());
     tracing::info!("Service checker started");
 
@@ -80,9 +87,9 @@ async fn main() -> anyhow::Result<()> {
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
 
-    let latest_release = services::update_checker::LatestReleaseCache::default();
+    let update_state = services::update_checker::UpdateCache::default();
     if settings.update_check {
-        services::update_checker::spawn(latest_release.clone());
+        services::update_checker::spawn(update_state.clone());
         tracing::info!("Update check scheduled");
     }
 
@@ -93,7 +100,8 @@ async fn main() -> anyhow::Result<()> {
         login_limits: settings.login_limits,
         session_days: settings.session_days,
         update_check: settings.update_check,
-        latest_release,
+        update_state,
+        started_at: chrono::Utc::now(),
     };
 
     // No CORS layer: browsers never call the backend directly, only the

@@ -6,6 +6,7 @@ mod profile;
 mod services;
 mod session;
 mod settings;
+mod system;
 mod users;
 mod version;
 
@@ -22,6 +23,8 @@ pub fn router() -> Router<AppState> {
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
         .route("/version", get(version::get))
+        .route("/version/check", post(version::check))
+        .route("/system", get(system::get))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
         .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))

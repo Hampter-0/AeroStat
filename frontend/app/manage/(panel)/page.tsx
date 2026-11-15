@@ -142,6 +142,9 @@ export default async function ManageOverviewPage() {
                 What&apos;s new <ExternalLink />
               </a>
             )}
+            <Link href="/manage/system?tab=updates" className="link-button">
+              Version history
+            </Link>
             <CopyButton text={UPDATE_COMMAND} label="Copy update command" />
           </div>
         </section>

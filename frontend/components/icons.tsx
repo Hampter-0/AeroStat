@@ -263,3 +263,85 @@ export function Search() {
     </svg>
   )
 }
+
+function SystemIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {children}
+    </svg>
+  )
+}
+
+export function Cpu() {
+  return (
+    <SystemIcon>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <rect x="9.5" y="9.5" width="5" height="5" rx="1" />
+      <path d="M9 2.5v3.5M15 2.5v3.5M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5" />
+    </SystemIcon>
+  )
+}
+
+export function MemoryChip() {
+  return (
+    <SystemIcon>
+      <rect x="2.5" y="7" width="19" height="10" rx="1.5" />
+      <path d="M6.5 10.5v3M10 10.5v3M14 10.5v3M17.5 10.5v3M6 17v2.5M18 17v2.5" />
+    </SystemIcon>
+  )
+}
+
+export function Database() {
+  return (
+    <SystemIcon>
+      <ellipse cx="12" cy="5.5" rx="7.5" ry="3" />
+      <path d="M4.5 5.5v13c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3v-13M4.5 12c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3" />
+    </SystemIcon>
+  )
+}
+
+export function Layers() {
+  return (
+    <SystemIcon>
+      <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+      <path d="m3 13 9 5 9-5" />
+    </SystemIcon>
+  )
+}
+
+export function Package() {
+  return (
+    <SystemIcon>
+      <path d="m12 2.5 8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5L12 2.5Z" />
+      <path d="m3.5 7.25 8.5 4.75 8.5-4.75M12 12v9.5" />
+    </SystemIcon>
+  )
+}
+
+export function Terminal() {
+  return (
+    <SystemIcon>
+      <rect x="2.5" y="4" width="19" height="16" rx="2" />
+      <path d="m7 9.5 3 2.5-3 2.5M12.5 15h4.5" />
+    </SystemIcon>
+  )
+}
+
+export function Clock() {
+  return (
+    <SystemIcon>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </SystemIcon>
+  )
+}
+
+export function Gauge() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4.5 18a9 9 0 1 1 15 0" />
+      <path d="m12 13 4-4" />
+      <circle cx="12" cy="13.5" r="1.2" />
+    </svg>
+  )
+}

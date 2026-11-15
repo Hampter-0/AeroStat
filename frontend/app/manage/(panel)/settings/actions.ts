@@ -88,3 +88,13 @@ export async function removeAsset(_state: FormState, formData: FormData): Promis
   refreshEverything()
   return { error: null, success: 'Removed' }
 }
+
+export async function checkForUpdates(): Promise<FormState> {
+  try {
+    await manageFetch('/version/check', { method: 'POST' })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  revalidatePath('/manage', 'layout')
+  return { error: null, success: null }
+}

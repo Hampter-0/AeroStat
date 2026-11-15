@@ -1,11 +1,15 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use tokio::sync::RwLock;
 
 const REPOSITORY: &str = "Hampter-0/AeroStat";
 const INTERVAL: Duration = Duration::from_secs(6 * 60 * 60);
+/// A manual check within this many seconds of the last one reuses its result,
+/// so clicking the button can't run into GitHub's rate limit.
+const MIN_SECONDS_BETWEEN_CHECKS: i64 = 30;
 const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
 
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -16,8 +20,23 @@ pub struct LatestRelease {
     pub url: String,
 }
 
-/// The newest release found on GitHub, or None until a check succeeds.
-pub type LatestReleaseCache = Arc<RwLock<Option<LatestRelease>>>;
+#[derive(Clone, Debug)]
+pub struct ReleaseInfo {
+    pub version: String,
+    pub url: String,
+    pub published_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct UpdateState {
+    pub latest: Option<LatestRelease>,
+    /// Newest first, drafts and prereleases left out.
+    pub releases: Vec<ReleaseInfo>,
+    pub checked_at: Option<DateTime<Utc>>,
+    pub error: Option<String>,
+}
+
+pub type UpdateCache = Arc<RwLock<UpdateState>>;
 
 #[derive(Deserialize)]
 struct GithubRelease {
@@ -25,52 +44,81 @@ struct GithubRelease {
     html_url: String,
     draft: bool,
     prerelease: bool,
+    published_at: Option<DateTime<Utc>>,
 }
 
 /// Asks GitHub for the latest release every few hours. Only the release
 /// version is read; nothing about this installation is sent.
-pub fn spawn(cache: LatestReleaseCache) {
+pub fn spawn(cache: UpdateCache) {
     tokio::spawn(async move {
-        let client = match reqwest::Client::builder()
-            .user_agent(USER_AGENT)
-            .timeout(Duration::from_secs(15))
-            .build()
-        {
-            Ok(client) => client,
-            Err(e) => {
-                tracing::warn!("Update check disabled, could not set up the HTTP client: {e}");
-                return;
-            }
-        };
-
         loop {
-            match fetch_latest(&client).await {
-                Ok(Some(release)) => *cache.write().await = Some(release),
-                Ok(None) => {}
-                Err(e) => tracing::warn!("Update check failed: {e}"),
-            }
+            check(&cache).await;
             tokio::time::sleep(INTERVAL).await;
         }
     });
 }
 
-async fn fetch_latest(client: &reqwest::Client) -> anyhow::Result<Option<LatestRelease>> {
+/// Checks now, unless the last check was less than half a minute ago.
+pub async fn check_now(cache: &UpdateCache) {
+    let recent = cache
+        .read()
+        .await
+        .checked_at
+        .map(|at| (Utc::now() - at).num_seconds() < MIN_SECONDS_BETWEEN_CHECKS)
+        .unwrap_or(false);
+    if !recent {
+        check(cache).await;
+    }
+}
+
+async fn check(cache: &UpdateCache) {
+    let result = fetch_releases().await;
+    let mut state = cache.write().await;
+    state.checked_at = Some(Utc::now());
+    match result {
+        Ok(releases) => {
+            state.error = None;
+            // The highest version, not the most recently published one, in
+            // case an older line gets a patch release later.
+            let newest = releases.iter().fold(None::<&ReleaseInfo>, |best, release| match best {
+                Some(best) if !is_newer(&release.version, &best.version) => Some(best),
+                _ => Some(release),
+            });
+            if let Some(newest) = newest {
+                state.latest = Some(LatestRelease {
+                    version: newest.version.clone(),
+                    url: newest.url.clone(),
+                });
+            }
+            state.releases = releases;
+        }
+        Err(e) => {
+            tracing::warn!("Update check failed: {e}");
+            state.error = Some("Could not reach GitHub".to_string());
+        }
+    }
+}
+
+async fn fetch_releases() -> anyhow::Result<Vec<ReleaseInfo>> {
+    let client = reqwest::Client::builder()
+        .user_agent(USER_AGENT)
+        .timeout(Duration::from_secs(15))
+        .build()?;
     let response = client
-        .get(format!("https://api.github.com/repos/{REPOSITORY}/releases/latest"))
+        .get(format!("https://api.github.com/repos/{REPOSITORY}/releases?per_page=15"))
         .header("accept", "application/vnd.github+json")
         .send()
         .await?;
-    if response.status() == reqwest::StatusCode::NOT_FOUND {
-        return Ok(None);
-    }
-    let release: GithubRelease = response.error_for_status()?.json().await?;
-    if release.draft || release.prerelease {
-        return Ok(None);
-    }
-    Ok(Some(LatestRelease {
-        version: release.tag_name.trim_start_matches('v').to_string(),
-        url: release.html_url,
-    }))
+    let releases: Vec<GithubRelease> = response.error_for_status()?.json().await?;
+    Ok(releases
+        .into_iter()
+        .filter(|release| !release.draft && !release.prerelease)
+        .map(|release| ReleaseInfo {
+            version: release.tag_name.trim_start_matches('v').to_string(),
+            url: release.html_url,
+            published_at: release.published_at,
+        })
+        .collect())
 }
 
 fn parse_version(text: &str) -> Option<(u64, u64, u64)> {

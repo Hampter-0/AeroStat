@@ -6,6 +6,8 @@ export interface VersionInfo {
   update_available: boolean
   release_url: string | null
   update_check: boolean
+  checked_at: string | null
+  check_error: string | null
 }
 
 export const UPDATE_COMMAND = 'docker compose pull && docker compose up -d'

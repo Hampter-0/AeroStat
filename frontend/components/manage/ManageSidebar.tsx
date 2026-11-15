@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import Avatar from '@/components/manage/Avatar'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { Activity, AlertTriangle, ExternalLink, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
+import { Activity, AlertTriangle, ExternalLink, Gauge, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
 import type { VersionInfo } from '@/lib/version'
@@ -44,6 +44,7 @@ export default function ManageSidebar({
   if (user.is_admin) {
     items.push({ href: '/manage/users', label: 'Users', icon: <Users /> })
     items.push({ href: '/manage/activity', label: 'Activity', icon: <Activity /> })
+    items.push({ href: '/manage/system', label: 'System', icon: <Gauge /> })
   }
 
   function linkClass(href: string) {
@@ -86,10 +87,10 @@ export default function ManageSidebar({
       {version && (
         <div className="manage-version">
           <span>AeroStat v{version.current}</span>
-          {user.is_admin && version.update_available && version.release_url && (
-            <a href={version.release_url} target="_blank" rel="noreferrer" className="version-update" title={'v' + version.latest + ' is available'}>
-              Update
-            </a>
+          {user.is_admin && version.update_available && (
+            <Link href="/manage/system?tab=updates" className="version-update" title={'v' + version.latest + ' is available'}>
+              Update available
+            </Link>
           )}
         </div>
       )}
