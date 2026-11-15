@@ -3,6 +3,8 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { checkForUpdates } from '@/app/manage/(panel)/settings/actions'
+import CopyButton from '@/components/manage/CopyButton'
+import { UPDATE_COMMAND } from '@/lib/update-command'
 import type { VersionInfo } from '@/lib/version'
 
 const initialState: FormState = { error: null, success: null }
@@ -38,9 +40,12 @@ export default function UpdateCheck({ version, checkedText }: { version: Version
           </a>
         )}
       </div>
-      <button type="submit" className="button-secondary" disabled={pending}>
-        {buttonText}
-      </button>
+      <div className="update-check-actions">
+        {version.update_available && <CopyButton text={UPDATE_COMMAND} label="Copy update command" />}
+        <button type="submit" className="button-secondary" disabled={pending}>
+          {buttonText}
+        </button>
+      </div>
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
     </form>
   )

@@ -10,7 +10,7 @@ export interface VersionInfo {
   check_error: string | null
 }
 
-export const UPDATE_COMMAND = 'docker compose pull && docker compose up -d'
+export { UPDATE_COMMAND } from './update-command'
 
 export async function getVersionInfo(): Promise<VersionInfo | null> {
   try {

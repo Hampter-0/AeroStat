@@ -2205,6 +2205,12 @@ a.page-button:hover {
     text-decoration: underline;
 }
 
+.update-check-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 .update-check .form-error {
     flex-basis: 100%;
     margin: 0;
