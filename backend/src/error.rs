@@ -10,6 +10,7 @@ pub enum ApiError {
     Forbidden,
     NotFound,
     Conflict(String),
+    TooManyRequests(String),
     Internal(anyhow::Error),
 }
 
@@ -21,6 +22,7 @@ impl IntoResponse for ApiError {
             ApiError::Forbidden => (StatusCode::FORBIDDEN, "You don't have permission to do this".to_string()),
             ApiError::NotFound => (StatusCode::NOT_FOUND, "Not found".to_string()),
             ApiError::Conflict(message) => (StatusCode::CONFLICT, message),
+            ApiError::TooManyRequests(message) => (StatusCode::TOO_MANY_REQUESTS, message),
             ApiError::Internal(error) => {
                 tracing::error!("Internal error: {error:#}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong".to_string())

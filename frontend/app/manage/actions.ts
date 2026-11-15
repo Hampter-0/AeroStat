@@ -24,10 +24,26 @@ export async function login(_state: FormState, formData: FormData): Promise<Form
   const username = String(formData.get('username') || '')
   const password = String(formData.get('password') || '')
 
+  const headerStore = await headers()
+  const loginHeaders = new Headers()
+  const forwarded = headerStore.get('x-forwarded-for')
+  if (forwarded) {
+    let clientIp = forwarded.split(',')[0].trim()
+    if (clientIp.startsWith('::ffff:')) {
+      clientIp = clientIp.slice(7)
+    }
+    loginHeaders.set('x-forwarded-for', clientIp)
+  }
+  const userAgent = headerStore.get('user-agent')
+  if (userAgent) {
+    loginHeaders.set('user-agent', userAgent)
+  }
+
   let session: LoginResponse
   try {
     session = await manageFetch<LoginResponse>('/login', {
       method: 'POST',
+      headers: loginHeaders,
       body: JSON.stringify({ username: username, password: password }),
     })
   } catch (error) {

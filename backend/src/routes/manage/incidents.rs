@@ -2,8 +2,10 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use serde::Deserialize;
+use serde_json::{json, Value};
 use sqlx::PgPool;
 
+use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::models::{Incident, StatusUpdate};
@@ -87,6 +89,14 @@ async fn check_services(db: &PgPool, ids: &[String]) -> Result<(), ApiError> {
     Ok(())
 }
 
+async fn log(state: &AppState, user: &CurrentUser, action: &str, id: Option<i64>, title: &str, details: Option<Value>) {
+    activity::record(&state.db, user, PERMISSION, action, id.map(|id| id.to_string()), title, details).await;
+}
+
+async fn snapshot(state: &AppState, table: &str, id: i64) -> Option<Value> {
+    activity::snapshot(&state.db, table, &id.to_string()).await
+}
+
 async fn find_incident(db: &PgPool, id: i64) -> Result<Incident, ApiError> {
     let incident: Option<Incident> = sqlx::query_as("SELECT * FROM incidents WHERE id = $1")
         .bind(id)
@@ -155,6 +165,8 @@ pub async fn create(
     tx.commit().await?;
 
     sync_status(&state.db, id).await?;
+    let details = activity::created(snapshot(&state, "incidents", id).await);
+    log(&state, &user, "created incident", Some(id), &title, details).await;
     Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)))
 }
 
@@ -166,6 +178,7 @@ pub async fn update(
 ) -> Result<Json<Incident>, ApiError> {
     user.require(PERMISSION)?;
     find_incident(&state.db, id).await?;
+    let before = snapshot(&state, "incidents", id).await;
     let title = clean_title(&body.title)?;
     check_severity(&body.severity)?;
     check_services(&state.db, &body.affected_services).await?;
@@ -181,6 +194,8 @@ pub async fn update(
     .execute(&state.db)
     .await?;
 
+    let details = activity::changes(before, snapshot(&state, "incidents", id).await);
+    log(&state, &user, "edited incident", Some(id), &title, details).await;
     Ok(Json(find_incident(&state.db, id).await?))
 }
 
@@ -190,11 +205,13 @@ pub async fn delete(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    find_incident(&state.db, id).await?;
+    let incident = find_incident(&state.db, id).await?;
+    let before = snapshot(&state, "incidents", id).await;
     sqlx::query("DELETE FROM incidents WHERE id = $1")
         .bind(id)
         .execute(&state.db)
         .await?;
+    log(&state, &user, "deleted incident", None, &incident.title, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -205,7 +222,7 @@ pub async fn add_update(
     Json(body): Json<UpdateBody>,
 ) -> Result<(StatusCode, Json<StatusUpdate>), ApiError> {
     user.require(PERMISSION)?;
-    find_incident(&state.db, id).await?;
+    let incident = find_incident(&state.db, id).await?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
 
@@ -223,6 +240,13 @@ pub async fn add_update(
     .await?;
 
     sync_status(&state.db, id).await?;
+    let action = if body.status == "resolved" {
+        "resolved incident"
+    } else {
+        "posted an update on incident"
+    };
+    let details = Some(json!({ "update": created }));
+    log(&state, &user, action, Some(id), &incident.title, details).await;
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -235,6 +259,7 @@ pub async fn edit_update(
     user.require(PERMISSION)?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
+    let before = snapshot(&state, "incident_updates", update_id).await;
 
     let edited: Option<StatusUpdate> = sqlx::query_as(
         r#"
@@ -252,6 +277,9 @@ pub async fn edit_update(
     let edited = edited.ok_or(ApiError::NotFound)?;
 
     sync_status(&state.db, id).await?;
+    let incident = find_incident(&state.db, id).await?;
+    let details = activity::changes(before, snapshot(&state, "incident_updates", update_id).await);
+    log(&state, &user, "edited an update on incident", Some(id), &incident.title, details).await;
     Ok(Json(edited))
 }
 
@@ -272,6 +300,7 @@ pub async fn delete_update(
         ));
     }
 
+    let before = snapshot(&state, "incident_updates", update_id).await;
     let deleted = sqlx::query("DELETE FROM incident_updates WHERE id = $1 AND incident_id = $2")
         .bind(update_id)
         .bind(id)
@@ -283,5 +312,7 @@ pub async fn delete_update(
     }
 
     sync_status(&state.db, id).await?;
+    let incident = find_incident(&state.db, id).await?;
+    log(&state, &user, "deleted an update on incident", Some(id), &incident.title, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }

@@ -3,8 +3,10 @@ use axum::http::StatusCode;
 use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
+use serde_json::{json, Value};
 use sqlx::PgPool;
 
+use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::models::StatusUpdate;
@@ -93,12 +95,20 @@ async fn check_services(db: &PgPool, ids: &[String]) -> Result<(), ApiError> {
     Ok(())
 }
 
-async fn ensure_exists(db: &PgPool, id: i64) -> Result<(), ApiError> {
-    let found: Option<(i64,)> = sqlx::query_as("SELECT id FROM maintenance WHERE id = $1")
+async fn find_title(db: &PgPool, id: i64) -> Result<String, ApiError> {
+    let found: Option<(String,)> = sqlx::query_as("SELECT title FROM maintenance WHERE id = $1")
         .bind(id)
         .fetch_optional(db)
         .await?;
-    found.map(|_| ()).ok_or(ApiError::NotFound)
+    found.map(|(title,)| title).ok_or(ApiError::NotFound)
+}
+
+async fn log(state: &AppState, user: &CurrentUser, action: &str, id: Option<i64>, title: &str, details: Option<Value>) {
+    activity::record(&state.db, user, PERMISSION, action, id.map(|id| id.to_string()), title, details).await;
+}
+
+async fn snapshot(state: &AppState, table: &str, id: i64) -> Option<Value> {
+    activity::snapshot(&state.db, table, &id.to_string()).await
 }
 
 pub async fn create(
@@ -135,6 +145,8 @@ pub async fn create(
         .await?;
     tx.commit().await?;
 
+    let details = activity::created(snapshot(&state, "maintenance", id).await);
+    log(&state, &user, "scheduled maintenance", Some(id), &title, details).await;
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
 
@@ -145,7 +157,8 @@ pub async fn update(
     Json(body): Json<MaintenanceBody>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    ensure_exists(&state.db, id).await?;
+    find_title(&state.db, id).await?;
+    let before = snapshot(&state, "maintenance", id).await;
     let title = clean_title(&body.title)?;
     check_window(body.scheduled_start, body.scheduled_end)?;
     check_services(&state.db, &body.affected_services).await?;
@@ -166,6 +179,8 @@ pub async fn update(
     .execute(&state.db)
     .await?;
 
+    let details = activity::changes(before, snapshot(&state, "maintenance", id).await);
+    log(&state, &user, "edited maintenance", Some(id), &title, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -176,8 +191,9 @@ pub async fn cancel(
     Json(body): Json<CancelBody>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    ensure_exists(&state.db, id).await?;
+    let title = find_title(&state.db, id).await?;
     let message = clean_optional(body.message).unwrap_or_else(|| DEFAULT_CANCELLED_MESSAGE.to_string());
+    let before = snapshot(&state, "maintenance", id).await;
 
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE maintenance SET status = 'cancelled' WHERE id = $1")
@@ -191,6 +207,9 @@ pub async fn cancel(
         .await?;
     tx.commit().await?;
 
+    let mut details = activity::changes(before, snapshot(&state, "maintenance", id).await).unwrap_or_else(|| json!({}));
+    details["message"] = json!(message);
+    log(&state, &user, "cancelled maintenance", Some(id), &title, Some(details)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -202,7 +221,8 @@ pub async fn reactivate(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    ensure_exists(&state.db, id).await?;
+    let title = find_title(&state.db, id).await?;
+    let before = snapshot(&state, "maintenance", id).await;
 
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE maintenance SET status = 'scheduled' WHERE id = $1")
@@ -228,6 +248,8 @@ pub async fn reactivate(
     .await?;
     tx.commit().await?;
 
+    let details = activity::changes(before, snapshot(&state, "maintenance", id).await);
+    log(&state, &user, "reactivated maintenance", Some(id), &title, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -237,11 +259,13 @@ pub async fn delete(
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    ensure_exists(&state.db, id).await?;
+    let title = find_title(&state.db, id).await?;
+    let before = snapshot(&state, "maintenance", id).await;
     sqlx::query("DELETE FROM maintenance WHERE id = $1")
         .bind(id)
         .execute(&state.db)
         .await?;
+    log(&state, &user, "deleted maintenance", None, &title, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -252,7 +276,7 @@ pub async fn add_update(
     Json(body): Json<UpdateBody>,
 ) -> Result<(StatusCode, Json<StatusUpdate>), ApiError> {
     user.require(PERMISSION)?;
-    ensure_exists(&state.db, id).await?;
+    let title = find_title(&state.db, id).await?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
 
@@ -269,6 +293,8 @@ pub async fn add_update(
     .fetch_one(&state.db)
     .await?;
 
+    let details = Some(json!({ "update": created }));
+    log(&state, &user, "posted an update on maintenance", Some(id), &title, details).await;
     Ok((StatusCode::CREATED, Json(created)))
 }
 
@@ -281,6 +307,7 @@ pub async fn edit_update(
     user.require(PERMISSION)?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
+    let before = snapshot(&state, "maintenance_updates", update_id).await;
 
     let edited: Option<StatusUpdate> = sqlx::query_as(
         r#"
@@ -296,7 +323,11 @@ pub async fn edit_update(
     .fetch_optional(&state.db)
     .await?;
 
-    edited.map(Json).ok_or(ApiError::NotFound)
+    let edited = edited.ok_or(ApiError::NotFound)?;
+    let title = find_title(&state.db, id).await?;
+    let details = activity::changes(before, snapshot(&state, "maintenance_updates", update_id).await);
+    log(&state, &user, "edited an update on maintenance", Some(id), &title, details).await;
+    Ok(Json(edited))
 }
 
 pub async fn delete_update(
@@ -305,6 +336,7 @@ pub async fn delete_update(
     Path((id, update_id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
+    let before = snapshot(&state, "maintenance_updates", update_id).await;
     let deleted = sqlx::query("DELETE FROM maintenance_updates WHERE id = $1 AND maintenance_id = $2")
         .bind(update_id)
         .bind(id)
@@ -314,5 +346,7 @@ pub async fn delete_update(
     if deleted == 0 {
         return Err(ApiError::NotFound);
     }
+    let title = find_title(&state.db, id).await?;
+    log(&state, &user, "deleted an update on maintenance", Some(id), &title, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }

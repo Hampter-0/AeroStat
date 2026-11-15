@@ -2,9 +2,10 @@ use std::io::{self, BufRead, Write};
 
 use chrono::{DateTime, Utc};
 use owo_colors::OwoColorize;
+use deadpool_redis::Pool as RedisPool;
 use sqlx::PgPool;
 
-use crate::{db, routes};
+use crate::{db, login_guard, routes};
 
 const ACCENT: (u8, u8, u8) = (0x56, 0xc7, 0xe4);
 
@@ -14,12 +15,13 @@ struct MenuItem {
     description: &'static str,
 }
 
-const MENU: [MenuItem; 6] = [
+const MENU: [MenuItem; 7] = [
     MenuItem { number: "1", name: "help", description: "Show all commands" },
     MenuItem { number: "2", name: "migrate", description: "Run database migrations" },
     MenuItem { number: "3", name: "create-admin", description: "Create an admin account (or reset one)" },
     MenuItem { number: "4", name: "users", description: "List all accounts" },
     MenuItem { number: "5", name: "reset-password", description: "Set a new password for an account" },
+    MenuItem { number: "6", name: "unblock", description: "Lift a sign-in block for an account or IP" },
     MenuItem { number: "0", name: "exit", description: "Leave the CLI" },
 ];
 
@@ -29,6 +31,7 @@ enum Action {
     CreateAdmin,
     Users,
     ResetPassword,
+    Unblock,
     Exit,
 }
 
@@ -39,12 +42,13 @@ fn parse_action(input: &str) -> Option<Action> {
         "3" | "create-admin" => Some(Action::CreateAdmin),
         "4" | "users" => Some(Action::Users),
         "5" | "reset-password" => Some(Action::ResetPassword),
+        "6" | "unblock" => Some(Action::Unblock),
         "0" | "exit" | "quit" | "q" => Some(Action::Exit),
         _ => None,
     }
 }
 
-pub async fn run(pool: &PgPool) -> anyhow::Result<()> {
+pub async fn run(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
     db::migrate(pool).await?;
 
     println!(
@@ -77,7 +81,8 @@ pub async fn run(pool: &PgPool) -> anyhow::Result<()> {
             Action::Migrate => migrate(pool).await,
             Action::CreateAdmin => create_admin(pool).await,
             Action::Users => list_users(pool).await,
-            Action::ResetPassword => reset_password(pool).await,
+            Action::ResetPassword => reset_password(pool, redis).await,
+            Action::Unblock => unblock(pool, redis).await,
             Action::Exit => break,
         };
 
@@ -151,11 +156,26 @@ async fn create_admin(pool: &PgPool) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn reset_password(pool: &PgPool) -> anyhow::Result<()> {
+async fn reset_password(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
     let username = ask("Username or email")?;
     let password = ask_new_password()?;
     routes::manage::reset_password_from_cli(pool, &username, password).await?;
+    // A new password should work right away, even after a lockout.
+    if let Err(e) = login_guard::unblock(pool, redis, &username).await {
+        println!("  {} Could not lift a sign-in block: {e:#}", "!".yellow().bold());
+    }
     success(&format!("Password for '{}' changed. Their sessions were signed out", username.to_lowercase()));
+    Ok(())
+}
+
+async fn unblock(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
+    let input = ask("Username, email or IP")?;
+    let removed = login_guard::unblock(pool, redis, &input).await?;
+    if removed == 0 {
+        success(&format!("'{}' was not blocked and has no failed sign-ins", input.to_lowercase()));
+    } else {
+        success(&format!("Sign-in block for '{}' lifted", input.to_lowercase()));
+    }
     Ok(())
 }
 

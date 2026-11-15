@@ -7,6 +7,7 @@ use axum::Json;
 use chrono_tz::Tz;
 use serde::Serialize;
 
+use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
@@ -123,6 +124,17 @@ pub async fn update(
     }
 
     let old_tz = site_settings::timezone(&state.db).await;
+    let old_values = site_settings::all(&state.db).await?;
+    let mut changed: Vec<String> = Vec::new();
+    let mut details = serde_json::Map::new();
+    for (key, value) in &changes {
+        let old = old_values.get(key);
+        if old != value.as_ref() {
+            changed.push(key.replace('_', " "));
+            details.insert(key.clone(), serde_json::json!({ "from": old, "to": value }));
+        }
+    }
+    changed.sort();
 
     let mut tx = state.db.begin().await?;
     for (key, value) in &changes {
@@ -145,6 +157,11 @@ pub async fn update(
         }
     }
     tx.commit().await?;
+
+    if !changed.is_empty() {
+        let details = Some(serde_json::json!({ "changes": details }));
+        activity::record(&state.db, &user, PERMISSION, "changed", None, &changed.join(", "), details).await;
+    }
 
     // Day bars are per local day, so a new timezone means recomputing them.
     if site_settings::timezone(&state.db).await != old_tz {
@@ -204,6 +221,8 @@ pub async fn upload_asset(
     .execute(&state.db)
     .await?;
 
+    let details = Some(serde_json::json!({ "content_type": content_type, "bytes": body.len() }));
+    activity::record(&state.db, &user, PERMISSION, "uploaded a new", None, &name, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -216,9 +235,13 @@ pub async fn delete_asset(
     if !BRAND_ASSETS.contains(&name.as_str()) {
         return Err(ApiError::NotFound);
     }
-    sqlx::query("DELETE FROM brand_assets WHERE name = $1")
+    let deleted = sqlx::query("DELETE FROM brand_assets WHERE name = $1")
         .bind(&name)
         .execute(&state.db)
-        .await?;
+        .await?
+        .rows_affected();
+    if deleted > 0 {
+        activity::record(&state.db, &user, PERMISSION, "removed the", None, &name, None).await;
+    }
     Ok(StatusCode::NO_CONTENT)
 }

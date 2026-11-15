@@ -1,3 +1,4 @@
+mod activity;
 mod dashboard;
 mod incidents;
 mod maintenance;
@@ -24,6 +25,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))
         .route("/avatar/:id", get(profile::avatar))
         .route("/dashboard", get(dashboard::get))
+        .route("/activity", get(activity::list))
         .route("/users", get(users::list).post(users::create))
         .route("/users/:id", patch(users::update).delete(users::delete))
         .route("/incidents", post(incidents::create))

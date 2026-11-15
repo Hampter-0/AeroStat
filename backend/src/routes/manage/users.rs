@@ -4,6 +4,7 @@ use axum::Json;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::activity;
 use crate::auth::{self, CurrentUser, PERMISSIONS};
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -125,7 +126,11 @@ pub async fn create(
     .await;
 
     match created {
-        Ok(row) => Ok((StatusCode::CREATED, Json(row))),
+        Ok(row) => {
+            let details = activity::created(activity::snapshot(&state.db, "users", &row.id.to_string()).await);
+            activity::record(&state.db, &user, "users", "created user", None, &row.username, details).await;
+            Ok((StatusCode::CREATED, Json(row)))
+        }
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => {
             Err(ApiError::Conflict(format!("Username '{username}' is already taken")))
         }
@@ -141,6 +146,8 @@ pub async fn update(
 ) -> Result<Json<UserRow>, ApiError> {
     user.require_admin()?;
     let target = find_user(&state, id).await?;
+    let before = activity::snapshot(&state.db, "users", &id.to_string()).await;
+    let password_changed = body.password.is_some();
 
     if let Some(is_admin) = body.is_admin {
         if target.is_admin && !is_admin {
@@ -183,6 +190,12 @@ pub async fn update(
         }
     }
 
+    let after = activity::snapshot(&state.db, "users", &id.to_string()).await;
+    let mut details = activity::changes(before, after).unwrap_or_else(|| serde_json::json!({}));
+    if password_changed {
+        details["password_changed"] = serde_json::json!(true);
+    }
+    activity::record(&state.db, &user, "users", "edited user", None, &target.username, Some(details)).await;
     Ok(Json(find_user(&state, id).await?))
 }
 
@@ -200,12 +213,14 @@ pub async fn delete(
     if target.is_admin && admin_count(&state).await? <= 1 {
         return Err(ApiError::BadRequest("There must always be at least one admin".into()));
     }
+    let before = activity::snapshot(&state.db, "users", &id.to_string()).await;
 
     sqlx::query("DELETE FROM users WHERE id = $1")
         .bind(id)
         .execute(&state.db)
         .await?;
 
+    activity::record(&state.db, &user, "users", "deleted user", None, &target.username, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

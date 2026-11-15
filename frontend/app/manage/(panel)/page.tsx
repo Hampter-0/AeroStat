@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { AlertSmall, AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '@/components/icons'
+import ActivityList from '@/components/manage/ActivityList'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
+import type { ActivityResponse } from '@/lib/activity'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { formatStatus } from '@/lib/format'
@@ -14,6 +16,7 @@ interface DashboardData {
 }
 
 const UPCOMING_DAYS = 7
+const RECENT_ACTIVITY = 8
 
 function minutesText(minutes: number | null): string {
   if (minutes === null) {
@@ -34,6 +37,7 @@ export default async function ManageOverviewPage() {
 
   const services: ServiceStatus[] = await getStatus()
   const dashboard = await manageFetch<DashboardData>('/dashboard')
+  const activity = await manageFetch<ActivityResponse>('/activity?per_page=' + RECENT_ACTIVITY)
   const now = currentTimeMs()
 
   const ongoing: IncidentDetail[] = []
@@ -270,6 +274,19 @@ export default async function ManageOverviewPage() {
             )
           })}
         </div>
+      </section>
+
+      <section className="manage-panel">
+        <div className="panel-heading">
+          <h2>Recent activity</h2>
+          {user.is_admin && (
+            <Link href="/manage/activity" className="link-button">
+              View all <Arrow />
+            </Link>
+          )}
+        </div>
+        {activity.entries.length === 0 && <p className="manage-empty">No changes yet.</p>}
+        <ActivityList entries={activity.entries} timezone={timezone} showIp={false} />
       </section>
     </div>
   )

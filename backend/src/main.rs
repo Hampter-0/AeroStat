@@ -1,9 +1,11 @@
-﻿mod auth;
+﻿mod activity;
+mod auth;
 mod cli;
 mod config;
 mod console;
 mod db;
 mod error;
+mod login_guard;
 mod models;
 mod routes;
 mod services;
@@ -13,7 +15,6 @@ mod state;
 use clap::Parser;
 use cli::Commands;
 use state::AppState;
-use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
@@ -39,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Some(Commands::Cli) => {
-            console::run(&pool).await?;
+            console::run(&pool, &redis_pool).await?;
             return Ok(());
         }
         Some(Commands::Migrate) => {
@@ -83,16 +84,17 @@ async fn main() -> anyhow::Result<()> {
         db: pool,
         redis: redis_pool,
         default_retention_days: settings.metrics_retention_days,
+        login_limits: settings.login_limits,
+        session_days: settings.session_days,
     };
 
-    let app = routes::build(state)
-        .layer(CorsLayer::permissive())
-        .layer(TraceLayer::new_for_http());
+    // No CORS layer: browsers never call the backend directly, only the
+    // Next.js server does.
+    let app = routes::build(state).layer(TraceLayer::new_for_http());
 
-    let addr = format!("0.0.0.0:{}", settings.port);
-    tracing::info!("Statuspage backend listening on {addr}");
+    let listener = tokio::net::TcpListener::bind((settings.host.as_str(), settings.port)).await?;
+    tracing::info!("Statuspage backend listening on {}", listener.local_addr()?);
 
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())

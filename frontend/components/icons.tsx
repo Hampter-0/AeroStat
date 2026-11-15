@@ -242,3 +242,20 @@ export function Settings() {
     </svg>
   )
 }
+
+export function Activity() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M2.5 10h3l2.5-6 4 12 2.5-6h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+export function Search() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="m13 13 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}

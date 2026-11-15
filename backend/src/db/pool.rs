@@ -11,8 +11,7 @@ pub async fn connect(database_url: &str) -> anyhow::Result<PgPool> {
     Ok(pool)
 }
 
-/// Runs all pending migrations from `backend/migrations`
-
+/// Runs all pending migrations from `backend/migrations`.
 pub async fn migrate(pool: &PgPool) -> anyhow::Result<()> {
     sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())

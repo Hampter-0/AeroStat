@@ -1,5 +1,6 @@
 use argon2::password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
+use std::sync::LazyLock;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use axum::http::HeaderMap;
@@ -12,7 +13,19 @@ use crate::state::AppState;
 
 pub const PERMISSIONS: [&str; 4] = ["incidents", "maintenance", "services", "settings"];
 
-pub const SESSION_DAYS: i32 = 30;
+/// Checked against when a login matches no account, so an unknown username
+/// takes as long to refuse as a wrong password.
+static DUMMY_HASH: LazyLock<String> = LazyLock::new(|| {
+    let salt = SaltString::generate(&mut OsRng);
+    Argon2::default()
+        .hash_password(b"not-a-real-password", &salt)
+        .map(|hash| hash.to_string())
+        .unwrap_or_default()
+});
+
+pub fn dummy_hash() -> String {
+    DUMMY_HASH.clone()
+}
 
 pub async fn hash_password(password: String) -> anyhow::Result<String> {
     tokio::task::spawn_blocking(move || {

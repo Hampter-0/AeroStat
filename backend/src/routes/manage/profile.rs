@@ -5,6 +5,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
+use crate::activity;
 use crate::auth::{self, CurrentUser};
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -51,6 +52,7 @@ pub async fn update(
     let username = body.username.trim().to_lowercase();
     validate_username(&username)?;
     let email = clean_email(body.email)?;
+    let before = activity::snapshot(&state.db, "users", &user.id.to_string()).await;
 
     let result = sqlx::query("UPDATE users SET username = $1, email = $2 WHERE id = $3")
         .bind(&username)
@@ -60,7 +62,14 @@ pub async fn update(
         .await;
 
     match result {
-        Ok(_) => Ok(Json(auth::load_user(&state.db, user.id).await?)),
+        Ok(_) => {
+            let updated = auth::load_user(&state.db, user.id).await?;
+            if updated.username != user.username || updated.email != user.email {
+                let details = activity::changes(before, activity::snapshot(&state.db, "users", &user.id.to_string()).await);
+                activity::record(&state.db, &updated, "account", "updated their profile", None, "", details).await;
+            }
+            Ok(Json(updated))
+        }
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => {
             let constraint = e.constraint().unwrap_or("");
             if constraint.contains("email") {
@@ -105,6 +114,7 @@ pub async fn change_password(
         .await?;
     tx.commit().await?;
 
+    activity::record(&state.db, &user, "account", "changed their password", None, "", None).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

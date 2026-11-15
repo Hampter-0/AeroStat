@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import Avatar from '@/components/manage/Avatar'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { AlertTriangle, ExternalLink, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
+import { Activity, AlertTriangle, ExternalLink, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
 
@@ -34,6 +34,7 @@ export default function ManageSidebar({ siteName, user }: { siteName: string; us
   }
   if (user.is_admin) {
     items.push({ href: '/manage/users', label: 'Users', icon: <Users /> })
+    items.push({ href: '/manage/activity', label: 'Activity', icon: <Activity /> })
   }
 
   function linkClass(href: string) {

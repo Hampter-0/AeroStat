@@ -4,6 +4,7 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -201,6 +202,8 @@ pub async fn create(
     .execute(&state.db)
     .await?;
 
+    let details = activity::created(activity::snapshot(&state.db, "services", &id).await);
+    activity::record(&state.db, &user, PERMISSION, "added service", Some(id.clone()), &name, details).await;
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
 
@@ -216,6 +219,7 @@ pub async fn update(
     let statuses = clean_statuses(&body.expected_status)?;
     check_interval(body.check_interval_seconds)?;
     check_group(&state.db, &body.group_id).await?;
+    let before = activity::snapshot(&state.db, "services", &id).await;
 
     let updated = sqlx::query(
         r#"
@@ -238,6 +242,8 @@ pub async fn update(
     if updated == 0 {
         return Err(ApiError::NotFound);
     }
+    let details = activity::changes(before, activity::snapshot(&state.db, "services", &id).await);
+    activity::record(&state.db, &user, PERMISSION, "edited service", Some(id), &name, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -248,15 +254,13 @@ pub async fn delete(
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
 
+    let before = activity::snapshot(&state.db, "services", &id).await;
     let mut tx = state.db.begin().await?;
-    let deleted = sqlx::query("DELETE FROM services WHERE id = $1")
+    let deleted: Option<(String,)> = sqlx::query_as("DELETE FROM services WHERE id = $1 RETURNING name")
         .bind(&id)
-        .execute(&mut *tx)
-        .await?
-        .rows_affected();
-    if deleted == 0 {
-        return Err(ApiError::NotFound);
-    }
+        .fetch_optional(&mut *tx)
+        .await?;
+    let (name,) = deleted.ok_or(ApiError::NotFound)?;
     sqlx::query("UPDATE incidents SET affected_services = array_remove(affected_services, $1) WHERE $1 = ANY(affected_services)")
         .bind(&id)
         .execute(&mut *tx)
@@ -267,6 +271,7 @@ pub async fn delete(
         .await?;
     tx.commit().await?;
 
+    activity::record(&state.db, &user, PERMISSION, "deleted service", None, &name, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -302,6 +307,7 @@ pub async fn check_now(State(state): State<AppState>, user: CurrentUser) -> Resu
     sqlx::query("UPDATE services SET next_check_at = now()")
         .execute(&state.db)
         .await?;
+    activity::record(&state.db, &user, PERMISSION, "checked all services now", None, "", None).await;
     Ok(StatusCode::ACCEPTED)
 }
 
@@ -322,6 +328,8 @@ pub async fn create_group(
     .execute(&state.db)
     .await?;
 
+    let details = activity::created(activity::snapshot(&state.db, "groups", &id).await);
+    activity::record(&state.db, &user, PERMISSION, "added group", None, &name, details).await;
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
 
@@ -333,6 +341,7 @@ pub async fn update_group(
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
     let name = clean_name(&body.name)?;
+    let before = activity::snapshot(&state.db, "groups", &id).await;
     let updated = sqlx::query("UPDATE groups SET name = $1 WHERE id = $2")
         .bind(&name)
         .bind(&id)
@@ -342,6 +351,8 @@ pub async fn update_group(
     if updated == 0 {
         return Err(ApiError::NotFound);
     }
+    let details = activity::changes(before, activity::snapshot(&state.db, "groups", &id).await);
+    activity::record(&state.db, &user, PERMISSION, "renamed group", None, &name, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -352,14 +363,13 @@ pub async fn delete_group(
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     user.require(PERMISSION)?;
-    let deleted = sqlx::query("DELETE FROM groups WHERE id = $1")
+    let before = activity::snapshot(&state.db, "groups", &id).await;
+    let deleted: Option<(String,)> = sqlx::query_as("DELETE FROM groups WHERE id = $1 RETURNING name")
         .bind(&id)
-        .execute(&state.db)
-        .await?
-        .rows_affected();
-    if deleted == 0 {
-        return Err(ApiError::NotFound);
-    }
+        .fetch_optional(&state.db)
+        .await?;
+    let (name,) = deleted.ok_or(ApiError::NotFound)?;
+    activity::record(&state.db, &user, PERMISSION, "deleted group", None, &name, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

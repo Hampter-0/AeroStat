@@ -4,8 +4,11 @@ use sqlx::PgPool;
 
 use crate::site_settings;
 
+const ACTIVITY_RETENTION_DAYS: i32 = 365;
+
 /// Runs metrics cleanup once a day. The retention comes from the panel
-/// settings, with the METRICS_RETENTION_DAYS env value as fallback.
+/// settings, with the METRICS_RETENTION_DAYS env value as fallback. The
+/// activity log is kept for a year.
 pub fn spawn(pool: PgPool, default_retention_days: i32) {
     tokio::spawn(async move {
         let interval = Duration::from_secs(24 * 60 * 60);
@@ -18,6 +21,9 @@ pub fn spawn(pool: PgPool, default_retention_days: i32) {
                 }
                 Ok(_) => {}
                 Err(e) => tracing::error!("Metrics cleanup failed: {e}"),
+            }
+            if let Err(e) = crate::activity::cleanup(&pool, ACTIVITY_RETENTION_DAYS).await {
+                tracing::error!("Activity log cleanup failed: {e}");
             }
 
             tokio::time::sleep(interval).await;
