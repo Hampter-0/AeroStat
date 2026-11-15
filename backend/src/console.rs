@@ -152,7 +152,7 @@ async fn create_admin(pool: &PgPool) -> anyhow::Result<()> {
 }
 
 async fn reset_password(pool: &PgPool) -> anyhow::Result<()> {
-    let username = ask("Username")?;
+    let username = ask("Username or email")?;
     let password = ask_new_password()?;
     routes::manage::reset_password_from_cli(pool, &username, password).await?;
     success(&format!("Password for '{}' changed. Their sessions were signed out", username.to_lowercase()));
@@ -162,6 +162,7 @@ async fn reset_password(pool: &PgPool) -> anyhow::Result<()> {
 #[derive(sqlx::FromRow)]
 struct UserListRow {
     username: String,
+    email: Option<String>,
     is_admin: bool,
     permissions: Vec<String>,
     created_at: DateTime<Utc>,
@@ -169,7 +170,7 @@ struct UserListRow {
 
 async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
     let users: Vec<UserListRow> = sqlx::query_as(
-        "SELECT username, is_admin, permissions, created_at FROM users ORDER BY username",
+        "SELECT username, email, is_admin, permissions, created_at FROM users ORDER BY username",
     )
     .fetch_all(pool)
     .await?;
@@ -179,7 +180,7 @@ async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let rows: Vec<(&str, String, String)> = users
+    let rows: Vec<(&str, String, String, String)> = users
         .iter()
         .map(|user| {
             let access = if user.is_admin {
@@ -189,24 +190,28 @@ async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
             } else {
                 user.permissions.join(", ")
             };
-            (user.username.as_str(), access, user.created_at.format("%Y-%m-%d").to_string())
+            let email = user.email.clone().unwrap_or_else(|| "-".to_string());
+            (user.username.as_str(), email, access, user.created_at.format("%Y-%m-%d").to_string())
         })
         .collect();
 
     let name_width = rows.iter().map(|row| row.0.len()).max().unwrap_or(0).max("USERNAME".len()) + 3;
-    let access_width = rows.iter().map(|row| row.1.len()).max().unwrap_or(0).max("ACCESS".len()) + 3;
+    let email_width = rows.iter().map(|row| row.1.len()).max().unwrap_or(0).max("EMAIL".len()) + 3;
+    let access_width = rows.iter().map(|row| row.2.len()).max().unwrap_or(0).max("ACCESS".len()) + 3;
 
     println!();
     println!(
-        "  {}{}{}",
+        "  {}{}{}{}",
         pad("USERNAME", name_width).dimmed(),
+        pad("EMAIL", email_width).dimmed(),
         pad("ACCESS", access_width).dimmed(),
         "CREATED".dimmed()
     );
-    for (username, access, created) in &rows {
+    for (username, email, access, created) in &rows {
         println!(
-            "  {}{}{}",
+            "  {}{}{}{}",
             pad(username, name_width).bold(),
+            pad(email, email_width),
             pad(access, access_width),
             created.dimmed()
         );

@@ -69,10 +69,26 @@
 
 .manage-account-user {
     min-width: 0;
+    margin: -4px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-radius: 6px;
+    text-decoration: none;
+}
+
+.manage-account-user:hover,
+.manage-account-user.active {
+    background: var(--panel-soft);
+}
+
+.manage-account-text {
+    min-width: 0;
     display: grid;
 }
 
-.manage-account-user strong {
+.manage-account-text strong {
     overflow: hidden;
     color: var(--text);
     font-size: 12px;
@@ -80,7 +96,7 @@
     white-space: nowrap;
 }
 
-.manage-account-user span {
+.manage-account-text span {
     color: var(--subtle);
     font-size: 10px;
 }
@@ -1300,6 +1316,7 @@ a.button-secondary {
 .asset-body {
     min-width: 0;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     flex: 1;
     gap: 6px;
 }
@@ -1654,4 +1671,45 @@ a.button-secondary {
     .service-stats {
         display: none;
     }
+}
+
+.avatar {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--chip-bg);
+}
+
+.avatar.initials {
+    color: #fff;
+    background: var(--blue);
+    font-weight: 600;
+}
+
+.avatar-form {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.user-row-names {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.user-row-names small {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sparkline-range {
+    margin: -6px 0 0;
+    color: var(--muted);
+    font-size: 10px;
 }

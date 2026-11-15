@@ -22,11 +22,8 @@ pub struct LoginResponse {
 }
 
 #[derive(sqlx::FromRow)]
-struct UserWithHash {
+struct LoginRow {
     id: i64,
-    username: String,
-    is_admin: bool,
-    permissions: Vec<String>,
     password_hash: String,
 }
 
@@ -34,16 +31,19 @@ pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, ApiError> {
-    let username = body.username.trim().to_lowercase();
+    let login = body.username.trim().to_lowercase();
 
-    let row: Option<UserWithHash> = sqlx::query_as(
-        "SELECT id, username, is_admin, permissions, password_hash FROM users WHERE username = $1",
-    )
-    .bind(&username)
-    .fetch_optional(&state.db)
-    .await?;
+    let query = if login.contains('@') {
+        "SELECT id, password_hash FROM users WHERE lower(email) = $1"
+    } else {
+        "SELECT id, password_hash FROM users WHERE username = $1"
+    };
+    let row: Option<LoginRow> = sqlx::query_as(query)
+        .bind(&login)
+        .fetch_optional(&state.db)
+        .await?;
 
-    let invalid = || ApiError::BadRequest("Invalid username or password".into());
+    let invalid = || ApiError::BadRequest("Invalid username, email or password".into());
     let row = row.ok_or_else(invalid)?;
     if !auth::verify_password(body.password, row.password_hash.clone()).await {
         return Err(invalid());
@@ -66,12 +66,7 @@ pub async fn login(
     Ok(Json(LoginResponse {
         token,
         expires_at,
-        user: CurrentUser {
-            id: row.id,
-            username: row.username,
-            is_admin: row.is_admin,
-            permissions: row.permissions,
-        },
+        user: auth::load_user(&state.db, row.id).await?,
     }))
 }
 

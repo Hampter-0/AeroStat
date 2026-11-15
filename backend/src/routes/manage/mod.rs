@@ -1,6 +1,7 @@
 mod dashboard;
 mod incidents;
 mod maintenance;
+mod profile;
 mod services;
 mod session;
 mod settings;
@@ -18,6 +19,10 @@ pub fn router() -> Router<AppState> {
         .route("/login", post(session::login))
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
+        .route("/profile", patch(profile::update))
+        .route("/profile/password", post(profile::change_password))
+        .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))
+        .route("/avatar/:id", get(profile::avatar))
         .route("/dashboard", get(dashboard::get))
         .route("/users", get(users::list).post(users::create))
         .route("/users/:id", patch(users::update).delete(users::delete))

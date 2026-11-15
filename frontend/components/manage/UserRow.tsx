@@ -10,6 +10,7 @@ const initialState: FormState = { error: null, success: null }
 interface UserRecord {
   id: number
   username: string
+  email: string | null
   is_admin: boolean
   permissions: string[]
   created_at: string
@@ -61,7 +62,10 @@ export default function UserRow({
     <article className="user-row">
       <div className="user-row-summary">
         <div className="user-row-name">
-          <strong>{user.username}</strong>
+          <span className="user-row-names">
+            <strong>{user.username}</strong>
+            {user.email && <small>{user.email}</small>}
+          </span>
           {isSelf && <span className="you-tag">You</span>}
         </div>
         <div className="user-row-access">

@@ -17,7 +17,7 @@ export default function LoginForm() {
   return (
     <form action={formAction} className="manage-form">
       <label>
-        <span>Username</span>
+        <span>Username or email</span>
         <div className="input-with-icon">
           <User />
           <input name="username" autoComplete="username" required autoFocus />

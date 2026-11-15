@@ -89,6 +89,16 @@ export default function ResponseSparkline({
     latestText = latest + ' ms'
   }
 
+  let rangeText = ''
+  if (values.length > 0) {
+    let total = 0
+    for (const value of values) {
+      total = total + value
+    }
+    const average = Math.round(total / values.length)
+    rangeText = '24h avg ' + average + ' ms · min ' + Math.min(...values) + ' · max ' + Math.max(...values)
+  }
+
   let summary = name + ': no response time data in the last 24 hours'
   if (values.length > 0) {
     summary =
@@ -152,6 +162,7 @@ export default function ResponseSparkline({
           <b>{latestText}</b> last hour
         </span>
       </div>
+      {rangeText && <p className="sparkline-range">{rangeText}</p>}
       <div className="sparkline-plot">
         <svg
           viewBox={'0 0 ' + WIDTH + ' ' + HEIGHT}

@@ -14,6 +14,7 @@ const MIN_PASSWORD_LENGTH: usize = 8;
 pub struct UserRow {
     id: i64,
     username: String,
+    email: Option<String>,
     is_admin: bool,
     permissions: Vec<String>,
     created_at: DateTime<Utc>,
@@ -42,7 +43,7 @@ pub struct UpdateUser {
     password: Option<String>,
 }
 
-fn validate_username(username: &str) -> Result<(), ApiError> {
+pub(super) fn validate_username(username: &str) -> Result<(), ApiError> {
     let valid_chars = username
         .chars()
         .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '_' || c == '-');
@@ -54,7 +55,7 @@ fn validate_username(username: &str) -> Result<(), ApiError> {
     Ok(())
 }
 
-fn validate_password(password: &str) -> Result<(), ApiError> {
+pub(super) fn validate_password(password: &str) -> Result<(), ApiError> {
     if password.chars().count() < MIN_PASSWORD_LENGTH {
         return Err(ApiError::BadRequest(format!(
             "Password must be at least {MIN_PASSWORD_LENGTH} characters"
@@ -72,7 +73,7 @@ async fn admin_count(state: &AppState) -> Result<i64, ApiError> {
 
 async fn find_user(state: &AppState, id: i64) -> Result<UserRow, ApiError> {
     let user: Option<UserRow> = sqlx::query_as(
-        "SELECT id, username, is_admin, permissions, created_at FROM users WHERE id = $1",
+        "SELECT id, username, email, is_admin, permissions, created_at FROM users WHERE id = $1",
     )
     .bind(id)
     .fetch_optional(&state.db)
@@ -84,7 +85,7 @@ pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Js
     user.require_admin()?;
 
     let users: Vec<UserRow> = sqlx::query_as(
-        "SELECT id, username, is_admin, permissions, created_at FROM users ORDER BY username",
+        "SELECT id, username, email, is_admin, permissions, created_at FROM users ORDER BY username",
     )
     .fetch_all(&state.db)
     .await?;
@@ -113,7 +114,7 @@ pub async fn create(
         r#"
         INSERT INTO users (username, password_hash, is_admin, permissions)
         VALUES ($1, $2, $3, $4)
-        RETURNING id, username, is_admin, permissions, created_at
+        RETURNING id, username, email, is_admin, permissions, created_at
         "#,
     )
     .bind(&username)
@@ -233,11 +234,11 @@ pub async fn reset_password_from_cli(pool: &sqlx::PgPool, username: &str, passwo
     let username = username.trim().to_lowercase();
     validate_password(&password).map_err(|e| anyhow::anyhow!(error_text(e)))?;
 
-    let user: Option<(i64,)> = sqlx::query_as("SELECT id FROM users WHERE username = $1")
+    let user: Option<(i64,)> = sqlx::query_as("SELECT id FROM users WHERE username = $1 OR lower(email) = $1")
         .bind(&username)
         .fetch_optional(pool)
         .await?;
-    let (id,) = user.ok_or_else(|| anyhow::anyhow!("No account named '{username}'"))?;
+    let (id,) = user.ok_or_else(|| anyhow::anyhow!("No account with username or email '{username}'"))?;
 
     let password_hash = auth::hash_password(password).await?;
     sqlx::query("UPDATE users SET password_hash = $1 WHERE id = $2")

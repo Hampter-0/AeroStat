@@ -29,7 +29,7 @@ export default async function LoginPage() {
 
         <div className="manage-login-heading">
           <h1>Login</h1>
-          <p>Enter your username and password to continue</p>
+          <p>Enter your username or email and password to continue</p>
         </div>
 
         <div className="manage-login-card">

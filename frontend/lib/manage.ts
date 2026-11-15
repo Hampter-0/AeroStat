@@ -8,8 +8,10 @@ export { PERMISSION_LABELS } from './permissions'
 export interface ManageUser {
   id: number
   username: string
+  email: string | null
   is_admin: boolean
   permissions: string[]
+  avatar_version: number | null
 }
 
 export class ManageApiError extends Error {

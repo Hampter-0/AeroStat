@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
+import Avatar from '@/components/manage/Avatar'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
 import { AlertTriangle, ExternalLink, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
@@ -73,10 +74,13 @@ export default function ManageSidebar({ siteName, user }: { siteName: string; us
       </nav>
 
       <div className="manage-account">
-        <div className="manage-account-user">
-          <strong>{user.username}</strong>
-          <span>{roleLabel}</span>
-        </div>
+        <Link href="/manage/profile" className={'manage-account-user ' + linkClass('/manage/profile')} title="Your profile">
+          <Avatar userId={user.id} username={user.username} version={user.avatar_version} size={30} />
+          <span className="manage-account-text">
+            <strong>{user.username}</strong>
+            <span>{roleLabel}</span>
+          </span>
+        </Link>
         <div className="manage-account-actions">
           <ThemeSwitcher />
           <form action={logout}>

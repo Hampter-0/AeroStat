@@ -10,6 +10,7 @@ export const metadata = {
 interface UserRecord {
   id: number
   username: string
+  email: string | null
   is_admin: boolean
   permissions: string[]
   created_at: string

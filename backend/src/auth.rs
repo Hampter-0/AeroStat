@@ -62,8 +62,20 @@ pub fn validate_permissions(permissions: &[String]) -> Result<(), ApiError> {
 pub struct CurrentUser {
     pub id: i64,
     pub username: String,
+    pub email: Option<String>,
     pub is_admin: bool,
     pub permissions: Vec<String>,
+    pub avatar_version: Option<i64>,
+}
+
+/// Columns for loading a CurrentUser from the users table aliased as `u`.
+pub const CURRENT_USER_COLUMNS: &str =
+    "u.id, u.username, u.email, u.is_admin, u.permissions, EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version";
+
+pub async fn load_user(db: &sqlx::PgPool, id: i64) -> Result<CurrentUser, ApiError> {
+    let query = format!("SELECT {CURRENT_USER_COLUMNS} FROM users u WHERE u.id = $1");
+    let user: Option<CurrentUser> = sqlx::query_as(&query).bind(id).fetch_optional(db).await?;
+    user.ok_or(ApiError::NotFound)
 }
 
 impl CurrentUser {
@@ -95,14 +107,10 @@ impl FromRequestParts<AppState> for CurrentUser {
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let token = bearer_token(&parts.headers).ok_or(ApiError::Unauthorized)?;
 
-        let user: Option<CurrentUser> = sqlx::query_as(
-            r#"
-            SELECT u.id, u.username, u.is_admin, u.permissions
-            FROM sessions s
-            JOIN users u ON u.id = s.user_id
-            WHERE s.token_hash = $1 AND s.expires_at > now()
-            "#,
-        )
+        let query = format!(
+            "SELECT {CURRENT_USER_COLUMNS} FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()"
+        );
+        let user: Option<CurrentUser> = sqlx::query_as(&query)
         .bind(hash_token(&token))
         .fetch_optional(&state.db)
         .await?;
