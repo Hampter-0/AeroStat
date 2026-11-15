@@ -1,7 +1,6 @@
 mod incidents;
 pub mod manage;
 mod maintenance;
-mod services;
 pub mod settings;
 mod status;
 mod uptime;
@@ -22,7 +21,6 @@ pub fn build(state: AppState) -> Router {
     Router::new()
         .route("/", get(root))
         .route("/health", get(health))
-        .route("/api/services", get(services::list))
         .route("/api/status", get(status::get))
         .route("/api/incidents", get(incidents::list))
         .route("/api/incidents/:id", get(incidents::get))

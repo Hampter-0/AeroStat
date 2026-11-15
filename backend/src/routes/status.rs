@@ -2,11 +2,11 @@ use axum::{extract::State, Json};
 
 use crate::state::AppState;
 
+/// Public, so it never includes the check URL: that can be an internal address.
 #[derive(serde::Serialize, sqlx::FromRow)]
 pub struct ServiceStatus {
     id: String,
     name: String,
-    url: String,
     group_id: Option<String>,
     group_name: Option<String>,
     status: Option<String>,
@@ -20,7 +20,6 @@ pub async fn get(State(state): State<AppState>) -> Json<Vec<ServiceStatus>> {
         SELECT
             s.id,
             s.name,
-            s.url,
             s.group_id,
             g.name AS group_name,
             m.status,

@@ -1,7 +1,6 @@
 export interface ServiceStatus {
   id: string
   name: string
-  url: string
   group_id: string | null
   group_name: string | null
   status: 'online' | 'offline' | null

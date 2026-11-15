@@ -32,6 +32,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Public status page with daily uptime bars, incidents and maintenance
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
 - Light and dark mode, visitor-chosen timezone
+- Public JSON status API and SVG status badges
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
 
 ## Screenshots
@@ -158,6 +159,36 @@ server {
 ```
 
 `client_max_body_size` allows logo and avatar uploads; nginx stops anything over 1 MB by default. Use `$remote_addr` rather than `$proxy_add_x_forwarded_for`, so a visitor can't send a made-up IP. Without a proxy in front, the IP-based sign-in limit can be bypassed this way; the per-account limit still applies.
+
+## Status API and badges
+
+Every AeroStat site has a small public API, so other sites and tools can show your status. Both endpoints allow cross-origin requests and are cached for a short time.
+
+**`GET /api/status`** returns the overall status, every service and anything ongoing:
+
+```json
+{
+  "status": "operational",
+  "last_checked": "2026-11-15T16:40:12Z",
+  "services": [
+    { "id": "website", "name": "Website", "group": "Websites", "status": "online", "last_checked": "2026-11-15T16:40:12Z" }
+  ],
+  "ongoing_incidents": [],
+  "maintenance_in_progress": []
+}
+```
+
+`status` is one of `operational`, `degraded` (an incident is ongoing), `outage` (a service is down), `maintenance` or `no_services`. A service is `online`, `offline` or `pending` (not checked yet). Check URLs are never included.
+
+**`GET /api/badge`** returns an SVG badge for a README or website:
+
+```markdown
+![Status](https://status.example.com/api/badge)
+![Website](https://status.example.com/api/badge?service=website)
+![Status](https://status.example.com/api/badge?label=my%20app)
+```
+
+`service` picks one service by its id (shown in the panel's service URL and in `/api/status`), and `label` replaces the text on the left.
 
 ## Troubleshooting
 

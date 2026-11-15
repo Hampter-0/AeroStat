@@ -3,6 +3,7 @@ import { AlertSmall, AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '
 import ActivityList from '@/components/manage/ActivityList'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
 import type { ActivityResponse } from '@/lib/activity'
+import type { ManageServicesResponse } from '@/lib/services'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { formatStatus } from '@/lib/format'
@@ -90,6 +91,14 @@ export default async function ManageOverviewPage() {
     }
   }
 
+  const serviceUrls = new Map<string, string>()
+  if (canServices && unexplained.length > 0) {
+    const manageServices = await manageFetch<ManageServicesResponse>('/services')
+    for (const service of manageServices.services) {
+      serviceUrls.set(service.id, service.url)
+    }
+  }
+
   let statusClass = 'dashboard-status ok'
   let statusTitle = 'All systems operational'
   let statusText = services.length + ' services, all online'
@@ -139,7 +148,7 @@ export default async function ManageOverviewPage() {
                 <div className="manage-list-row" key={service.id}>
                   <div>
                     <strong>{service.name}</strong>
-                    <span>{service.url}</span>
+                    {serviceUrls.has(service.id) && <span>{serviceUrls.get(service.id)}</span>}
                   </div>
                   <Link href={'/manage/incidents/new?service=' + encodeURIComponent(service.id)} className="button-primary">
                     Create incident
