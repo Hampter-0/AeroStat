@@ -1,7 +1,9 @@
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ChevronLeft } from '@/components/icons'
 import DeleteForm from '@/components/manage/DeleteForm'
+import BadgeCard from '@/components/manage/services/BadgeCard'
 import ServiceForm from '@/components/manage/services/ServiceForm'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { intervalLabel, type ManageServicesResponse } from '@/lib/services'
@@ -29,6 +31,20 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   }
   if (!service) {
     notFound()
+  }
+
+  const requestHeaders = await headers()
+  let host = requestHeaders.get('x-forwarded-host')
+  if (!host) {
+    host = requestHeaders.get('host')
+  }
+  let protocol = requestHeaders.get('x-forwarded-proto')
+  if (!protocol) {
+    protocol = 'http'
+  }
+  let baseUrl = ''
+  if (host) {
+    baseUrl = protocol.split(',')[0].trim() + '://' + host.split(',')[0].trim()
   }
 
   return (
@@ -65,6 +81,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
           </dl>
         </section>
       )}
+      <BadgeCard serviceId={service.id} serviceName={service.name} baseUrl={baseUrl} />
       {can(user, 'services.delete') && (
         <section className="manage-panel danger">
           <h2>Delete service</h2>

@@ -459,3 +459,12 @@ export function Upload() {
     </svg>
   )
 }
+
+export function Copy() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="7" y="7" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M13 4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}
