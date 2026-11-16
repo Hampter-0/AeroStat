@@ -3,11 +3,12 @@ use axum::extract::{Path, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::Response;
 use axum::Json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio_util::io::ReaderStream;
 
 use crate::activity;
+use crate::login_guard;
 use crate::auth::CurrentUser;
 use crate::backups::{self, Backup, Kind};
 use crate::error::ApiError;
@@ -132,4 +133,94 @@ pub async fn upload(State(state): State<AppState>, user: CurrentUser, headers: H
     )
     .await;
     Ok(Json(backup))
+}
+
+#[derive(Deserialize)]
+pub struct RestoreBody {
+    password: String,
+}
+
+#[derive(Serialize)]
+pub struct RestoreResult {
+    /// True when AeroStat restarts itself now (in Docker); otherwise the
+    /// backend has to be restarted by hand.
+    restarting: bool,
+    safety_backup: String,
+}
+
+/// Puts a backup back from the panel, for super users only and after the
+/// current password. The database as it is now is backed up first. In Docker
+/// the backend then restarts, so newer migrations run and nothing old stays in
+/// memory.
+pub async fn restore(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<String>,
+    Json(body): Json<RestoreBody>,
+) -> Result<Json<RestoreResult>, ApiError> {
+    user.require(PERMISSION)?;
+    if !user.is_admin {
+        return Err(ApiError::BadRequest("Only a super user can restore a backup".into()));
+    }
+    let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+        .bind(user.id)
+        .fetch_one(&state.db)
+        .await?;
+    login_guard::verify_current_password(&state.redis, &state.login_limits, user.id, body.password, hash).await?;
+
+    let backup = backups::find(&id)
+        .await
+        .map_err(|e| ApiError::BadRequest(format!("{e:#}")))?
+        .ok_or(ApiError::NotFound)?;
+    if backups::is_newer(&backup.version, CURRENT_VERSION) {
+        return Err(ApiError::BadRequest(format!(
+            "This backup is from v{}, newer than this AeroStat (v{CURRENT_VERSION}). Update AeroStat first",
+            backup.version
+        )));
+    }
+
+    let safety = backups::create(
+        Kind::Restore,
+        Some(user.username.clone()),
+        CURRENT_VERSION,
+        Some(format!("Before restoring {}", backup.id)),
+    )
+    .await
+    .map_err(|e| ApiError::BadRequest(format!("Could not back up the current database, so nothing was restored: {e:#}")))?;
+
+    backups::restore(&backup.id)
+        .await
+        .map_err(|e| ApiError::BadRequest(format!("{e:#}")))?;
+    tracing::info!("{} restored backup {} from the panel", user.username, backup.id);
+
+    // Written after the restore, so it lands in the database that is now in use.
+    // The account may not exist in the restored data, so the link is kept only if it does.
+    let logged = sqlx::query(
+        r#"
+        INSERT INTO activity_log (user_id, username, category, action, target_id, target_label, details)
+        VALUES ((SELECT id FROM users WHERE id = $1), $2, 'system', 'restored a backup', $3, $3, $4::jsonb)
+        "#,
+    )
+    .bind(user.id)
+    .bind(&user.username)
+    .bind(&backup.id)
+    .bind(json!({ "safety_backup": safety.id, "version": backup.version }).to_string())
+    .execute(&state.db)
+    .await;
+    if let Err(e) = logged {
+        tracing::warn!("Could not log the restore: {e}");
+    }
+
+    let restarting = std::path::Path::new("/.dockerenv").exists();
+    if restarting {
+        tokio::spawn(async {
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            tracing::info!("Restarting after a restore");
+            std::process::exit(0);
+        });
+    }
+    Ok(Json(RestoreResult {
+        restarting,
+        safety_backup: safety.id,
+    }))
 }

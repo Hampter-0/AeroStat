@@ -465,7 +465,9 @@ services:
 
 ### Restoring
 
-Restore from the server with the CLI. It lists the backups, makes a backup of the database as it is now, then puts the chosen one back. If anything fails, nothing is changed.
+Super users can restore a backup under **System → Backups** with **Restore**, after entering their password. AeroStat first backs up the database as it is now, puts the chosen backup back, and then restarts the backend so newer migrations run; you sign in again afterwards. If anything fails, nothing is changed.
+
+The same works from the server with the CLI, also when you can't sign in:
 
 ```bash
 docker compose exec -it backend aerostat cli

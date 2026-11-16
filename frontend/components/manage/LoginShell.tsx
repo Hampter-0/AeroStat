@@ -1,17 +1,13 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
-import Logo from "@/components/layout/Logo";
-import ToastProvider from "@/components/manage/toast/Toasts";
-import { getSiteConfig } from "@/lib/branding";
+import Link from 'next/link'
+import type { ReactNode } from 'react'
+import Logo from '@/components/layout/Logo'
+import ToastProvider from '@/components/manage/toast/Toasts'
+import { getSiteConfig } from '@/lib/branding'
 
-export default async function LoginShell({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const config = await getSiteConfig();
-  const siteName = config.siteName;
-  const year = new Date().getUTCFullYear();
+export default async function LoginShell({ children }: { children: ReactNode }) {
+  const config = await getSiteConfig()
+  const siteName = config.siteName
+  const year = new Date().getUTCFullYear()
 
   return (
     <ToastProvider>
@@ -32,5 +28,5 @@ export default async function LoginShell({
         </div>
       </div>
     </ToastProvider>
-  );
+  )
 }

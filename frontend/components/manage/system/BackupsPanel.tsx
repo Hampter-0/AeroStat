@@ -7,6 +7,7 @@ import { createBackup, deleteBackup } from '@/app/manage/(panel)/system/backup-a
 import { Database, Upload } from '@/components/icons'
 import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import SettingsForm from '@/components/manage/settings/SettingsForm'
+import RestoreBackup from '@/components/manage/system/RestoreBackup'
 import { useErrorToast, useResultToast, useToast } from '@/components/manage/toast/Toasts'
 import { KIND_LABELS, type Backup, type BackupsView } from '@/lib/backups'
 import { formatBytes } from '@/lib/system'
@@ -202,6 +203,7 @@ export default function BackupsPanel({ data, timezone, isAdmin }: { data: Backup
                           <a href={'/manage/backups/' + encodeURIComponent(backup.id) + '/download'} className="button-secondary" download>
                             Download
                           </a>
+                          {isAdmin && <RestoreBackup backup={backup} label={made} />}
                           <DeleteBackup backup={backup} label={made} />
                         </div>
                       </td>
@@ -214,8 +216,8 @@ export default function BackupsPanel({ data, timezone, isAdmin }: { data: Backup
         )}
         <p className="field-hint backup-hint">
           Keep a copy somewhere else too, with your <code>.env</code>: a backup on the same server is lost with the server. To
-          move to another server, upload a backup there. Restoring is done from the server with <code>aerostat cli</code> →{' '}
-          <code>restore</code>.
+          move to another server, upload a backup there. Super users can restore a backup here; the server can also do it with{' '}
+          <code>aerostat cli</code> → <code>restore</code>.
         </p>
       </section>
 

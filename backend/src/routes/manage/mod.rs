@@ -48,6 +48,7 @@ pub fn router() -> Router<AppState> {
         )
         .route("/backups/:id", delete(backups::delete))
         .route("/backups/:id/download", get(backups::download))
+        .route("/backups/:id/restore", post(backups::restore))
         .route("/version/check", post(version::check))
         .route("/system", get(system::get))
         .route("/profile", patch(profile::update))

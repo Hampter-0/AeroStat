@@ -268,11 +268,6 @@ async fn make_backup() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// "1.2.3" as numbers, for comparing versions.
-fn version_parts(version: &str) -> Vec<u64> {
-    version.split('.').map(|part| part.trim().parse().unwrap_or(0)).collect()
-}
-
 async fn restore_backup() -> anyhow::Result<()> {
     let list = list_backups().await?;
     if list.is_empty() {
@@ -285,7 +280,7 @@ async fn restore_backup() -> anyhow::Result<()> {
         .ok_or_else(|| anyhow::anyhow!("'{answer}' is not a number from the list"))?
         .clone();
 
-    if version_parts(&backup.version) > version_parts(CURRENT_VERSION) {
+    if backups::is_newer(&backup.version, CURRENT_VERSION) {
         anyhow::bail!(
             "This backup is from v{}, newer than this AeroStat (v{CURRENT_VERSION}). Update AeroStat first, then restore it",
             backup.version

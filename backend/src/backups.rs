@@ -264,6 +264,12 @@ async fn run_dump(config: &BackupConfig, path: &PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Whether `version` is newer than `current`, comparing "1.2.3" part by part.
+pub fn is_newer(version: &str, current: &str) -> bool {
+    let parts = |text: &str| -> Vec<u64> { text.split('.').map(|part| part.trim().parse().unwrap_or(0)).collect() };
+    parts(version) > parts(current)
+}
+
 /// Largest allowed upload.
 pub const MAX_UPLOAD_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
