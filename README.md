@@ -166,7 +166,7 @@ server {
 
 `client_max_body_size` allows uploads of logos, avatars and backups; nginx stops anything over 1 MB by default. Use `$remote_addr` as shown, so the proxy replaces any `X-Forwarded-For` a visitor sends and AeroStat sees the real IP.
 
-Without a proxy in front, visitors can choose the IP AeroStat sees, so the IP-based sign-in limit can be bypassed; the per-account limits still apply. Run AeroStat behind a proxy and set `AEROSTAT_BIND=127.0.0.1`.
+AeroStat only trusts `X-Forwarded-For` when the connection comes from a private address, like a proxy on the same server or Docker network. A visitor who connects straight to port 3000 from the internet is seen by their real address, whatever header they send. A visitor on your own local network could still send a made-up header, so for anything beyond a home lab run AeroStat behind a proxy and set `AEROSTAT_BIND=127.0.0.1`.
 
 ### Cloudflare in front of your proxy
 

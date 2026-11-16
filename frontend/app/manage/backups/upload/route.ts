@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
     headers.set('x-file-name', decoded.replace(/[^ -~]/g, '_'))
   }
-  const ip = clientIp(request.headers.get('x-forwarded-for'))
+  const ip = clientIp(request.headers.get('x-forwarded-for'), request.headers.get('x-aerostat-peer'))
   if (ip) {
     headers.set('x-forwarded-for', ip)
   }

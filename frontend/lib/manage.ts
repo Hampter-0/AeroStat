@@ -40,7 +40,7 @@ async function visitorHeaders(): Promise<Record<string, string>> {
   const result: Record<string, string> = {}
   try {
     const store = await headers()
-    const ip = clientIp(store.get('x-forwarded-for'))
+    const ip = clientIp(store.get('x-forwarded-for'), store.get('x-aerostat-peer'))
     if (ip) {
       result['x-forwarded-for'] = ip
     }

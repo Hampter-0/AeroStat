@@ -3327,3 +3327,94 @@ a.page-button:hover {
     font-size: 12px;
     text-decoration: none;
 }
+
+.help-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.help-link {
+    padding: 12px 14px;
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.help-link:hover {
+    border-color: var(--link);
+}
+
+.help-link strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.help-link strong svg {
+    color: var(--muted);
+}
+
+.help-link small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.help-guide {
+    border-top: 1px solid var(--border-soft);
+}
+
+.help-guide:first-of-type {
+    border-top: 0;
+}
+
+.help-guide summary {
+    padding: 12px 0;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.help-guide-body {
+    padding: 0 0 14px;
+    display: grid;
+    gap: 10px;
+}
+
+.help-guide-body p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.help-guide-body code {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.help-code {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.help-more {
+    margin: 12px 0 0;
+}
+
+.help-more a {
+    color: var(--link);
+}

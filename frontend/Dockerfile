@@ -21,7 +21,8 @@ RUN addgroup -S aerostat && adduser -S -G aerostat aerostat
 COPY --from=build --chown=aerostat:aerostat /app/.next/standalone ./
 COPY --from=build --chown=aerostat:aerostat /app/.next/static ./.next/static
 COPY --from=build --chown=aerostat:aerostat /app/public ./public
+COPY --from=build --chown=aerostat:aerostat /app/peer.mjs ./peer.mjs
 
 USER aerostat
 EXPOSE 3000
-CMD ["node", "server.js"]
+CMD ["node", "--import", "./peer.mjs", "server.js"]

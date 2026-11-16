@@ -468,3 +468,13 @@ export function Copy() {
     </svg>
   )
 }
+
+export function HelpCircle() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7.8 7.6a2.3 2.3 0 0 1 4.4.9c0 1.6-2.2 2-2.2 3.3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="10" cy="14.2" r="0.9" fill="currentColor" />
+    </svg>
+  )
+}

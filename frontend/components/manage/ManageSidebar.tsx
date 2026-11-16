@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import Avatar from '@/components/manage/Avatar'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { Activity, AlertTriangle, ExternalLink, Gauge, Home, LogOut, Server, Settings, Shield, Tool, Users } from '@/components/icons'
+import { Activity, AlertTriangle, ExternalLink, Gauge, HelpCircle, Home, LogOut, Server, Settings, Shield, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
 import { hasPermission } from '@/lib/permissions'
@@ -58,6 +58,7 @@ export default function ManageSidebar({
   if (hasPermission(user, 'system.view')) {
     items.push({ href: '/manage/system', label: 'System', icon: <Gauge /> })
   }
+  items.push({ href: '/manage/help', label: 'Help', icon: <HelpCircle /> })
 
   function linkClass(href: string) {
     if (pathname === href) {

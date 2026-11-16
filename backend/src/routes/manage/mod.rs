@@ -2,6 +2,7 @@ mod activity;
 mod backups;
 mod dashboard;
 mod email;
+mod help;
 mod incidents;
 mod maintenance;
 mod notifications;
@@ -39,6 +40,7 @@ pub fn router() -> Router<AppState> {
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
         .route("/version", get(version::get))
+        .route("/help/status", get(help::status))
         .route("/backups", get(backups::list).post(backups::create))
         .route(
             "/backups/upload",
