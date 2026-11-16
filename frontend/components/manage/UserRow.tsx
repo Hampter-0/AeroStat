@@ -70,10 +70,12 @@ export default function UserRow({
       <div className="user-row-summary">
         <div className="user-row-name">
           <span className="user-row-names">
-            <strong>{user.username}</strong>
+            <span className="user-row-title">
+              <strong>{user.username}</strong>
+              {isSelf && <span className="you-tag">You</span>}
+            </span>
             {user.email && <small>{user.email}</small>}
           </span>
-          {isSelf && <span className="you-tag">You</span>}
         </div>
         <div className="user-row-access">
           {accessLabels.length === 0 && <span className="chip muted">No access</span>}

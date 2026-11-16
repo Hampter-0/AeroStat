@@ -392,6 +392,14 @@
 }
 
 .user-row-name {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-row-title {
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -607,14 +615,25 @@
     }
 
     .user-row-summary {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px 10px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px 12px;
+    }
+
+    .user-row-summary .user-row-name {
+        grid-row: 1;
+        grid-column: 1;
     }
 
     .user-row-summary .button-secondary {
-        margin-left: auto;
+        grid-row: 1;
+        grid-column: 2;
     }
+
+    .user-row-summary .user-row-access {
+        grid-row: 2;
+        grid-column: 1 / -1;
+    }
+
 }
 
 body:has(.manage-shell),
@@ -2400,7 +2419,7 @@ a.page-button:hover {
 .config-row dd {
     margin: 0;
     color: var(--text);
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
 }
 
 .config-row dd.muted {
@@ -2422,4 +2441,11 @@ a.page-button:hover {
     background: var(--chip-bg);
     font-size: 12px;
     line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+    .config-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
 }
