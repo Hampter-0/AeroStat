@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AtSign, Bell, Key, Lock, LogIn, Shield, User } from '@/components/icons'
+import { AtSign, Bell, Key, Lock, LogIn, Shield, Smartphone, User } from '@/components/icons'
 import AccountForm from '@/components/manage/profile/AccountForm'
 import AvatarForm from '@/components/manage/profile/AvatarForm'
 import EmailForm from '@/components/manage/profile/EmailForm'
@@ -8,11 +8,13 @@ import PasswordForm from '@/components/manage/profile/PasswordForm'
 import PasswordLoginForm from '@/components/manage/profile/PasswordLoginForm'
 import ProfileTabs from '@/components/manage/profile/ProfileTabs'
 import SecurityKeys, { type PasskeyRow } from '@/components/manage/profile/SecurityKeys'
+import TwoFactorCard from '@/components/manage/profile/TwoFactorCard'
 import { getSiteConfig } from '@/lib/branding'
 import type { MyNotifications } from '@/lib/email'
 import { manageFetch, requireUser } from '@/lib/manage'
 import type { PasskeysResponse } from '@/lib/passkeys'
 import { currentTimeMs, formatAgo, formatDateTimeShort } from '@/lib/time'
+import type { TwoFactorStatus } from '@/lib/two-factor'
 
 export const metadata = {
   title: 'Profile',
@@ -35,9 +37,10 @@ function Card({ icon, title, wide, children }: { icon: ReactNode; title: string;
 }
 
 export default async function ProfilePage() {
-  const user = await requireUser()
+  const user = await requireUser(true)
   const notifications = await manageFetch<MyNotifications>('/profile/notifications')
   const security = await manageFetch<PasskeysResponse>('/profile/passkeys')
+  const twoFactor = await manageFetch<TwoFactorStatus>('/profile/two-factor')
   const { timezone } = await getSiteConfig()
   const now = currentTimeMs()
 
@@ -62,6 +65,18 @@ export default async function ProfilePage() {
       </header>
       <ProfileTabs active="/manage/profile" />
 
+      {user.two_factor_setup_required && (
+        <section className="update-notice warning" role="alert">
+          <div>
+            <strong>Set up two-factor sign-in to continue</strong>
+            <span>
+              An admin requires it for your account. Turn on the authenticator app or email codes under Two-factor sign-in, or
+              add a passkey. Until then you can only use your profile.
+            </span>
+          </div>
+        </section>
+      )}
+
       <div className="profile-grid">
         <Card icon={<User />} title="Account details">
           <AvatarForm userId={user.id} username={user.username} version={user.avatar_version} />
@@ -78,6 +93,10 @@ export default async function ProfilePage() {
 
         <Card icon={<Key />} title="Security keys">
           <SecurityKeys passkeys={passkeys} available={security.available} />
+        </Card>
+
+        <Card icon={<Smartphone />} title="Two-factor sign-in">
+          <TwoFactorCard status={twoFactor} />
         </Card>
 
         <Card icon={<LogIn />} title="Password login">

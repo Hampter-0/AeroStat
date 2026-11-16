@@ -1,6 +1,6 @@
 [package]
 name = "statuspage-backend"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 
 [dependencies]
@@ -28,3 +28,5 @@ chrono-tz = "0.10"
 lettre = { version = "0.11", default-features = false, features = ["builder", "smtp-transport", "hostname", "tokio1-rustls-tls"] }
 webauthn-rs = { version = "0.6", features = ["danger-allow-state-serialisation", "conditional-ui"] }
 webauthn-rs-proto = "=0.6.2"
+totp-rs = { version = "5", features = ["qr", "gen_secret", "otpauth"] }
+aes-gcm = "0.10"

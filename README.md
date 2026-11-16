@@ -194,6 +194,20 @@ Panel users can sign in with a passkey instead of a password: Windows Hello, Fac
 
 Someone with a passkey can turn password sign-in off on their profile. Signing in with a passkey never counts towards the sign-in block.
 
+## Two-factor sign-in
+
+Panel users can ask for a code after their password under **Profile → Two-factor sign-in**: from an authenticator app (1Password, Bitwarden, Google Authenticator, Aegis and so on) or by email. Turning on the first method gives 10 recovery codes, each one works once when the app or email is out of reach.
+
+The authenticator app needs `SECRET_KEY` in `.env`, which encrypts the app secrets in the database:
+
+```bash
+openssl rand -hex 32
+```
+
+Keep this key with your backups. If it changes or gets lost, everyone has to set up their app again. Email codes need email to be set up and work without the key.
+
+Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method or add a passkey before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
+
 ## Status API and badges
 
 Every AeroStat site has a small public API, so other sites and tools can show your status. Both endpoints allow cross-origin requests and are cached for a short time.
@@ -281,6 +295,7 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before new IPs are blocked; IPs that signed in to it in the last 90 days still get in |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
 | `UPDATE_CHECK` | `true` | Show people who can view System when a newer release is out |
+| `SECRET_KEY` | | Encrypts authenticator app secrets. `openssl rand -hex 32`. Without it only email codes work |
 | `SMTP_HOST` | | Mail server for email notifications. Empty turns email off |
 | `SMTP_PORT` | `465` or `587` | Mail server port, follows `SMTP_ENCRYPTION` |
 | `SMTP_ENCRYPTION` | `starttls`, or `tls` on port 465 | `tls`, `starttls` or `none` |

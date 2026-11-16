@@ -12,6 +12,7 @@ mod session;
 mod sessions;
 mod settings;
 mod system;
+mod two_factor;
 mod users;
 mod version;
 
@@ -26,6 +27,8 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/login", post(session::login))
         .route("/login/options", get(passkeys::login_options))
+        .route("/login/two-factor", post(two_factor::verify_login))
+        .route("/login/two-factor/email", post(two_factor::send_login_code))
         .route("/login/passkey", post(passkeys::start_login))
         .route("/login/passkey/finish", post(passkeys::finish_login))
         .route("/logout", post(session::logout))
@@ -40,6 +43,14 @@ pub fn router() -> Router<AppState> {
         .route("/profile/passkeys/finish", post(passkeys::finish_registration))
         .route("/profile/passkeys/:id", delete(passkeys::delete))
         .route("/profile/password-login", put(passkeys::set_password_login))
+        .route("/profile/two-factor", get(two_factor::status))
+        .route("/profile/two-factor/app", post(two_factor::start_app))
+        .route("/profile/two-factor/app/confirm", post(two_factor::confirm_app))
+        .route("/profile/two-factor/app/disable", post(two_factor::disable_app))
+        .route("/profile/two-factor/email", post(two_factor::start_email))
+        .route("/profile/two-factor/email/confirm", post(two_factor::confirm_email))
+        .route("/profile/two-factor/email/disable", post(two_factor::disable_email))
+        .route("/profile/two-factor/recovery", post(two_factor::new_recovery_codes))
         .route("/profile/sessions/others", delete(sessions::end_others))
         .route("/profile/sessions/:id", delete(sessions::end))
         .route(
@@ -54,6 +65,7 @@ pub fn router() -> Router<AppState> {
         .route("/roles", get(roles::list).post(roles::create))
         .route("/roles/:id", get(roles::get).patch(roles::update).delete(roles::delete))
         .route("/users/:id", patch(users::update).delete(users::delete))
+        .route("/users/:id/reset-two-factor", post(users::reset_two_factor))
         .route("/incidents", post(incidents::create))
         .route("/incidents/:id", patch(incidents::update).delete(incidents::delete))
         .route("/incidents/:id/updates", post(incidents::add_update))

@@ -14,6 +14,8 @@ pub struct Settings {
     pub session_days: i32,
     pub update_check: bool,
     pub smtp: Option<SmtpConfig>,
+    /// Encrypts authenticator app secrets. Without it the app option is off.
+    pub secret_key: Option<[u8; 32]>,
 }
 
 impl Settings {
@@ -50,6 +52,7 @@ impl Settings {
         );
 
         let smtp = SmtpConfig::from_env()?;
+        let secret_key = secret_key()?;
 
         Ok(Self {
             host,
@@ -61,8 +64,20 @@ impl Settings {
             session_days: session_days as i32,
             update_check,
             smtp,
+            secret_key,
         })
     }
+}
+
+/// 64 hex characters, made with `openssl rand -hex 32`.
+fn secret_key() -> anyhow::Result<Option<[u8; 32]>> {
+    let Some(text) = env::var("SECRET_KEY").ok().map(|v| v.trim().to_string()).filter(|v| !v.is_empty()) else {
+        return Ok(None);
+    };
+    let message = "SECRET_KEY must be 64 hex characters, make one with: openssl rand -hex 32";
+    let bytes = hex::decode(&text).map_err(|_| anyhow::anyhow!(message))?;
+    let key: [u8; 32] = bytes.try_into().map_err(|_| anyhow::anyhow!(message))?;
+    Ok(Some(key))
 }
 
 fn positive(name: &str, default: i64) -> anyhow::Result<i64> {

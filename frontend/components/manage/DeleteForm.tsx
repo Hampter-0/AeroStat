@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -19,6 +20,7 @@ export default function DeleteForm({
   confirmText: string
 }) {
   const [state, formAction, pending] = useActionState(action, initialState)
+  useSuccessToast(state)
 
   function confirmDelete(event: React.FormEvent<HTMLFormElement>) {
     if (!window.confirm(confirmText)) {

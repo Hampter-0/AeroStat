@@ -8,6 +8,9 @@ export interface UserRecord {
   role_ids: number[]
   super_user: boolean
   permissions: string[]
+  two_factor: boolean
+  two_factor_required: boolean
+  passkeys: number
   created_at: string
   last_login_at: string | null
   avatar_version: number | null

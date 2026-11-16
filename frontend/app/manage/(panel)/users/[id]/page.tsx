@@ -9,6 +9,7 @@ import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatDateTimeShort } from '@/lib/time'
 import type { UsersResponse } from '@/lib/users'
 import { deleteUser } from '../actions'
+import { resetTwoFactor } from '../two-factor-actions'
 
 export const metadata = {
   title: 'User',
@@ -98,6 +99,19 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
               <dd>{extraLabels.join(', ') || 'None'}</dd>
             </div>
           </dl>
+        </section>
+      )}
+
+      {!isSelf && user.two_factor && can(currentUser, 'users.edit') && (
+        <section className="manage-panel danger">
+          <h2>Reset two-factor</h2>
+          <DeleteForm
+            id={user.id}
+            action={resetTwoFactor}
+            buttonText="Reset two-factor"
+            description="Turns off their authenticator app and email codes and removes their recovery codes. Use this when they lost their phone. Their passkeys stay."
+            confirmText={'Reset two-factor sign-in for ' + user.username + '?'}
+          />
         </section>
       )}
 

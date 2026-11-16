@@ -9,7 +9,7 @@ export const metadata = {
 }
 
 export default async function SessionsPage() {
-  await requireUser()
+  await requireUser(true)
   const sessions = await manageFetch<SessionInfo[]>('/profile/sessions')
   const now = currentTimeMs()
 

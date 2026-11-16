@@ -15,6 +15,7 @@ mod services;
 mod site_settings;
 mod state;
 mod system_info;
+mod two_factor;
 
 use clap::Parser;
 use cli::Commands;
@@ -95,6 +96,10 @@ async fn main() -> anyhow::Result<()> {
         None => tracing::info!("Email is off, set SMTP_HOST to turn it on"),
     }
     mailer::init(settings.smtp.clone());
+    if settings.secret_key.is_none() {
+        tracing::info!("SECRET_KEY is not set, so the authenticator app option for two-factor sign-in is off");
+    }
+    two_factor::init(settings.secret_key);
     notifications::spawn_maintenance_watcher(pool.clone());
 
     let update_state = services::update_checker::UpdateCache::default();

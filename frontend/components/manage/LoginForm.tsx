@@ -1,15 +1,20 @@
 'use client'
 
 import { useActionState } from 'react'
-import { login, type FormState } from '@/app/manage/actions'
+import { login, type LoginState } from '@/app/manage/actions'
 import { Lock, User } from '@/components/icons'
+import TwoFactorStep from '@/components/manage/TwoFactorStep'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
-const initialState: FormState = { error: null, success: null }
+const initialState: LoginState = { error: null, success: null, twoFactor: null }
 
 export default function LoginForm() {
   const [state, formAction, pending] = useActionState(login, initialState)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
+
+  if (state.twoFactor) {
+    return <TwoFactorStep challenge={state.twoFactor} />
+  }
 
   let buttonText = 'Continue'
   if (pending) {

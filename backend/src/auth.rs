@@ -216,6 +216,9 @@ pub struct CurrentUser {
     /// Permissions given to the user directly, next to their roles.
     pub extra_permissions: Vec<String>,
     pub avatar_version: Option<i64>,
+    /// An admin requires two-factor and the user hasn't set any up yet. Until
+    /// then only the profile works.
+    pub two_factor_setup_required: bool,
 }
 
 /// Columns for loading a CurrentUser from the users table aliased as `u`.
@@ -224,7 +227,9 @@ pub const CURRENT_USER_COLUMNS: &str = "u.id, u.username, u.email, \
      (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
      (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.super_user ORDER BY r.name)) AS super_roles, \
      u.permissions AS extra_permissions, \
-     EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version";
+     EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version, \
+     (u.two_factor_required AND u.totp_secret IS NULL AND NOT u.email_two_factor \
+      AND NOT EXISTS (SELECT 1 FROM passkeys p WHERE p.user_id = u.id)) AS two_factor_setup_required";
 
 pub async fn load_user(db: &sqlx::PgPool, id: i64) -> Result<CurrentUser, ApiError> {
     let query = format!("SELECT {CURRENT_USER_COLUMNS} FROM users u WHERE u.id = $1");
@@ -276,6 +281,9 @@ impl FromRequestParts<AppState> for CurrentUser {
             .fetch_optional(&state.db)
             .await?;
         let user = user.ok_or(ApiError::Unauthorized)?;
+        if user.two_factor_setup_required && !allowed_before_setup(parts.uri.path()) {
+            return Err(ApiError::Forbidden);
+        }
 
         // At most once a minute, so browsing the panel doesn't write on every request.
         let ip = crate::login_guard::client_ip(&parts.headers);
@@ -297,6 +305,12 @@ impl FromRequestParts<AppState> for CurrentUser {
 
         Ok(user)
     }
+}
+
+/// What someone who still has to set up two-factor may use: their profile,
+/// sign-out and the basics the panel layout needs.
+fn allowed_before_setup(path: &str) -> bool {
+    path == "/me" || path == "/logout" || path == "/version" || path.starts_with("/profile") || path.starts_with("/avatar")
 }
 
 /// None when the frontend didn't pass the visitor's IP on.

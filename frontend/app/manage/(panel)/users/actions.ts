@@ -40,6 +40,7 @@ export async function createUser(_state: FormState, formData: FormData): Promise
         role_ids: roleIds(formData),
         super_user: formData.get('super_user') === 'on',
         permissions: permissions(formData),
+        two_factor_required: formData.get('two_factor_required') === 'on',
       }),
     })
   } catch (error) {
@@ -52,11 +53,19 @@ export async function createUser(_state: FormState, formData: FormData): Promise
 
 export async function updateUser(_state: FormState, formData: FormData): Promise<FormState> {
   const id = text(formData, 'id')
-  const body: { email: string; role_ids: number[]; super_user: boolean; permissions: string[]; password?: string } = {
+  const body: {
+    email: string
+    role_ids: number[]
+    super_user: boolean
+    permissions: string[]
+    two_factor_required: boolean
+    password?: string
+  } = {
     email: text(formData, 'email').trim(),
     role_ids: roleIds(formData),
     super_user: formData.get('super_user') === 'on',
     permissions: permissions(formData),
+    two_factor_required: formData.get('two_factor_required') === 'on',
   }
   const password = text(formData, 'password')
   if (password) {

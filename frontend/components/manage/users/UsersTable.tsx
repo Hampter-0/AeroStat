@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Search } from '@/components/icons'
+import { Crown, Lock, LockOpen, Search } from '@/components/icons'
 import Avatar from '@/components/manage/Avatar'
 import type { RoleSummary } from '@/lib/permissions'
 import { formatDateTimeShort } from '@/lib/time'
@@ -106,6 +106,15 @@ export default function UsersTable({
                 lastLogin = formatDateTimeShort(user.last_login_at, timezone)
               }
               const userRoles = rolesOf(user)
+              const secured = user.two_factor || user.passkeys > 0
+              let secureText = 'Password only'
+              if (user.two_factor && user.passkeys > 0) {
+                secureText = 'Two-factor and passkeys'
+              } else if (user.two_factor) {
+                secureText = 'Two-factor sign-in'
+              } else if (user.passkeys > 0) {
+                secureText = 'Passkeys'
+              }
               return (
                 <tr key={user.id}>
                   <td>
@@ -114,6 +123,21 @@ export default function UsersTable({
                       <span className="user-row-names">
                         <span className="user-row-title">
                           <strong>{user.username}</strong>
+                          {user.is_admin && (
+                            <span className="user-badge super" title="Super user">
+                              <Crown />
+                            </span>
+                          )}
+                          {secured && (
+                            <span className="user-badge secured" title={secureText}>
+                              <Lock size={13} />
+                            </span>
+                          )}
+                          {!secured && (
+                            <span className="user-badge unsecured" title={secureText}>
+                              <LockOpen size={13} />
+                            </span>
+                          )}
                           {user.id === currentUserId && <span className="you-tag">You</span>}
                         </span>
                         {user.email && <small>{user.email}</small>}

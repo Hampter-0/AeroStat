@@ -38,11 +38,13 @@ export default function UserForm({
   let startRoles: number[] = []
   let startPermissions: string[] = []
   let startSuper = false
+  let startRequired = false
   if (user) {
     userId = String(user.id)
     startRoles = user.role_ids
     startPermissions = user.permissions
     startSuper = user.super_user
+    startRequired = user.two_factor_required
     if (user.email) {
       email = user.email
     }
@@ -50,6 +52,11 @@ export default function UserForm({
   const [assigned, setAssigned] = useState<number[]>(startRoles)
   const [extra, setExtra] = useState<string[]>(startPermissions)
   const [directSuper, setDirectSuper] = useState(startSuper)
+  const [required, setRequired] = useState(startRequired)
+
+  function changeRequired(event: React.ChangeEvent<HTMLInputElement>) {
+    setRequired(event.target.checked)
+  }
 
   function changeSuper(event: React.ChangeEvent<HTMLInputElement>) {
     setDirectSuper(event.target.checked)
@@ -142,6 +149,13 @@ export default function UserForm({
           <span>
             <strong>Super user</strong>
             <small>{superHint}</small>
+          </span>
+        </label>
+        <label className="check-row hint-row">
+          <input type="checkbox" name="two_factor_required" checked={required} onChange={changeRequired} />
+          <span>
+            <strong>Require two-factor sign-in</strong>
+            <small>They must turn on an authenticator app, email codes or a passkey before they can use the panel.</small>
           </span>
         </label>
       </section>

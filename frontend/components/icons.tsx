@@ -243,9 +243,13 @@ export function User() {
   )
 }
 
-export function Lock() {
+export function Lock({ size }: { size?: number }) {
+  let px = 16
+  if (size) {
+    px = size
+  }
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <svg width={px} height={px} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
       <path d="M6 8V6.5a4 4 0 0 1 8 0V8h.5A1.5 1.5 0 0 1 16 9.5v7a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 4 16.5v-7A1.5 1.5 0 0 1 5.5 8H6Zm1.6 0h4.8V6.5a2.4 2.4 0 0 0-4.8 0V8Z" />
     </svg>
   )
@@ -385,6 +389,40 @@ export function Gauge() {
       <path d="M4.5 18a9 9 0 1 1 15 0" />
       <path d="m12 13 4-4" />
       <circle cx="12" cy="13.5" r="1.2" />
+    </svg>
+  )
+}
+
+export function Smartphone() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="5.5" y="2.5" width="9" height="15" rx="1.8" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9 14.5h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function Crown({ size }: { size?: number }) {
+  let px = 14
+  if (size) {
+    px = size
+  }
+  return (
+    <svg width={px} height={px} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M3 6.5 6.5 9 10 4l3.5 5L17 6.5 15.6 15H4.4L3 6.5Z" />
+      <rect x="4.4" y="16" width="11.2" height="1.6" rx="0.8" />
+    </svg>
+  )
+}
+
+export function LockOpen({ size }: { size?: number }) {
+  let px = 16
+  if (size) {
+    px = size
+  }
+  return (
+    <svg width={px} height={px} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M7.6 8V6.5a2.4 2.4 0 0 1 4.6-1 .8.8 0 1 0 1.5-.6A4 4 0 0 0 6 6.5V8h-.5A1.5 1.5 0 0 0 4 9.5v7A1.5 1.5 0 0 0 5.5 18h9a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 14.5 8H7.6Z" />
     </svg>
   )
 }

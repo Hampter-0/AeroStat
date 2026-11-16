@@ -2865,3 +2865,90 @@ a.page-button:hover {
     margin: 0;
     font-size: 11px;
 }
+
+.two-factor-step {
+    display: grid;
+    gap: 14px;
+}
+
+.two-factor-title {
+    margin: 0;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.two-factor-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 16px;
+}
+
+.two-factor-links .link-button {
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.two-factor-qr {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+}
+
+.two-factor-qr img {
+    padding: 8px;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.two-factor-secret {
+    max-width: 100%;
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--chip-bg);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+    text-align: center;
+}
+
+.recovery-codes {
+    margin: 0;
+    padding: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    list-style: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: var(--text);
+}
+
+.user-badge {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: -2px;
+    margin-left: 6px;
+}
+
+.user-badge.super {
+    color: var(--warning);
+}
+
+.user-badge.secured {
+    color: var(--success);
+}
+
+.user-badge.unsecured {
+    color: var(--muted);
+}
+
+.update-notice.warning {
+    margin-bottom: 16px;
+    border-color: var(--warning-border);
+    background: var(--warning-bg);
+}

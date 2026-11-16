@@ -26,6 +26,10 @@ pub struct UserRow {
     super_user: bool,
     /// Given to this user directly, on top of their roles.
     permissions: Vec<String>,
+    /// The authenticator app or email codes are on.
+    two_factor: bool,
+    two_factor_required: bool,
+    passkeys: i64,
     created_at: DateTime<Utc>,
     last_login_at: Option<DateTime<Utc>>,
     avatar_version: Option<i64>,
@@ -33,7 +37,9 @@ pub struct UserRow {
 
 const USER_COLUMNS: &str = "u.id, u.username, u.email, user_is_super(u.id) AS is_admin, \
      ARRAY(SELECT role_id FROM user_roles WHERE user_id = u.id ORDER BY role_id) AS role_ids, \
-     u.super_user, u.permissions, u.created_at, u.last_login_at, \
+     u.super_user, u.permissions, (u.totp_secret IS NOT NULL OR u.email_two_factor) AS two_factor, \
+     u.two_factor_required, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkeys, \
+     u.created_at, u.last_login_at, \
      EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version";
 
 #[derive(Serialize)]
@@ -55,6 +61,8 @@ pub struct CreateUser {
     super_user: bool,
     #[serde(default)]
     permissions: Vec<String>,
+    #[serde(default)]
+    two_factor_required: bool,
 }
 
 #[derive(Deserialize)]
@@ -62,6 +70,7 @@ pub struct UpdateUser {
     role_ids: Option<Vec<i64>>,
     super_user: Option<bool>,
     permissions: Option<Vec<String>>,
+    two_factor_required: Option<bool>,
     password: Option<String>,
     /// Missing keeps the address, an empty string removes it.
     email: Option<String>,
@@ -229,13 +238,18 @@ pub async fn create(
 
     let mut tx = state.db.begin().await?;
     let created: Result<(i64,), sqlx::Error> = sqlx::query_as(
-        "INSERT INTO users (username, password_hash, email, permissions, super_user) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        r#"
+        INSERT INTO users (username, password_hash, email, permissions, super_user, two_factor_required)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING id
+        "#,
     )
     .bind(&username)
     .bind(&password_hash)
     .bind(&email)
     .bind(&permissions)
     .bind(body.super_user)
+    .bind(body.two_factor_required)
     .fetch_one(&mut *tx)
     .await;
     let id = match created {
@@ -256,6 +270,7 @@ pub async fn create(
         "roles": role_names(&state.db, id).await,
         "super_user": body.super_user,
         "permissions": permissions,
+        "two_factor_required": body.two_factor_required,
     });
     activity::record(&state.db, &user, "users", "created user", None, &username, Some(details)).await;
     Ok((StatusCode::CREATED, Json(find_user(&state.db, id).await?)))
@@ -327,6 +342,14 @@ pub async fn update(
             .await?;
         details["super_user"] = json!({ "from": target.super_user, "to": super_user });
     }
+    if let Some(required) = body.two_factor_required.filter(|value| *value != target.two_factor_required) {
+        sqlx::query("UPDATE users SET two_factor_required = $1 WHERE id = $2")
+            .bind(required)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+        details["two_factor_required"] = json!({ "from": target.two_factor_required, "to": required });
+    }
     if role_ids.is_some() || super_change.is_some() {
         ensure_super_user_left(&mut tx, &user).await?;
     }
@@ -396,6 +419,33 @@ pub async fn delete(
 
     let details = json!({ "email": target.email, "roles": roles_before });
     activity::record(&state.db, &user, "users", "deleted user", None, &target.username, Some(details)).await;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Turns off someone's authenticator app and email codes, for when they lost
+/// their phone. Their recovery codes go too; passkeys stay.
+pub async fn reset_two_factor(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(id): Path<i64>,
+) -> Result<StatusCode, ApiError> {
+    user.require("users.edit")?;
+    let target = find_user(&state.db, id).await?;
+    if target.id == user.id {
+        return Err(ApiError::BadRequest("Change your own two-factor sign-in on your profile".into()));
+    }
+    require_reach(&state.db, &user, id).await?;
+    let mut tx = state.db.begin().await?;
+    sqlx::query("UPDATE users SET totp_secret = NULL, totp_last_step = NULL, email_two_factor = false WHERE id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM recovery_codes WHERE user_id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    activity::record(&state.db, &user, "users", "reset two-factor sign-in of", None, &target.username, None).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -10,7 +10,7 @@ export const metadata = {
 }
 
 export default async function PanelLayout({ children }: { children: ReactNode }) {
-  const user = await requireUser()
+  const user = await requireUser(true)
   const config = await getSiteConfig()
   const version = await getVersionInfo()
 

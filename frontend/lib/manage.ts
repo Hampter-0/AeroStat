@@ -14,6 +14,7 @@ export interface ManageUser {
   super_roles: string[]
   extra_permissions: string[]
   avatar_version: number | null
+  two_factor_setup_required: boolean
 }
 
 export class ManageApiError extends Error {
@@ -113,10 +114,13 @@ export async function getCurrentUser(): Promise<ManageUser | null> {
   }
 }
 
-export async function requireUser(): Promise<ManageUser> {
+export async function requireUser(allowBeforeSetup: boolean = false): Promise<ManageUser> {
   const user = await getCurrentUser()
   if (!user) {
     redirect('/manage/login')
+  }
+  if (user.two_factor_setup_required && !allowBeforeSetup) {
+    redirect('/manage/profile')
   }
   return user
 }

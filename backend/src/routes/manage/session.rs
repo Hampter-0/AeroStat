@@ -16,8 +16,16 @@ pub struct LoginRequest {
     password: String,
 }
 
+/// Either a session, or a challenge when a second factor is still needed.
 #[derive(Serialize)]
-pub(super) struct LoginResponse {
+#[serde(untagged)]
+pub enum LoginReply {
+    Session(LoginResponse),
+    TwoFactor { two_factor: super::two_factor::ChallengeView },
+}
+
+#[derive(Serialize)]
+pub struct LoginResponse {
     token: String,
     expires_at: DateTime<Utc>,
     user: CurrentUser,
@@ -34,7 +42,7 @@ pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(body): Json<LoginRequest>,
-) -> Result<Json<LoginResponse>, ApiError> {
+) -> Result<Json<LoginReply>, ApiError> {
     let login = body.username.trim().to_lowercase();
     let ip = login_guard::client_ip(&headers);
     let details = headers
@@ -97,7 +105,11 @@ pub async fn login(
         ));
     }
 
-    start_session(&state, user_id, &headers, &ip, details).await
+    if let Some(challenge) = super::two_factor::challenge_for(&state, user_id, &ip, details.clone()).await? {
+        return Ok(Json(LoginReply::TwoFactor { two_factor: challenge }));
+    }
+    let Json(session) = start_session(&state, user_id, &headers, &ip, details).await?;
+    Ok(Json(LoginReply::Session(session)))
 }
 
 /// Opens a session after a successful sign-in, by password or passkey.
