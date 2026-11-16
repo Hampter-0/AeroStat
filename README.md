@@ -363,7 +363,7 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `PRIMARY_COLOR` | `#1678c2` | Default accent colour |
 | `METRICS_RETENTION_DAYS` | `60` | Days of check results to keep |
 | `SESSION_DAYS` | `30` | How long a panel sign-in lasts (max 365) |
-| `LOGIN_MAX_FAILURES_PER_IP` | `10` | Failed sign-ins from one IP before a block |
+| `LOGIN_MAX_FAILURES_PER_IP` | `10` | Failed sign-ins from one IP before a block. IPv6 addresses count per /64 block, since one connection gets a whole block |
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before new IPs are blocked; IPs that signed in to it in the last 90 days still get in |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
 | `UPDATE_CHECK` | `true` | Show people who can view System when a newer release is out |

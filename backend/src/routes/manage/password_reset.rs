@@ -67,7 +67,7 @@ fn new_token() -> String {
 /// Counts requests per IP. Over the limit the request is refused; if Redis is
 /// down, requests keep working.
 async fn check_ip_limit(state: &AppState, ip: &str) -> Result<(), ApiError> {
-    let key = format!("reset:ip:{ip}");
+    let key = format!("reset:ip:{}", login_guard::limit_address(ip));
     let count: anyhow::Result<i64> = async {
         let mut conn = state.redis.get().await?;
         let count: i64 = conn.incr(&key, 1).await?;

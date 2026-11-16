@@ -16,8 +16,25 @@ pub struct LoginLimits {
     pub lockout_minutes: i64,
 }
 
+/// The part of an address the limits count. An IPv6 connection gets a whole
+/// /64 block, so counting single addresses would let someone switch address on
+/// every attempt; the block counts as one. IPv4 stays as it is.
+pub fn limit_address(ip: &str) -> String {
+    match ip.trim().parse::<std::net::IpAddr>() {
+        Ok(std::net::IpAddr::V6(v6)) => match v6.to_ipv4_mapped() {
+            Some(v4) => v4.to_string(),
+            None => {
+                let s = v6.segments();
+                format!("{:x}:{:x}:{:x}:{:x}::/64", s[0], s[1], s[2], s[3])
+            }
+        },
+        Ok(std::net::IpAddr::V4(v4)) => v4.to_string(),
+        Err(_) => ip.trim().to_lowercase(),
+    }
+}
+
 fn ip_key(ip: &str) -> String {
-    format!("login:fail:ip:{}", ip.to_lowercase())
+    format!("login:fail:ip:{}", limit_address(ip))
 }
 
 /// Failures count per account, so signing in with the username or the email
@@ -264,4 +281,23 @@ pub async fn unblock(db: &PgPool, redis: &Pool, input: &str) -> anyhow::Result<u
     let mut conn = redis.get().await?;
     let removed: usize = conn.del(&keys).await?;
     Ok(removed)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::limit_address;
+
+    #[test]
+    fn ipv6_counts_per_64_block() {
+        assert_eq!(limit_address("2a02:a442:262e:0:59c:d8d:4683:f1ba"), "2a02:a442:262e:0::/64");
+        assert_eq!(limit_address("2a02:a442:262e:0:ffff:1:2:3"), "2a02:a442:262e:0::/64");
+        assert_ne!(limit_address("2a02:a442:262e:1::1"), limit_address("2a02:a442:262e:0::1"));
+    }
+
+    #[test]
+    fn ipv4_and_mapped_stay_whole() {
+        assert_eq!(limit_address("178.230.109.111"), "178.230.109.111");
+        assert_eq!(limit_address("::ffff:178.230.109.111"), "178.230.109.111");
+        assert_eq!(limit_address("unknown"), "unknown");
+    }
 }
