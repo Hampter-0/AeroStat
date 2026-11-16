@@ -35,6 +35,8 @@ pub struct CreateUser {
     is_admin: bool,
     #[serde(default)]
     permissions: Vec<String>,
+    #[serde(default)]
+    email: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -42,6 +44,12 @@ pub struct UpdateUser {
     is_admin: Option<bool>,
     permissions: Option<Vec<String>>,
     password: Option<String>,
+    /// Missing keeps the address, an empty string removes it.
+    email: Option<String>,
+}
+
+fn email_taken() -> ApiError {
+    ApiError::Conflict("That email address is already used by another account".into())
 }
 
 pub(super) fn validate_username(username: &str) -> Result<(), ApiError> {
@@ -108,13 +116,14 @@ pub async fn create(
     validate_username(&username)?;
     validate_password(&body.password)?;
     auth::validate_permissions(&body.permissions)?;
+    let email = super::profile::clean_email(body.email)?;
 
     let password_hash = auth::hash_password(body.password).await?;
 
     let created: Result<UserRow, sqlx::Error> = sqlx::query_as(
         r#"
-        INSERT INTO users (username, password_hash, is_admin, permissions)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO users (username, password_hash, is_admin, permissions, email)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING id, username, email, is_admin, permissions, created_at
         "#,
     )
@@ -122,6 +131,7 @@ pub async fn create(
     .bind(&password_hash)
     .bind(body.is_admin)
     .bind(&body.permissions)
+    .bind(&email)
     .fetch_one(&state.db)
     .await;
 
@@ -132,7 +142,11 @@ pub async fn create(
             Ok((StatusCode::CREATED, Json(row)))
         }
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => {
-            Err(ApiError::Conflict(format!("Username '{username}' is already taken")))
+            if e.constraint().unwrap_or("").contains("email") {
+                Err(email_taken())
+            } else {
+                Err(ApiError::Conflict(format!("Username '{username}' is already taken")))
+            }
         }
         Err(e) => Err(e.into()),
     }
@@ -148,6 +162,21 @@ pub async fn update(
     let target = find_user(&state, id).await?;
     let before = activity::snapshot(&state.db, "users", &id.to_string()).await;
     let password_changed = body.password.is_some();
+
+    // First, so a taken address stops the edit before anything else changes.
+    if body.email.is_some() {
+        let email = super::profile::clean_email(body.email)?;
+        let result = sqlx::query("UPDATE users SET email = $1 WHERE id = $2")
+            .bind(&email)
+            .bind(id)
+            .execute(&state.db)
+            .await;
+        match result {
+            Ok(_) => {}
+            Err(sqlx::Error::Database(e)) if e.is_unique_violation() => return Err(email_taken()),
+            Err(e) => return Err(e.into()),
+        }
+    }
 
     if let Some(is_admin) = body.is_admin {
         if target.is_admin && !is_admin {

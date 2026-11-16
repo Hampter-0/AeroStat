@@ -90,6 +90,7 @@ export async function createUser(_state: FormState, formData: FormData): Promise
         password: String(formData.get('password') || ''),
         is_admin: formData.get('is_admin') === 'on',
         permissions: selectedPermissions(formData),
+        email: String(formData.get('email') || '').trim(),
       }),
     })
   } catch (error) {
@@ -101,9 +102,10 @@ export async function createUser(_state: FormState, formData: FormData): Promise
 
 export async function updateUser(_state: FormState, formData: FormData): Promise<FormState> {
   const id = String(formData.get('id') || '')
-  const body: { is_admin: boolean; permissions: string[]; password?: string } = {
+  const body: { is_admin: boolean; permissions: string[]; email: string; password?: string } = {
     is_admin: formData.get('is_admin') === 'on',
     permissions: selectedPermissions(formData),
+    email: String(formData.get('email') || '').trim(),
   }
   const password = String(formData.get('password') || '')
   if (password) {

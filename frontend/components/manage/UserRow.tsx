@@ -55,6 +55,11 @@ export default function UserRow({
     editLabel = 'Close'
   }
 
+  let email = ''
+  if (user.email) {
+    email = user.email
+  }
+
   let saveText = 'Save changes'
   if (saving) {
     saveText = 'Saving…'
@@ -99,6 +104,10 @@ export default function UserRow({
               initialSelected={user.permissions}
               adminLocked={isSelf}
             />
+            <label>
+              <span>Email</span>
+              <input key={'email-' + email} name="email" type="email" autoComplete="off" defaultValue={email} placeholder="No email address" />
+            </label>
             <label>
               <span>New password</span>
               <input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="Leave empty to keep the current password" />

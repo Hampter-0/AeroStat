@@ -27,6 +27,11 @@ export default function NewUserForm({ permissions }: { permissions: string[] }) 
           <input name="password" type="password" autoComplete="new-password" required minLength={8} />
         </label>
       </div>
+      <label>
+        <span>Email</span>
+        <input name="email" type="email" autoComplete="off" placeholder="Optional" />
+        <small className="field-hint">For email notifications. They can change it on their profile.</small>
+      </label>
       <PermissionFields permissions={permissions} initialAdmin={false} initialSelected={[]} adminLocked={false} />
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
       {state.success && <p className="form-success" role="status">{state.success}</p>}

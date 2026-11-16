@@ -27,7 +27,7 @@ pub struct PasswordBody {
     new_password: String,
 }
 
-fn clean_email(email: Option<String>) -> Result<Option<String>, ApiError> {
+pub(super) fn clean_email(email: Option<String>) -> Result<Option<String>, ApiError> {
     let email = match email.map(|e| e.trim().to_string()).filter(|e| !e.is_empty()) {
         Some(e) => e,
         None => return Ok(None),
