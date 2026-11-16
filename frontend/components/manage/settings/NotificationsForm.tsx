@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { saveNotifications, sendTestNotification } from '@/app/manage/(panel)/settings/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import { EVENT_GROUPS, type NotificationSettings } from '@/lib/notifications'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
@@ -10,8 +11,10 @@ const initialState: FormState = { error: null, success: null }
 
 export default function NotificationsForm({ settings }: { settings: NotificationSettings }) {
   const [state, formAction, pending] = useActionState(saveNotifications, initialState)
+  useSuccessToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
   const [testState, testAction, testing] = useActionState(sendTestNotification, initialState)
+  useSuccessToast(testState)
 
   let webhookHint = 'Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.'
   let webhookPlaceholder = 'https://discord.com/api/webhooks/…'
@@ -20,9 +23,9 @@ export default function NotificationsForm({ settings }: { settings: Notification
     webhookPlaceholder = 'Saved, leave empty to keep it'
   }
 
-  let publicUrl = ''
+  let addressText = 'Messages have no links yet. Set the status page address under Settings → General.'
   if (settings.public_url) {
-    publicUrl = settings.public_url
+    addressText = 'Messages link to ' + settings.public_url + '. Change it under Settings → General.'
   }
 
   let saveText = 'Save'
@@ -51,16 +54,7 @@ export default function NotificationsForm({ settings }: { settings: Notification
             </span>
           </label>
         )}
-        <label>
-          <span>Status page address</span>
-          <input
-            key={'public_url-' + publicUrl}
-            name="public_url"
-            defaultValue={publicUrl}
-            placeholder="https://status.example.com"
-          />
-          <small className="field-hint">Messages link to the incident or maintenance on this address. Leave empty for no links.</small>
-        </label>
+        <p className="field-hint notification-address">{addressText}</p>
 
         {EVENT_GROUPS.map(function (group) {
           return (
@@ -84,7 +78,6 @@ export default function NotificationsForm({ settings }: { settings: Notification
         })}
 
         {state.error && <p className="form-error" role="alert">{state.error}</p>}
-        {state.success && <p className="form-success" role="status">{state.success}</p>}
         <div className="form-actions">
           <button type="submit" className="button-primary" disabled={pending}>
             {saveText}
@@ -99,7 +92,6 @@ export default function NotificationsForm({ settings }: { settings: Notification
             {testText}
           </button>
           {testState.error && <p className="form-error" role="alert">{testState.error}</p>}
-          {testState.success && <p className="form-success" role="status">{testState.success}</p>}
         </form>
       )}
     </>

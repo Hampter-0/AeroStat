@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
+import { flash } from '@/lib/flash'
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) || '')
@@ -35,6 +36,7 @@ export async function saveRole(_state: FormState, formData: FormData): Promise<F
   }
   revalidatePath('/manage', 'layout')
   if (createdId) {
+    await flash('Role created')
     redirect('/manage/roles/' + createdId)
   }
   return { error: null, success: 'Saved' }
@@ -48,5 +50,6 @@ export async function deleteRole(_state: FormState, formData: FormData): Promise
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage', 'layout')
+  await flash('Role deleted')
   redirect('/manage/roles')
 }

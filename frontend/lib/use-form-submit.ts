@@ -37,3 +37,16 @@ export function useFormSubmit(formAction: (payload: FormData) => void, state: Fo
 
   return { formRef: formRef, onSubmit: onSubmit }
 }
+
+export function useKeepValuesSubmit(formAction: (payload: FormData) => void) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const submitter = (event.nativeEvent as SubmitEvent).submitter
+    const formData = new FormData(event.currentTarget, submitter)
+    startTransition(function () {
+      formAction(formData)
+    })
+  }
+
+  return onSubmit
+}

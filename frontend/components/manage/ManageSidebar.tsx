@@ -39,7 +39,11 @@ export default function ManageSidebar({
   if (hasPermission(user, 'services.view')) {
     items.push({ href: '/manage/services', label: 'Services', icon: <Server /> })
   }
-  if (hasPermission(user, 'settings.general') || hasPermission(user, 'settings.notifications')) {
+  const settingsPermissions = ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.time', 'settings.notifications']
+  const canSettings = settingsPermissions.some(function (permission) {
+    return hasPermission(user, permission)
+  })
+  if (canSettings) {
     items.push({ href: '/manage/settings', label: 'Settings', icon: <Settings /> })
   }
   if (hasPermission(user, 'users.view')) {

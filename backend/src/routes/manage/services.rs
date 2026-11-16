@@ -304,10 +304,11 @@ pub async fn move_service(
 
 pub async fn check_now(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
     user.require("services.check")?;
-    sqlx::query("UPDATE services SET next_check_at = now()")
+    let result = sqlx::query("UPDATE services SET next_check_at = now()")
         .execute(&state.db)
         .await?;
-    activity::record(&state.db, &user, PERMISSION, "checked all services now", None, "", None).await;
+    let details = serde_json::json!({ "services": result.rows_affected() });
+    activity::record(&state.db, &user, PERMISSION, "checked all services now", None, "", Some(details)).await;
     Ok(StatusCode::ACCEPTED)
 }
 

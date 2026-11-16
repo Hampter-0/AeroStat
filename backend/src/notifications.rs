@@ -114,18 +114,23 @@ pub fn permission_for(kind: &str) -> &'static str {
     }
 }
 
-#[derive(sqlx::FromRow)]
 pub struct NotificationSettings {
     pub discord_webhook_url: Option<String>,
+    /// The status page address from the site settings, for links and pictures.
     pub public_url: Option<String>,
     pub events: Vec<String>,
 }
 
 pub async fn load(db: &PgPool) -> anyhow::Result<NotificationSettings> {
-    let settings = sqlx::query_as("SELECT discord_webhook_url, public_url, events FROM notification_settings")
-        .fetch_one(db)
-        .await?;
-    Ok(settings)
+    let (discord_webhook_url, events): (Option<String>, Vec<String>) =
+        sqlx::query_as("SELECT discord_webhook_url, events FROM notification_settings")
+            .fetch_one(db)
+            .await?;
+    Ok(NotificationSettings {
+        discord_webhook_url,
+        public_url: site_settings::public_url(db).await,
+        events,
+    })
 }
 
 /// Only real Discord webhooks are accepted, so this field can't be used to make

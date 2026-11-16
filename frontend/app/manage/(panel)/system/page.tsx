@@ -261,7 +261,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
             </div>
             {system.history.length === 0 && <p className="manage-empty activity-empty">No releases found yet. Check for updates to load them.</p>}
             {system.history.length > 0 && (
-              <div className="activity-table-wrap">
+              <div className="activity-table-wrap history-scroll">
                 <table className="activity-table history-table">
                   <thead>
                     <tr>

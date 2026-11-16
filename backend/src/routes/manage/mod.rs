@@ -4,6 +4,7 @@ mod email;
 mod incidents;
 mod maintenance;
 mod notifications;
+mod passkeys;
 mod profile;
 mod roles;
 mod services;
@@ -24,6 +25,9 @@ pub use users::{create_admin_from_cli, reset_password_from_cli};
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/login", post(session::login))
+        .route("/login/options", get(passkeys::login_options))
+        .route("/login/passkey", post(passkeys::start_login))
+        .route("/login/passkey/finish", post(passkeys::finish_login))
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
         .route("/version", get(version::get))
@@ -32,6 +36,10 @@ pub fn router() -> Router<AppState> {
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
         .route("/profile/sessions", get(sessions::list))
+        .route("/profile/passkeys", get(passkeys::list).post(passkeys::start_registration))
+        .route("/profile/passkeys/finish", post(passkeys::finish_registration))
+        .route("/profile/passkeys/:id", delete(passkeys::delete))
+        .route("/profile/password-login", put(passkeys::set_password_login))
         .route("/profile/sessions/others", delete(sessions::end_others))
         .route("/profile/sessions/:id", delete(sessions::end))
         .route(

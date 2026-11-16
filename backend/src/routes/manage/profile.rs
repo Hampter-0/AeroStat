@@ -19,6 +19,10 @@ const AVATAR_TYPES: [&str; 4] = ["image/png", "image/jpeg", "image/webp", "image
 pub struct ProfileBody {
     username: String,
     email: Option<String>,
+    /// Needed when the email address changes, so someone at an unlocked screen
+    /// can't take over the address your account mail goes to.
+    #[serde(default)]
+    current_password: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -52,6 +56,19 @@ pub async fn update(
     let username = body.username.trim().to_lowercase();
     validate_username(&username)?;
     let email = clean_email(body.email)?;
+    if email != user.email {
+        let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
+            .bind(user.id)
+            .fetch_one(&state.db)
+            .await?;
+        let given = body.current_password.unwrap_or_default();
+        if given.is_empty() {
+            return Err(ApiError::BadRequest("Enter your current password to change your email address".into()));
+        }
+        if !auth::verify_password(given, hash).await {
+            return Err(ApiError::BadRequest("Your current password is not correct".into()));
+        }
+    }
     let before = activity::snapshot(&state.db, "users", &user.id.to_string()).await;
 
     let result = sqlx::query("UPDATE users SET username = $1, email = $2 WHERE id = $3")

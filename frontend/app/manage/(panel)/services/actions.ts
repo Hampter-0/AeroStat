@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
 import { INTERVAL_UNITS } from '@/lib/services'
+import { flash } from '@/lib/flash'
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) || '')
@@ -65,6 +66,7 @@ export async function createService(_state: FormState, formData: FormData): Prom
     return { error: errorMessage(error), success: null }
   }
   refreshAll()
+  await flash('Service added')
   redirect('/manage/services')
 }
 
@@ -92,6 +94,7 @@ export async function deleteService(_state: FormState, formData: FormData): Prom
     return { error: errorMessage(error), success: null }
   }
   refreshAll()
+  await flash('Service deleted')
   redirect('/manage/services')
 }
 

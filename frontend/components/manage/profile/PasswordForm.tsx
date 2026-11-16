@@ -3,12 +3,14 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { changePassword } from '@/app/manage/(panel)/profile/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function PasswordForm() {
   const [state, formAction, pending] = useActionState(changePassword, initialState)
+  useSuccessToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let buttonText = 'Change password'
@@ -34,7 +36,6 @@ export default function PasswordForm() {
         </label>
       </div>
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

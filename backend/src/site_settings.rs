@@ -10,8 +10,31 @@ pub const CONTACT_URL: &str = "contact_url";
 pub const PRIMARY_COLOR: &str = "primary_color";
 pub const TIMEZONE: &str = "timezone";
 pub const METRICS_RETENTION_DAYS: &str = "metrics_retention_days";
+/// The address visitors use, for links in notifications and for passkeys.
+pub const PUBLIC_URL: &str = "public_url";
 
-pub const KEYS: [&str; 6] = [SITE_NAME, SITE_DESCRIPTION, CONTACT_URL, PRIMARY_COLOR, TIMEZONE, METRICS_RETENTION_DAYS];
+pub const KEYS: [&str; 7] = [
+    SITE_NAME,
+    SITE_DESCRIPTION,
+    CONTACT_URL,
+    PUBLIC_URL,
+    PRIMARY_COLOR,
+    TIMEZONE,
+    METRICS_RETENTION_DAYS,
+];
+
+/// The settings permission needed to change a key, one per tab in the panel.
+pub fn permission_for(key: &str) -> &'static str {
+    match key {
+        PRIMARY_COLOR => "settings.appearance",
+        TIMEZONE => "settings.time",
+        METRICS_RETENTION_DAYS => "settings.monitoring",
+        _ => "settings.general",
+    }
+}
+
+/// Every permission that opens a part of the settings page except notifications.
+pub const PAGE_PERMISSIONS: [&str; 4] = ["settings.general", "settings.appearance", "settings.monitoring", "settings.time"];
 
 pub async fn all(db: &PgPool) -> anyhow::Result<HashMap<String, String>> {
     let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value FROM settings")
@@ -26,6 +49,11 @@ async fn get(db: &PgPool, key: &str) -> anyhow::Result<Option<String>> {
         .fetch_optional(db)
         .await?;
     Ok(row.map(|(value,)| value))
+}
+
+/// The status page address without a trailing slash, when it is set.
+pub async fn public_url(db: &PgPool) -> Option<String> {
+    get(db, PUBLIC_URL).await.ok().flatten()
 }
 
 /// The site's timezone; UTC when unset or unreadable.

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
+import { flash } from '@/lib/flash'
 
 interface CreatedIncident {
   id: number
@@ -44,6 +45,7 @@ export async function createIncident(_state: FormState, formData: FormData): Pro
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/incidents')
+  await flash('Incident posted')
   redirect('/manage/incidents/' + created.id)
 }
 
@@ -74,6 +76,7 @@ export async function deleteIncident(_state: FormState, formData: FormData): Pro
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/incidents')
+  await flash('Incident deleted')
   redirect('/manage/incidents')
 }
 

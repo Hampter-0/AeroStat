@@ -17,6 +17,7 @@ pub struct NotificationView {
     /// Never the full URL: it works as a password for posting to the channel.
     discord_configured: bool,
     discord_hint: Option<String>,
+    /// Set under Settings → General; shown so the page can say where links go.
     public_url: Option<String>,
     events: Vec<String>,
     available_events: Vec<&'static str>,
@@ -26,7 +27,6 @@ pub struct NotificationView {
 pub struct NotificationBody {
     /// Missing keeps the current webhook, an empty string removes it.
     discord_webhook_url: Option<String>,
-    public_url: Option<String>,
     events: Vec<String>,
 }
 
@@ -47,19 +47,6 @@ pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Jso
     }))
 }
 
-fn clean_public_url(value: Option<String>) -> Result<Option<String>, ApiError> {
-    let Some(value) = value.map(|v| v.trim().trim_end_matches('/').to_string()).filter(|v| !v.is_empty()) else {
-        return Ok(None);
-    };
-    let ok = reqwest::Url::parse(&value)
-        .map(|url| matches!(url.scheme(), "http" | "https") && url.host_str().is_some())
-        .unwrap_or(false);
-    if !ok {
-        return Err(ApiError::BadRequest("Status page address must start with https://".into()));
-    }
-    Ok(Some(value))
-}
-
 pub async fn update(
     State(state): State<AppState>,
     user: CurrentUser,
@@ -71,7 +58,6 @@ pub async fn update(
             return Err(ApiError::BadRequest(format!("Unknown notification: {kind}")));
         }
     }
-    let public_url = clean_public_url(body.public_url)?;
 
     let webhook_change = match body.discord_webhook_url.map(|url| url.trim().to_string()) {
         None => None,
@@ -87,8 +73,7 @@ pub async fn update(
     };
 
     let mut tx = state.db.begin().await?;
-    sqlx::query("UPDATE notification_settings SET public_url = $1, events = $2, updated_at = now()")
-        .bind(&public_url)
+    sqlx::query("UPDATE notification_settings SET events = $1, updated_at = now()")
         .bind(&body.events)
         .execute(&mut *tx)
         .await?;
@@ -105,7 +90,7 @@ pub async fn update(
         Some(None) => "removed",
         Some(Some(_)) => "changed",
     };
-    let details = json!({ "events": body.events, "public_url": public_url, "discord_webhook": webhook_text });
+    let details = json!({ "events": body.events, "discord_webhook": webhook_text });
     activity::record(&state.db, &user, PERMISSION, "changed", None, "notifications", Some(details)).await;
     Ok(StatusCode::NO_CONTENT)
 }

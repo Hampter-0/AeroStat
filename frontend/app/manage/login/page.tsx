@@ -2,8 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import Logo from '@/components/layout/Logo'
 import LoginForm from '@/components/manage/LoginForm'
+import PasskeyLoginButton from '@/components/manage/PasskeyLoginButton'
 import { getSiteConfig } from '@/lib/branding'
-import { getCurrentUser } from '@/lib/manage'
+import { getCurrentUser, manageFetch } from '@/lib/manage'
 
 export const metadata = {
   title: 'Login',
@@ -16,6 +17,13 @@ export default async function LoginPage() {
   }
 
   const config = await getSiteConfig()
+  let passkeys = false
+  try {
+    const options = await manageFetch<{ passkeys: boolean }>('/login/options')
+    passkeys = options.passkeys
+  } catch {
+    passkeys = false
+  }
   const siteName = config.siteName
   const year = new Date().getUTCFullYear()
 
@@ -34,6 +42,7 @@ export default async function LoginPage() {
 
         <div className="manage-login-card">
           <LoginForm />
+          {passkeys && <PasskeyLoginButton />}
         </div>
 
         <footer className="manage-login-footer">

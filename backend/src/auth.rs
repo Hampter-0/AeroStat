@@ -80,7 +80,10 @@ pub static PERMISSION_GROUPS: &[PermissionGroup] = &[
         key: "settings",
         label: "Settings",
         permissions: &[
-            perm("settings.general", "Site settings", "Name, branding, time and region.", None),
+            perm("settings.general", "General", "Site name, description and contact link.", None),
+            perm("settings.appearance", "Appearance", "Logo, favicon and accent colour.", None),
+            perm("settings.monitoring", "Monitoring", "How long check results are kept.", None),
+            perm("settings.time", "Time & region", "The time zone the status page uses.", None),
             perm("settings.notifications", "Notifications", "The Discord webhook and which events it gets.", None),
         ],
     },

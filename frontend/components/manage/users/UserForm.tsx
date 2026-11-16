@@ -4,7 +4,9 @@ import { useActionState, useEffect, useRef, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createUser, updateUser } from '@/app/manage/(panel)/users/actions'
 import PermissionTree from '@/components/manage/roles/PermissionTree'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import type { PermissionGroup, PermissionUser, RoleSummary } from '@/lib/permissions'
+import { useKeepValuesSubmit } from '@/lib/use-form-submit'
 import { canGiveRole, roleDescription, type UserRecord } from '@/lib/users'
 
 const initialState: FormState = { error: null, success: null }
@@ -27,6 +29,8 @@ export default function UserForm({
     action = updateUser
   }
   const [state, formAction, pending] = useActionState(action, initialState)
+  const onSubmit = useKeepValuesSubmit(formAction)
+  useSuccessToast(state)
   const formRef = useRef<HTMLFormElement>(null)
 
   let email = ''
@@ -98,7 +102,7 @@ export default function UserForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="manage-form">
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       <input type="hidden" name="id" value={userId} />
       <section className="manage-panel">
         <h2>Account</h2>
@@ -202,7 +206,6 @@ export default function UserForm({
       )}
 
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {saveText}

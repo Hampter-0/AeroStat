@@ -8,6 +8,7 @@ mod error;
 mod login_guard;
 mod mailer;
 mod notifications;
+mod passkeys;
 mod models;
 mod routes;
 mod services;

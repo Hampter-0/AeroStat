@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import type { StatusUpdate } from '@/lib/types'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -31,6 +32,7 @@ export default function UpdateEntry({
 }) {
   const [editing, setEditing] = useState(false)
   const [saveState, saveFormAction, saving] = useActionState(editAction, initialState)
+  useSuccessToast(saveState)
   const { formRef: saveFormRef, onSubmit: saveSubmit } = useFormSubmit(saveFormAction, saveState)
   const [deleteState, deleteFormAction, deleting] = useActionState(deleteAction, initialState)
 
@@ -90,7 +92,6 @@ export default function UpdateEntry({
               <textarea name="message" rows={3} required defaultValue={update.message} />
             </label>
             {saveState.error && <p className="form-error" role="alert">{saveState.error}</p>}
-            {saveState.success && <p className="form-success" role="status">{saveState.success}</p>}
             {deleteState.error && <p className="form-error" role="alert">{deleteState.error}</p>}
             <div className="form-actions spread">
               {canDelete && (

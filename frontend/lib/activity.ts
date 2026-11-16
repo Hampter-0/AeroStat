@@ -24,7 +24,11 @@ export const ACTIVITY_CATEGORIES: { value: string; label: string; anyOf: string[
   { value: 'maintenance', label: 'Maintenance', anyOf: ['maintenance.view'] },
   { value: 'services', label: 'Services', anyOf: ['services.view'] },
   { value: 'groups', label: 'Groups', anyOf: ['services.view'] },
-  { value: 'settings', label: 'Settings', anyOf: ['settings.general', 'settings.notifications'] },
+  {
+    value: 'settings',
+    label: 'Settings',
+    anyOf: ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.time', 'settings.notifications'],
+  },
   { value: 'system', label: 'System', anyOf: ['system.view'] },
   { value: 'users', label: 'Users', anyOf: ['users.view'] },
   { value: 'roles', label: 'Roles', anyOf: ['roles.view'] },

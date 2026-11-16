@@ -6,6 +6,7 @@ use serde_json::Value;
 
 use crate::activity::CATEGORIES;
 use crate::auth::CurrentUser;
+use crate::site_settings;
 use crate::error::ApiError;
 use crate::state::AppState;
 
@@ -70,7 +71,9 @@ fn can_see(user: &CurrentUser, category: &str) -> bool {
         "incidents" => user.has("incidents.view"),
         "maintenance" => user.has("maintenance.view"),
         "services" | "groups" => user.has("services.view"),
-        "settings" => user.has("settings.general") || user.has("settings.notifications"),
+        "settings" => {
+            user.has("settings.notifications") || site_settings::PAGE_PERMISSIONS.iter().any(|permission| user.has(permission))
+        }
         "system" => user.has("system.view"),
         "users" | "account" => user.has("users.view"),
         "roles" => user.has("roles.view"),

@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { saveEmailNotifications } from '@/app/manage/(panel)/profile/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import type { MyNotifications } from '@/lib/email'
 import { EVENT_GROUPS } from '@/lib/notifications'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -11,6 +12,7 @@ const initialState: FormState = { error: null, success: null }
 
 export default function EmailNotificationsForm({ settings }: { settings: MyNotifications }) {
   const [state, formAction, pending] = useActionState(saveEmailNotifications, initialState)
+  useSuccessToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let saveText = 'Save'
@@ -68,7 +70,6 @@ export default function EmailNotificationsForm({ settings }: { settings: MyNotif
       })}
 
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {saveText}

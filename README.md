@@ -31,6 +31,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 
 - Public status page with daily uptime bars, incidents and maintenance
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log
+- Sign in with a password or a passkey, see and sign out your sessions
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
 - Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
@@ -170,7 +171,7 @@ In the panel under **Settings → Notifications**, paste a Discord webhook URL (
 - an incident is posted, updated or resolved
 - maintenance is planned, starts, ends or is cancelled
 
-Set the status page address there too, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.
+Set the status page address under **Settings → General**, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.
 
 ## Email notifications
 
@@ -186,6 +187,12 @@ SMTP_FROM_ADDRESS=noreply@example.com
 ```
 
 Restart with `docker compose up -d`. People with the Email settings permission see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones their roles let them see: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
+
+## Passkeys
+
+Panel users can sign in with a passkey instead of a password: Windows Hello, Face ID, Touch ID, a phone or a security key. Add one under **Profile → Security keys**. A passkey only works on the domain it was made for, so set the status page address under **Settings → General** first (for example `https://status.example.com`). If that address ever changes, everyone has to add their passkeys again.
+
+Someone with a passkey can turn password sign-in off on their profile. Signing in with a passkey never counts towards the sign-in block.
 
 ## Status API and badges
 

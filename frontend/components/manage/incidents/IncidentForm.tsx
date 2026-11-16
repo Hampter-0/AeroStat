@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createIncident, updateIncident } from '@/app/manage/(panel)/incidents/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import { formatStatus } from '@/lib/format'
 import { INCIDENT_SEVERITIES, INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -32,6 +33,7 @@ export default function IncidentForm({
     action = updateIncident
   }
   const [state, formAction, pending] = useActionState(action, initialState)
+  useSuccessToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let title = ''
@@ -104,7 +106,6 @@ export default function IncidentForm({
       )}
 
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

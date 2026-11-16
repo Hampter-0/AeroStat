@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { checkAllNow } from '@/app/manage/(panel)/services/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -10,6 +11,7 @@ const FEEDBACK_MS = 3000
 
 export default function CheckNowButton() {
   const [state, formAction, pending] = useActionState(checkAllNow, initialState)
+  useSuccessToast(state)
   const [expiredState, setExpiredState] = useState<FormState | null>(null)
 
   useEffect(
@@ -39,9 +41,6 @@ export default function CheckNowButton() {
   } else if (showFeedback && state.error) {
     label = 'Couldn’t start checks'
     className = 'button-secondary check-now-button failed'
-  } else if (showFeedback && state.success) {
-    label = '✓ Checks started'
-    className = 'button-secondary check-now-button done'
   }
 
   let title = 'Check every service right away instead of waiting for its interval'

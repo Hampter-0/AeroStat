@@ -1,8 +1,9 @@
 'use server'
 
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SESSION_COOKIE, errorMessage, manageFetch } from '@/lib/manage'
+import { setSessionCookie } from '@/lib/session-cookie'
 
 export interface FormState {
   error: string | null
@@ -12,11 +13,6 @@ export interface FormState {
 interface LoginResponse {
   token: string
   expires_at: string
-}
-
-async function isHttps(): Promise<boolean> {
-  const headerStore = await headers()
-  return headerStore.get('x-forwarded-proto') === 'https'
 }
 
 export async function login(_state: FormState, formData: FormData): Promise<FormState> {
@@ -33,14 +29,7 @@ export async function login(_state: FormState, formData: FormData): Promise<Form
     return { error: errorMessage(error), success: null }
   }
 
-  const store = await cookies()
-  store.set(SESSION_COOKIE, session.token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: await isHttps(),
-    path: '/',
-    expires: new Date(session.expires_at),
-  })
+  await setSessionCookie(session.token, session.expires_at)
   redirect('/manage')
 }
 

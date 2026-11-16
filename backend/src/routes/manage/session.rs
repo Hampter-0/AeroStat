@@ -17,7 +17,7 @@ pub struct LoginRequest {
 }
 
 #[derive(Serialize)]
-pub struct LoginResponse {
+pub(super) struct LoginResponse {
     token: String,
     expires_at: DateTime<Utc>,
     user: CurrentUser,
@@ -27,6 +27,7 @@ pub struct LoginResponse {
 struct LoginRow {
     id: i64,
     password_hash: String,
+    password_login: bool,
 }
 
 pub async fn login(
@@ -42,9 +43,9 @@ pub async fn login(
         .map(|agent| serde_json::json!({ "user_agent": agent }));
 
     let query = if login.contains('@') {
-        "SELECT id, password_hash FROM users WHERE lower(email) = $1"
+        "SELECT id, password_hash, password_login FROM users WHERE lower(email) = $1"
     } else {
-        "SELECT id, password_hash FROM users WHERE username = $1"
+        "SELECT id, password_hash, password_login FROM users WHERE username = $1"
     };
     let row: Option<LoginRow> = sqlx::query_as(query)
         .bind(&login)
@@ -74,9 +75,9 @@ pub async fn login(
     let account_limit = if known_ip { None } else { Some(account.as_str()) };
     login_guard::check(&state.redis, &limits, &ip, account_limit).await?;
 
-    let (found_id, hash) = match row {
-        Some(row) => (Some(row.id), row.password_hash),
-        None => (None, auth::dummy_hash()),
+    let (found_id, hash, password_login) = match row {
+        Some(row) => (Some(row.id), row.password_hash, row.password_login),
+        None => (None, auth::dummy_hash(), true),
     };
     let valid = auth::verify_password(body.password, hash).await;
     let user_id = match found_id {
@@ -89,7 +90,24 @@ pub async fn login(
         }
     };
     login_guard::clear_account(&state.redis, &account).await;
+    // Only said after a correct password, so it doesn't tell strangers anything.
+    if !password_login {
+        return Err(ApiError::BadRequest(
+            "Password sign-in is turned off for this account. Sign in with a passkey.".into(),
+        ));
+    }
 
+    start_session(&state, user_id, &headers, &ip, details).await
+}
+
+/// Opens a session after a successful sign-in, by password or passkey.
+pub(super) async fn start_session(
+    state: &AppState,
+    user_id: i64,
+    headers: &HeaderMap,
+    ip: &str,
+    details: Option<serde_json::Value>,
+) -> Result<Json<LoginResponse>, ApiError> {
     sqlx::query("UPDATE users SET last_login_at = now() WHERE id = $1")
         .bind(user_id)
         .execute(&state.db)
@@ -109,13 +127,13 @@ pub async fn login(
     .bind(&token_hash)
     .bind(user_id)
     .bind(state.session_days)
-    .bind(auth::known_ip(&ip))
-    .bind(auth::user_agent(&headers))
+    .bind(auth::known_ip(ip))
+    .bind(auth::user_agent(headers))
     .fetch_one(&state.db)
     .await?;
 
     let user = auth::load_user(&state.db, user_id).await?;
-    activity::record_account(&state.db, Some(user.id), &user.username, "signed in", &ip, details).await;
+    activity::record_account(&state.db, Some(user.id), &user.username, "signed in", ip, details).await;
 
     Ok(Json(LoginResponse { token, expires_at, user }))
 }

@@ -11,7 +11,9 @@ use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
-use crate::site_settings::{self, CONTACT_URL, METRICS_RETENTION_DAYS, PRIMARY_COLOR, SITE_DESCRIPTION, SITE_NAME, TIMEZONE};
+use crate::site_settings::{
+    self, CONTACT_URL, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
+};
 use crate::state::AppState;
 
 const PERMISSION: &str = "settings";
@@ -62,6 +64,17 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 ));
             }
         }
+        PUBLIC_URL => {
+            let ok = reqwest::Url::parse(value)
+                .map(|url| matches!(url.scheme(), "http" | "https") && url.host_str().is_some())
+                .unwrap_or(false);
+            if !ok {
+                return Err(ApiError::BadRequest(
+                    "Status page address must be a full URL like https://status.example.com".into(),
+                ));
+            }
+            return Ok(value.trim_end_matches('/').to_string());
+        }
         PRIMARY_COLOR => {
             let hex = value.strip_prefix('#').unwrap_or("");
             if hex.len() != 6 || !hex.chars().all(|c| c.is_ascii_hexdigit()) {
@@ -88,7 +101,9 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
 }
 
 pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Json<ManageSettings>, ApiError> {
-    user.require("settings.general")?;
+    if !site_settings::PAGE_PERMISSIONS.iter().any(|permission| user.has(permission)) {
+        return Err(ApiError::Forbidden);
+    }
     let stored = site_settings::all(&state.db).await?;
     let mut values = HashMap::new();
     for key in site_settings::KEYS {
@@ -114,13 +129,12 @@ pub async fn update(
     user: CurrentUser,
     Json(body): Json<HashMap<String, Option<String>>>,
 ) -> Result<StatusCode, ApiError> {
-    user.require("settings.general")?;
-
     let mut changes: Vec<(String, Option<String>)> = Vec::new();
     for (key, value) in body {
         if !site_settings::KEYS.contains(&key.as_str()) {
             return Err(ApiError::BadRequest(format!("Unknown setting: {key}")));
         }
+        user.require(site_settings::permission_for(&key))?;
         let cleaned = match value.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()) {
             Some(v) => Some(validate(&key, &v)?),
             None => None,
@@ -189,7 +203,7 @@ pub async fn upload_asset(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<StatusCode, ApiError> {
-    user.require("settings.general")?;
+    user.require("settings.appearance")?;
     if !BRAND_ASSETS.contains(&name.as_str()) {
         return Err(ApiError::NotFound);
     }
@@ -236,7 +250,7 @@ pub async fn delete_asset(
     user: CurrentUser,
     Path(name): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    user.require("settings.general")?;
+    user.require("settings.appearance")?;
     if !BRAND_ASSETS.contains(&name.as_str()) {
         return Err(ApiError::NotFound);
     }

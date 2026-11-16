@@ -3,11 +3,13 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { sendTestEmail } from '@/app/manage/(panel)/settings/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function EmailTest({ defaultTo }: { defaultTo: string }) {
   const [state, formAction, pending] = useActionState(sendTestEmail, initialState)
+  useSuccessToast(state)
 
   let buttonText = 'Send'
   if (pending) {
@@ -30,7 +32,6 @@ export default function EmailTest({ defaultTo }: { defaultTo: string }) {
         </button>
       </div>
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
     </form>
   )
 }

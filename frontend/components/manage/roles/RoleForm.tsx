@@ -3,7 +3,9 @@
 import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { saveRole } from '@/app/manage/(panel)/roles/actions'
+import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import type { PermissionGroup, PermissionUser, Role } from '@/lib/permissions'
+import { useKeepValuesSubmit } from '@/lib/use-form-submit'
 import PermissionTree from './PermissionTree'
 
 const initialState: FormState = { error: null, success: null }
@@ -28,6 +30,8 @@ export default function RoleForm({
   readOnly: boolean
 }) {
   const [state, formAction, pending] = useActionState(saveRole, initialState)
+  const onSubmit = useKeepValuesSubmit(formAction)
+  useSuccessToast(state)
 
   let startName = ''
   let startHandle = ''
@@ -73,7 +77,7 @@ export default function RoleForm({
   }
 
   return (
-    <form action={formAction} className="manage-form role-form">
+    <form action={formAction} onSubmit={onSubmit} className="manage-form role-form">
       <input type="hidden" name="id" value={roleId} />
 
       <section className="manage-panel">
@@ -127,7 +131,6 @@ export default function RoleForm({
       )}
 
       {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      {state.success && <p className="form-success" role="status">{state.success}</p>}
       {!readOnly && (
         <div className="form-actions">
           <button type="submit" className="button-primary" disabled={pending}>

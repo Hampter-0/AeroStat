@@ -6,6 +6,7 @@ import type { FormState } from '@/app/manage/actions'
 import { getSiteConfig } from '@/lib/branding'
 import { errorMessage, manageFetch } from '@/lib/manage'
 import { inputValueToIso } from '@/lib/time'
+import { flash } from '@/lib/flash'
 
 interface Created {
   id: number
@@ -65,6 +66,7 @@ export async function createMaintenance(_state: FormState, formData: FormData): 
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/maintenance')
+  await flash('Maintenance scheduled')
   redirect('/manage/maintenance/' + created.id)
 }
 
@@ -115,6 +117,7 @@ export async function deleteMaintenance(_state: FormState, formData: FormData): 
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/maintenance')
+  await flash('Maintenance deleted')
   redirect('/manage/maintenance')
 }
 

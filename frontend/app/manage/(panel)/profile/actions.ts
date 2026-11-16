@@ -20,7 +20,11 @@ export async function updateProfile(_state: FormState, formData: FormData): Prom
   try {
     await manageFetch('/profile', {
       method: 'PATCH',
-      body: JSON.stringify({ username: text(formData, 'username'), email: email }),
+      body: JSON.stringify({
+        username: text(formData, 'username'),
+        email: email,
+        current_password: text(formData, 'current_password'),
+      }),
     })
   } catch (error) {
     return { error: errorMessage(error), success: null }

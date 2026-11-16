@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
+import { flash } from '@/lib/flash'
 
 function text(formData: FormData, key: string): string {
   return String(formData.get(key) || '')
@@ -45,6 +46,7 @@ export async function createUser(_state: FormState, formData: FormData): Promise
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/users')
+  await flash('User created')
   redirect('/manage/users')
 }
 
@@ -77,5 +79,6 @@ export async function deleteUser(_state: FormState, formData: FormData): Promise
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage/users')
+  await flash('User deleted')
   redirect('/manage/users')
 }

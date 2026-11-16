@@ -21,11 +21,11 @@ interface ManageSettings {
 }
 
 const TABS = [
-  { id: 'general', label: 'General' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'monitoring', label: 'Monitoring' },
-  { id: 'time', label: 'Time & region' },
-  { id: 'notifications', label: 'Notifications' },
+  { id: 'general', label: 'General', permission: 'settings.general' },
+  { id: 'appearance', label: 'Appearance', permission: 'settings.appearance' },
+  { id: 'monitoring', label: 'Monitoring', permission: 'settings.monitoring' },
+  { id: 'time', label: 'Time & region', permission: 'settings.time' },
+  { id: 'notifications', label: 'Notifications', permission: 'settings.notifications' },
 ]
 
 function value(settings: ManageSettings, key: string): string {
@@ -57,14 +57,15 @@ function NotificationsTab({ notifications }: { notifications: NotificationSettin
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await requireUser()
-  const canGeneral = can(user, 'settings.general')
-  const canNotifications = can(user, 'settings.notifications')
-  if (!canGeneral && !canNotifications) {
+  const tabs = TABS.filter(function (option) {
+    return can(user, option.permission)
+  })
+  if (tabs.length === 0) {
     redirect('/manage')
   }
   const { tab } = await searchParams
 
-  if (!canGeneral) {
+  if (tabs.length === 1 && tabs[0].id === 'notifications') {
     const onlyNotifications = await manageFetch<NotificationSettings>('/notifications')
     return (
       <div className="manage-page">
@@ -80,13 +81,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const settings = await manageFetch<ManageSettings>('/settings')
   const defaults = envDefaults()
 
-  const tabs = []
-  for (const option of TABS) {
-    if (option.id !== 'notifications' || canNotifications) {
-      tabs.push(option)
-    }
-  }
-  let activeTab = 'general'
+  let activeTab = tabs[0].id
   for (const option of tabs) {
     if (option.id === tab) {
       activeTab = option.id
@@ -175,6 +170,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 placeholder="https://example.com/contact"
               />
               <small className="field-hint">A web page or a mailto: address. Leave empty to hide the Contact link.</small>
+            </label>
+            <label>
+              <span>Status page address</span>
+              <input
+                key={'public_url-' + value(settings, 'public_url')}
+                name="public_url"
+                defaultValue={value(settings, 'public_url')}
+                placeholder="https://status.example.com"
+              />
+              <small className="field-hint">
+                The address people use to open this status page. Notifications link to it, and passkeys only work on this address. If you change
+                it later, everyone has to add their passkeys again.
+              </small>
             </label>
           </SettingsForm>
         </section>
