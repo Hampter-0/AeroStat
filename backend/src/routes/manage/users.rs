@@ -309,6 +309,15 @@ pub async fn update(
         Some(text) => Some(super::profile::clean_email(Some(text))?),
         None => None,
     };
+    if id == user.id {
+        let email_changes = email.as_ref().is_some_and(|value| *value != target.email);
+        let rule_changes = body.two_factor_required.is_some_and(|value| value != target.two_factor_required);
+        if body.password.is_some() || email_changes || rule_changes {
+            return Err(ApiError::BadRequest(
+                "Change your own password, email and two-factor rule on your profile".into(),
+            ));
+        }
+    }
     let password_hash = match body.password {
         Some(password) => {
             validate_password(&password)?;
@@ -332,6 +341,11 @@ pub async fn update(
         }
         if *email != target.email {
             details["email"] = json!({ "from": target.email, "to": email });
+            // A reset link sent to the old address must stop working.
+            sqlx::query("DELETE FROM password_resets WHERE user_id = $1")
+                .bind(id)
+                .execute(&mut *tx)
+                .await?;
         }
     }
 

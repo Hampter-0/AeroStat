@@ -71,7 +71,7 @@ export default async function ProfilePage() {
             <strong>Set up two-factor sign-in to continue</strong>
             <span>
               An admin requires it for your account. Turn on the authenticator app or email codes under Two-factor sign-in, or
-              add a passkey. Until then you can only use your profile.
+              add a passkey and turn password sign-in off. Until then you can only use your profile.
             </span>
           </div>
         </section>

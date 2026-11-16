@@ -41,7 +41,7 @@ function DeleteBackup({ backup, label }: { backup: Backup; label: string }) {
   )
 }
 
-export default function BackupsPanel({ data, timezone }: { data: BackupsView; timezone: string }) {
+export default function BackupsPanel({ data, timezone, isAdmin }: { data: BackupsView; timezone: string; isAdmin: boolean }) {
   const [state, formAction, pending] = useActionState(createBackup, initialState)
   useResultToast(state)
   const router = useRouter()
@@ -136,10 +136,14 @@ export default function BackupsPanel({ data, timezone }: { data: BackupsView; ti
             <small className="table-count">{countText}</small>
           </div>
           <div className="backup-buttons">
-            <input ref={fileRef} type="file" accept=".dump" className="sr-only" onChange={upload} tabIndex={-1} />
-            <button type="button" className="button-secondary" onClick={chooseFile} disabled={uploading || !data.tool}>
-              <Upload /> {uploadText}
-            </button>
+            {isAdmin && (
+              <>
+                <input ref={fileRef} type="file" accept=".dump" className="sr-only" onChange={upload} tabIndex={-1} />
+                <button type="button" className="button-secondary" onClick={chooseFile} disabled={uploading || !data.tool}>
+                  <Upload /> {uploadText}
+                </button>
+              </>
+            )}
             <form action={formAction}>
               <button type="submit" className="button-primary" disabled={pending || !data.tool}>
                 <Database /> {buttonText}

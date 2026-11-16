@@ -292,6 +292,16 @@ async fn restore_backup() -> anyhow::Result<()> {
         );
     }
 
+    if backup.kind == Kind::Upload {
+        let by = backup.created_by.clone().unwrap_or_else(|| "someone".into());
+        println!();
+        println!(
+            "  {} This backup was uploaded in the panel by {by}, it was not made on this server.",
+            "!".red().bold()
+        );
+        println!("    A backup runs as SQL on your database. Only restore it if you trust where it came from.");
+    }
+
     println!();
     println!(
         "  {} This replaces everything in the database with the backup from {} (v{}).",
@@ -438,6 +448,11 @@ async fn set_email(pool: &PgPool) -> anyhow::Result<()> {
     let mut tx = pool.begin().await?;
     sqlx::query("UPDATE users SET email = $1 WHERE id = $2")
         .bind(&email)
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    // A reset link sent to the old address must stop working.
+    sqlx::query("DELETE FROM password_resets WHERE user_id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await?;

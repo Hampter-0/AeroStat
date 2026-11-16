@@ -164,7 +164,7 @@ server {
 }
 ```
 
-`client_max_body_size` allows logo and avatar uploads; nginx stops anything over 1 MB by default. Use `$remote_addr` rather than `$proxy_add_x_forwarded_for`, so a visitor can't send a made-up IP. Without a proxy in front, the IP-based sign-in limit can be bypassed this way; the per-account limit still applies.
+`client_max_body_size` allows logo and avatar uploads; nginx stops anything over 1 MB by default. AeroStat takes the client IP from the last `X-Forwarded-For` entry, the one your proxy adds, so a visitor can't send a made-up IP. With two proxies in a row (for example Cloudflare in front of nginx), set `TRUSTED_PROXY_HOPS=2` in `.env`. Without a proxy in front, visitors can choose the IP AeroStat sees, so the IP-based sign-in limit can be bypassed; the per-account limits still apply. Run AeroStat behind a proxy and set `AEROSTAT_BIND=127.0.0.1`.
 
 ## Discord notifications
 
@@ -209,7 +209,7 @@ openssl rand -hex 32
 
 Keep this key with your backups. If it changes or gets lost, everyone has to set up their app again. Email codes need email to be set up and work without the key.
 
-Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method or add a passkey before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
+Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method, or sign in with passkeys only (password sign-in off), before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
 
 ## Forgot password
 
@@ -320,6 +320,7 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `SMTP_FROM_NAME` | Site name | Name emails are sent from |
 | `BACKUP_DIR` | `/data/backups` | Where backups are stored |
 | `PG_DUMP_PATH`, `PG_RESTORE_PATH`, `PSQL_PATH` | `pg_dump`, `pg_restore`, `psql` | The PostgreSQL tools, only needed outside Docker |
+| `TRUSTED_PROXY_HOPS` | `1` | Number of reverse proxies in front of AeroStat, for finding the client IP |
 | `RUST_LOG` | `info` | Backend log level |
 
 ## Command line
@@ -386,7 +387,7 @@ Everything worth keeping is in Postgres. AeroStat backs it up with `pg_dump` int
 
 - **Every day** after 03:00 in the site's timezone, keeping the last 7. Change this, or turn it off, under **System → Backups**.
 - **Before an update.** When a new version starts for the first time, it backs up the database before changing it. The last 3 are kept.
-- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included.
+- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included. Uploading a backup from elsewhere is for super users only, because a backup runs as SQL when it is restored; the CLI warns before restoring an uploaded one.
 
 A backup on the same server is gone when the server is. Download one now and then, or copy the volume elsewhere, and keep a copy of your `.env` with it: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
 

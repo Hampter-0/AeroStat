@@ -175,10 +175,24 @@ pub async fn request(
     let Some((user_id, username, address)) = user else {
         return Ok(StatusCode::NO_CONTENT);
     };
-    if !may_email(&state, user_id).await {
-        return Ok(StatusCode::NO_CONTENT);
-    }
 
+    // Everything else happens in the background, so the answer comes back
+    // just as fast for an address that has an account as for one that hasn't.
+    let state = state.clone();
+    tokio::spawn(async move {
+        if let Err(e) = make_and_send(&state, user_id, &username, &address, &ip, &base).await {
+            tracing::warn!("Could not send a password reset email: {e:#}");
+        }
+    });
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Stores a new link for the account and emails it.
+async fn make_and_send(state: &AppState, user_id: i64, username: &str, address: &str, ip: &str, base: &str) -> anyhow::Result<()> {
+    if !may_email(state, user_id).await {
+        return Ok(());
+    }
     let token = new_token();
     let mut tx = state.db.begin().await?;
     // Only the newest link works.
@@ -191,24 +205,15 @@ pub async fn request(
     )
     .bind(user_id)
     .bind(hash_token(&token))
-    .bind(&ip)
+    .bind(ip)
     .bind(LINK_MINUTES as i32)
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
 
-    activity::record_account(&state.db, Some(user_id), &username, "asked for a password reset", &ip, None).await;
-
-    // Sent in the background, so the answer takes as long for unknown addresses.
-    let db = state.db.clone();
+    activity::record_account(&state.db, Some(user_id), username, "asked for a password reset", ip, None).await;
     let link = format!("{base}/manage/reset-password?token={token}");
-    tokio::spawn(async move {
-        if let Err(e) = send_link(&db, &address, &username, &link).await {
-            tracing::warn!("Could not send a password reset email: {e:#}");
-        }
-    });
-
-    Ok(StatusCode::NO_CONTENT)
+    send_link(&state.db, address, username, &link).await
 }
 
 /// Whether a link still works, so the page can say so before someone types a password.

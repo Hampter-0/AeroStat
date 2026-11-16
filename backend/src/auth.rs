@@ -235,7 +235,8 @@ pub const CURRENT_USER_COLUMNS: &str = "u.id, u.username, u.email, \
      u.permissions AS extra_permissions, \
      EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version, \
      (u.two_factor_required AND u.totp_secret IS NULL AND NOT u.email_two_factor \
-      AND NOT EXISTS (SELECT 1 FROM passkeys p WHERE p.user_id = u.id)) AS two_factor_setup_required";
+      AND NOT (NOT u.password_login AND EXISTS (SELECT 1 FROM passkeys p WHERE p.user_id = u.id))) \
+      AS two_factor_setup_required";
 
 pub async fn load_user(db: &sqlx::PgPool, id: i64) -> Result<CurrentUser, ApiError> {
     let query = format!("SELECT {CURRENT_USER_COLUMNS} FROM users u WHERE u.id = $1");

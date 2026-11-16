@@ -104,6 +104,78 @@ fn meta_path(config: &BackupConfig, id: &str) -> PathBuf {
     config.dir.join(format!("{id}.json"))
 }
 
+fn percent_decode(text: &str) -> String {
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or("");
+            if let Ok(value) = u8::from_str_radix(hex, 16) {
+                out.push(value);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// DATABASE_URL as libpq environment variables, so the password never shows
+/// up in the process list. None when the URL can't be read that way.
+fn pg_env(database_url: &str) -> Option<Vec<(&'static str, String)>> {
+    let url = reqwest::Url::parse(database_url).ok()?;
+    if !matches!(url.scheme(), "postgres" | "postgresql") {
+        return None;
+    }
+    let mut env = Vec::new();
+    if let Some(host) = url.host_str() {
+        env.push(("PGHOST", host.trim_start_matches('[').trim_end_matches(']').to_string()));
+    }
+    if let Some(port) = url.port() {
+        env.push(("PGPORT", port.to_string()));
+    }
+    if !url.username().is_empty() {
+        env.push(("PGUSER", percent_decode(url.username())));
+    }
+    if let Some(password) = url.password() {
+        env.push(("PGPASSWORD", percent_decode(password)));
+    }
+    let database = percent_decode(url.path().trim_start_matches('/'));
+    if !database.is_empty() {
+        env.push(("PGDATABASE", database));
+    }
+    for (key, value) in url.query_pairs() {
+        let name = match key.as_ref() {
+            "sslmode" => "PGSSLMODE",
+            "sslrootcert" => "PGSSLROOTCERT",
+            "sslcert" => "PGSSLCERT",
+            "sslkey" => "PGSSLKEY",
+            "application_name" => "PGAPPNAME",
+            "connect_timeout" => "PGCONNECT_TIMEOUT",
+            _ => continue,
+        };
+        env.push((name, value.into_owned()));
+    }
+    Some(env)
+}
+
+/// Points a pg_dump or psql command at the database.
+fn connect(command: &mut Command, database_url: &str) {
+    match pg_env(database_url) {
+        Some(env) => {
+            for (key, value) in env {
+                command.env(key, value);
+            }
+        }
+        None => {
+            command.arg("--dbname").arg(database_url);
+        }
+    }
+}
+
 /// The pg_dump version line, or None when it can't run.
 pub async fn tool_version() -> Option<String> {
     let config = CONFIG.get()?;
@@ -114,10 +186,24 @@ pub async fn tool_version() -> Option<String> {
     Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
+/// Manual and uploaded backups stop here, so nobody can fill the disk by
+/// clicking. Scheduled and update backups clean up after themselves.
+pub const MAX_BACKUPS: usize = 100;
+
+async fn check_room() -> anyhow::Result<()> {
+    if list().await?.len() >= MAX_BACKUPS {
+        anyhow::bail!("There are already {MAX_BACKUPS} backups. Delete some old ones first.");
+    }
+    Ok(())
+}
+
 /// Runs pg_dump and stores the result. The dump goes to a temporary file first,
 /// so a failed run never leaves half a backup in the list.
 pub async fn create(kind: Kind, created_by: Option<String>, version: &str, note: Option<String>) -> anyhow::Result<Backup> {
     let config = config()?;
+    if matches!(kind, Kind::Manual) {
+        check_room().await?;
+    }
     let _guard = RUNNING.try_lock().map_err(|_| anyhow::anyhow!("A backup or restore is already running. Try again in a moment."))?;
 
     tokio::fs::create_dir_all(&config.dir)
@@ -154,9 +240,10 @@ pub async fn create(kind: Kind, created_by: Option<String>, version: &str, note:
 /// pg_dump writes to stdout and we write the file, so a pg_dump in another
 /// container or behind a wrapper script works too.
 async fn run_dump(config: &BackupConfig, path: &PathBuf) -> anyhow::Result<()> {
-    let mut child = Command::new(&config.pg_dump)
-        .args(["--format=custom", "--no-owner", "--no-privileges", "--dbname"])
-        .arg(&config.database_url)
+    let mut command = Command::new(&config.pg_dump);
+    command.args(["--format=custom", "--no-owner", "--no-privileges"]);
+    connect(&mut command, &config.database_url);
+    let mut child = command
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true)
@@ -190,7 +277,7 @@ where
     use futures_util::StreamExt;
 
     let config = config()?;
-    let _guard = RUNNING.try_lock().map_err(|_| anyhow::anyhow!("A backup or restore is running. Try again in a moment."))?;
+    check_room().await?;
     tokio::fs::create_dir_all(&config.dir).await?;
 
     let now = Utc::now();
@@ -381,9 +468,10 @@ pub async fn restore(id: &str) -> anyhow::Result<()> {
         .kill_on_drop(true)
         .spawn()
         .map_err(|e| anyhow::anyhow!("Could not start pg_restore ({}): {e}", config.pg_restore))?;
-    let mut psql = Command::new(&config.psql)
-        .args(["--quiet", "--no-psqlrc", "--single-transaction", "--set=ON_ERROR_STOP=1", "--dbname"])
-        .arg(&config.database_url)
+    let mut psql_command = Command::new(&config.psql);
+    psql_command.args(["--quiet", "--no-psqlrc", "--single-transaction", "--set=ON_ERROR_STOP=1"]);
+    connect(&mut psql_command, &config.database_url);
+    let mut psql = psql_command
         .stdin(Stdio::piped())
         .stdout(Stdio::null())
         .stderr(Stdio::piped())

@@ -8,6 +8,7 @@ use serde::Deserialize;
 use crate::activity;
 use crate::auth::{self, CurrentUser};
 use crate::error::ApiError;
+use crate::login_guard;
 use crate::state::AppState;
 
 use super::users::{validate_password, validate_username};
@@ -65,9 +66,7 @@ pub async fn update(
         if given.is_empty() {
             return Err(ApiError::BadRequest("Enter your current password to change your email address".into()));
         }
-        if !auth::verify_password(given, hash).await {
-            return Err(ApiError::BadRequest("Your current password is not correct".into()));
-        }
+        login_guard::verify_current_password(&state.redis, &state.login_limits, user.id, given, hash).await?;
     }
     let before = activity::snapshot(&state.db, "users", &user.id.to_string()).await;
 
@@ -81,6 +80,13 @@ pub async fn update(
     match result {
         Ok(_) => {
             let updated = auth::load_user(&state.db, user.id).await?;
+            if updated.email != user.email {
+                // A reset link sent to the old address must stop working.
+                sqlx::query("DELETE FROM password_resets WHERE user_id = $1")
+                    .bind(user.id)
+                    .execute(&state.db)
+                    .await?;
+            }
             if updated.username != user.username || updated.email != user.email {
                 let details = activity::changes(before, activity::snapshot(&state.db, "users", &user.id.to_string()).await);
                 activity::record(&state.db, &updated, "account", "updated their profile", None, "", details).await;
@@ -110,9 +116,7 @@ pub async fn change_password(
         .bind(user.id)
         .fetch_one(&state.db)
         .await?;
-    if !auth::verify_password(body.current_password, hash).await {
-        return Err(ApiError::BadRequest("Your current password is not correct".into()));
-    }
+    login_guard::verify_current_password(&state.redis, &state.login_limits, user.id, body.current_password, hash).await?;
     validate_password(&body.new_password)?;
 
     let new_hash = auth::hash_password(body.new_password).await?;

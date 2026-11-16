@@ -350,7 +350,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
           </div>
         </section>
       )}
-      {activeTab === 'backups' && backups && <BackupsPanel data={backups} timezone={timezone} />}
+      {activeTab === 'backups' && backups && <BackupsPanel data={backups} timezone={timezone} isAdmin={user.is_admin} />}
     </div>
   )
 }

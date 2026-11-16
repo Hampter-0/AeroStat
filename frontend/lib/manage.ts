@@ -1,6 +1,7 @@
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { hasPermission } from './permissions'
+import { clientIp } from '@/lib/client-ip'
 
 export const SESSION_COOKIE = 'aerostat_session'
 
@@ -39,12 +40,8 @@ async function visitorHeaders(): Promise<Record<string, string>> {
   const result: Record<string, string> = {}
   try {
     const store = await headers()
-    const forwarded = store.get('x-forwarded-for')
-    if (forwarded) {
-      let ip = forwarded.split(',')[0].trim()
-      if (ip.startsWith('::ffff:')) {
-        ip = ip.slice(7)
-      }
+    const ip = clientIp(store.get('x-forwarded-for'))
+    if (ip) {
       result['x-forwarded-for'] = ip
     }
     const agent = store.get('user-agent')

@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use sqlx::PgPool;
 
 use crate::activity;
-use crate::auth::{self, CurrentUser};
+use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::login_guard;
 use crate::mailer;
@@ -21,6 +21,9 @@ use super::session::{start_session, LoginResponse};
 /// How long a code by email stays valid, the same as the challenge around it.
 const CODE_SECONDS: i64 = passkeys::CHALLENGE_SECONDS as i64;
 const MAX_ATTEMPTS: u32 = 5;
+/// Wrong codes per account within the lockout window, across every sign-in.
+/// A correct password doesn't reset this, so guessing can't start over.
+const MAX_CODES_PER_ACCOUNT: i64 = 10;
 const RESEND_SECONDS: i64 = 60;
 
 #[derive(Serialize)]
@@ -141,11 +144,8 @@ async fn factors(db: &PgPool, user_id: i64) -> Result<Factors, ApiError> {
     Ok(row)
 }
 
-async fn require_password(password: String, factors: &Factors) -> Result<(), ApiError> {
-    if !auth::verify_password(password, factors.password_hash.clone()).await {
-        return Err(ApiError::BadRequest("Your current password is not correct".into()));
-    }
-    Ok(())
+async fn require_password(state: &AppState, user_id: i64, password: String, factors: &Factors) -> Result<(), ApiError> {
+    login_guard::verify_current_password(&state.redis, &state.login_limits, user_id, password, factors.password_hash.clone()).await
 }
 
 async fn site_name(db: &PgPool) -> String {
@@ -239,11 +239,15 @@ async fn would_leave_nothing(db: &PgPool, user_id: i64, f: &Factors, removing_ap
     if other || !f.two_factor_required {
         return Ok(false);
     }
-    let passkeys: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM passkeys WHERE user_id = $1")
-        .bind(user_id)
-        .fetch_one(db)
-        .await?;
-    Ok(passkeys == 0)
+    // A passkey only stands in for two-factor when password sign-in is off,
+    // otherwise the password alone still gets in.
+    let passkey_only: bool = sqlx::query_scalar(
+        "SELECT NOT password_login AND EXISTS (SELECT 1 FROM passkeys WHERE user_id = $1) FROM users WHERE id = $1",
+    )
+    .bind(user_id)
+    .fetch_one(db)
+    .await?;
+    Ok(!passkey_only)
 }
 
 fn setup_key(kind: &str, user_id: i64) -> String {
@@ -318,7 +322,7 @@ pub async fn start_app(
         ));
     }
     let f = factors(&state.db, user.id).await?;
-    require_password(body.password, &f).await?;
+    require_password(&state, user.id, body.password, &f).await?;
     let secret = two_factor::new_secret();
     let totp = two_factor::totp(secret.clone(), &site_name(&state.db).await, &f.username)?;
     let qr = totp.get_qr_base64().map_err(|e| ApiError::Internal(anyhow::anyhow!(e)))?;
@@ -361,7 +365,7 @@ pub async fn disable_app(
     Json(body): Json<PasswordBody>,
 ) -> Result<StatusCode, ApiError> {
     let f = factors(&state.db, user.id).await?;
-    require_password(body.password, &f).await?;
+    require_password(&state, user.id, body.password, &f).await?;
     if would_leave_nothing(&state.db, user.id, &f, true).await? {
         return Err(ApiError::BadRequest(
             "Your account needs two-factor sign-in. Turn on email codes or add a passkey first.".into(),
@@ -383,7 +387,7 @@ pub async fn start_email(
     Json(body): Json<PasswordBody>,
 ) -> Result<StatusCode, ApiError> {
     let f = factors(&state.db, user.id).await?;
-    require_password(body.password, &f).await?;
+    require_password(&state, user.id, body.password, &f).await?;
     let Some(email) = f.email.clone() else {
         return Err(ApiError::BadRequest("Add an email address to your profile first".into()));
     };
@@ -430,7 +434,7 @@ pub async fn disable_email(
     Json(body): Json<PasswordBody>,
 ) -> Result<StatusCode, ApiError> {
     let f = factors(&state.db, user.id).await?;
-    require_password(body.password, &f).await?;
+    require_password(&state, user.id, body.password, &f).await?;
     if would_leave_nothing(&state.db, user.id, &f, false).await? {
         return Err(ApiError::BadRequest(
             "Your account needs two-factor sign-in. Turn on the authenticator app or add a passkey first.".into(),
@@ -451,7 +455,7 @@ pub async fn new_recovery_codes(
     Json(body): Json<PasswordBody>,
 ) -> Result<Json<RecoveryCodes>, ApiError> {
     let f = factors(&state.db, user.id).await?;
-    require_password(body.password, &f).await?;
+    require_password(&state, user.id, body.password, &f).await?;
     if f.totp_secret.is_none() && !f.email_two_factor {
         return Err(ApiError::BadRequest("Turn on two-factor sign-in first".into()));
     }
@@ -553,6 +557,15 @@ pub async fn verify_login(
         .await
         .map_err(|_| ApiError::BadRequest("This sign-in expired. Start again.".into()))?;
     let f = factors(&state.db, challenge.user_id).await?;
+    let account_key = format!("twofactor:fail:user:{}", challenge.user_id);
+    login_guard::hit_user_limit(
+        &state.redis,
+        &account_key,
+        MAX_CODES_PER_ACCOUNT,
+        state.login_limits.lockout_minutes * 60,
+        "wrong codes",
+    )
+    .await?;
 
     let mut accepted = false;
     let mut method = "";
@@ -576,13 +589,19 @@ pub async fn verify_login(
             if let Ok(secret) = secret {
                 let totp = two_factor::totp(secret, &site_name(&state.db).await, &f.username)?;
                 if let Some(step) = two_factor::check_app_code(&totp, &body.code, f.totp_last_step) {
-                    sqlx::query("UPDATE users SET totp_last_step = $1 WHERE id = $2")
-                        .bind(step)
-                        .bind(challenge.user_id)
-                        .execute(&state.db)
-                        .await?;
-                    accepted = true;
-                    method = "authenticator app";
+                    // Only one request can move the step forward, so a code
+                    // sent twice at the same moment still works once.
+                    let moved = sqlx::query(
+                        "UPDATE users SET totp_last_step = $1 WHERE id = $2 AND (totp_last_step IS NULL OR totp_last_step < $1)",
+                    )
+                    .bind(step)
+                    .bind(challenge.user_id)
+                    .execute(&state.db)
+                    .await?;
+                    if moved.rows_affected() == 1 {
+                        accepted = true;
+                        method = "authenticator app";
+                    }
                 }
             }
         }
@@ -607,6 +626,7 @@ pub async fn verify_login(
         return Err(ApiError::BadRequest("That code is not right".into()));
     }
 
+    login_guard::release_user_limit(&state.redis, &account_key).await;
     let mut details = challenge.details.unwrap_or_else(|| json!({}));
     details["second_factor"] = json!(method);
     start_session(&state, challenge.user_id, &headers, &challenge.ip, Some(details)).await

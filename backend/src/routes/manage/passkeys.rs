@@ -87,10 +87,7 @@ async fn require_password(state: &AppState, user: &CurrentUser, password: String
         .bind(user.id)
         .fetch_one(&state.db)
         .await?;
-    if !auth::verify_password(password, hash).await {
-        return Err(ApiError::BadRequest("Your current password is not correct".into()));
-    }
-    Ok(())
+    login_guard::verify_current_password(&state.redis, &state.login_limits, user.id, password, hash).await
 }
 
 pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Json<PasskeysResponse>, ApiError> {

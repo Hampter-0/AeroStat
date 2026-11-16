@@ -110,6 +110,10 @@ pub async fn download(State(state): State<AppState>, user: CurrentUser, Path(id)
 /// Putting it back is done with the CLI, like any other backup.
 pub async fn upload(State(state): State<AppState>, user: CurrentUser, headers: HeaderMap, body: Body) -> Result<Json<Backup>, ApiError> {
     user.require(PERMISSION)?;
+    // A dump runs as SQL when it is restored, so only super users may add one.
+    if !user.is_admin {
+        return Err(ApiError::BadRequest("Only a super user can upload a backup".into()));
+    }
     let file_name = headers
         .get("x-file-name")
         .and_then(|value| value.to_str().ok())

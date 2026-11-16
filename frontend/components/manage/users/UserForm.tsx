@@ -128,10 +128,11 @@ export default function UserForm({
         )}
         <label>
           <span>Email</span>
-          <input name="email" type="email" autoComplete="off" defaultValue={email} placeholder="Optional" />
-          <small className="field-hint">For email notifications. They can change it on their profile.</small>
+          <input name="email" type="email" autoComplete="off" defaultValue={email} placeholder="Optional" readOnly={isSelf} />
+          {!isSelf && <small className="field-hint">For email notifications. They can change it on their profile.</small>}
+          {isSelf && <small className="field-hint">Change your own email on your profile, where it asks for your password.</small>}
         </label>
-        {user && (
+        {user && !isSelf && (
           <label>
             <span>New password</span>
             <input name="password" type="password" autoComplete="new-password" minLength={8} placeholder="Leave empty to keep the current password" />
@@ -152,10 +153,17 @@ export default function UserForm({
           </span>
         </label>
         <label className="check-row hint-row">
-          <input type="checkbox" name="two_factor_required" checked={required} onChange={changeRequired} />
+          <input type="checkbox" name="two_factor_required" checked={required} onChange={changeRequired} disabled={isSelf} />
+          {isSelf && startRequired && <input type="hidden" name="two_factor_required" value="on" />}
           <span>
             <strong>Require two-factor sign-in</strong>
-            <small>They must turn on an authenticator app, email codes or a passkey before they can use the panel.</small>
+            {!isSelf && (
+              <small>
+                They must turn on an authenticator app or email codes, or sign in with passkeys only, before they can use the
+                panel.
+              </small>
+            )}
+            {isSelf && <small>Someone else has to change this for your own account.</small>}
           </span>
         </label>
       </section>

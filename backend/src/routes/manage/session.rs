@@ -81,7 +81,7 @@ pub async fn login(
         _ => false,
     };
     let account_limit = if known_ip { None } else { Some(account.as_str()) };
-    login_guard::check(&state.redis, &limits, &ip, account_limit).await?;
+    let reached_limit = login_guard::reserve(&state.redis, &limits, &ip, account_limit).await?;
 
     let (found_id, hash, password_login) = match row {
         Some(row) => (Some(row.id), row.password_hash, row.password_login),
@@ -91,12 +91,13 @@ pub async fn login(
     let user_id = match found_id {
         Some(id) if valid => id,
         _ => {
-            if login_guard::record_failure(&state.redis, &limits, &ip, account_limit).await {
+            if reached_limit {
                 activity::record_account(&state.db, found_id, &login, "was blocked after too many failed sign-ins", &ip, details).await;
             }
             return Err(ApiError::BadRequest("Invalid username, email or password".into()));
         }
     };
+    login_guard::release_ip(&state.redis, &ip).await;
     login_guard::clear_account(&state.redis, &account).await;
     // Only said after a correct password, so it doesn't tell strangers anything.
     if !password_login {

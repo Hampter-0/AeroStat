@@ -1,3 +1,4 @@
+import { clientIp } from '@/lib/client-ip'
 import { getSessionToken } from '@/lib/manage'
 
 export async function POST(request: Request) {
@@ -21,9 +22,9 @@ export async function POST(request: Request) {
     }
     headers.set('x-file-name', decoded.replace(/[^ -~]/g, '_'))
   }
-  const forwarded = request.headers.get('x-forwarded-for')
-  if (forwarded) {
-    headers.set('x-forwarded-for', forwarded.split(',')[0].trim())
+  const ip = clientIp(request.headers.get('x-forwarded-for'))
+  if (ip) {
+    headers.set('x-forwarded-for', ip)
   }
   const init: RequestInit & { duplex: 'half' } = {
     method: 'POST',
