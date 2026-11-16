@@ -390,6 +390,12 @@ Everything worth keeping is in Postgres. AeroStat backs it up with `pg_dump` int
 
 A backup on the same server is gone when the server is. Download one now and then, or copy the volume elsewhere, and keep a copy of your `.env` with it: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
 
+The volume is called `aerostat_backups`. Find its folder on the server with `docker volume inspect aerostat_backups --format '{{ .Mountpoint }}'` (usually `/var/lib/docker/volumes/aerostat_backups/_data`), or copy every backup next to your compose file:
+
+```bash
+docker compose cp backend:/data/backups ./aerostat-backups
+```
+
 To keep the backups in a folder of your own instead of a volume, add this to `docker-compose.override.yml`. The folder must be writable for user id 10001:
 
 ```yaml

@@ -3177,3 +3177,40 @@ a.page-button:hover {
 .backups-table .chip {
     white-space: nowrap;
 }
+
+.passkey-list .preferred-select {
+    width: auto;
+    max-width: 170px;
+    height: 32px;
+    padding: 0 28px 0 10px;
+    font-size: 12px;
+}
+
+.backup-location {
+    display: grid;
+    gap: 10px;
+}
+
+.backup-location p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.backup-location code {
+    color: var(--text);
+    font-size: 12px;
+}
+
+.backup-location pre {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font-size: 12px;
+}

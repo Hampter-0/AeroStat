@@ -17,6 +17,7 @@ export interface BackupsView {
   total_bytes: number
   settings: { schedule: string; keep: number; before_update: boolean }
   version: string
+  in_docker: boolean
 }
 
 export const KIND_LABELS: Record<BackupKind, string> = {

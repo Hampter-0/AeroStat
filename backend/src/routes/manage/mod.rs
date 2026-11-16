@@ -63,6 +63,7 @@ pub fn router() -> Router<AppState> {
         .route("/profile/two-factor/email/confirm", post(two_factor::confirm_email))
         .route("/profile/two-factor/email/disable", post(two_factor::disable_email))
         .route("/profile/two-factor/recovery", post(two_factor::new_recovery_codes))
+        .route("/profile/two-factor/preferred", put(two_factor::set_preferred))
         .route("/profile/sessions/others", delete(sessions::end_others))
         .route("/profile/sessions/:id", delete(sessions::end))
         .route(

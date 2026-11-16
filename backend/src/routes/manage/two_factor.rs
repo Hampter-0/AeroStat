@@ -32,6 +32,13 @@ pub struct TwoFactorStatus {
     email_address: Option<String>,
     recovery_codes_left: i64,
     required: bool,
+    /// The method shown first at sign-in, None when neither is on.
+    preferred: Option<&'static str>,
+}
+
+#[derive(Deserialize)]
+pub struct PreferredBody {
+    method: String,
 }
 
 #[derive(Deserialize)]
@@ -104,12 +111,27 @@ struct Factors {
     totp_last_step: Option<i64>,
     email_two_factor: bool,
     two_factor_required: bool,
+    two_factor_preferred: Option<String>,
+}
+
+/// The method sign-in asks for first: the chosen one when both are on,
+/// otherwise the only one that is on.
+fn preferred(f: &Factors) -> Option<&'static str> {
+    let app = f.totp_secret.is_some();
+    let email = f.email_two_factor && f.email.is_some();
+    match (app, email) {
+        (true, true) if f.two_factor_preferred.as_deref() == Some("email") => Some("email"),
+        (true, _) => Some("app"),
+        (false, true) => Some("email"),
+        (false, false) => None,
+    }
 }
 
 async fn factors(db: &PgPool, user_id: i64) -> Result<Factors, ApiError> {
     let row = sqlx::query_as(
         r#"
-        SELECT username, email, password_hash, totp_secret, totp_last_step, email_two_factor, two_factor_required
+        SELECT username, email, password_hash, totp_secret, totp_last_step, email_two_factor, two_factor_required,
+               two_factor_preferred
         FROM users WHERE id = $1
         "#,
     )
@@ -238,6 +260,7 @@ pub async fn status(State(state): State<AppState>, user: CurrentUser) -> Result<
         .bind(user.id)
         .fetch_one(&state.db)
         .await?;
+    let first = preferred(&f);
     Ok(Json(TwoFactorStatus {
         app: f.totp_secret.is_some(),
         email: f.email_two_factor,
@@ -246,7 +269,41 @@ pub async fn status(State(state): State<AppState>, user: CurrentUser) -> Result<
         email_address: f.email,
         recovery_codes_left: left,
         required: f.two_factor_required,
+        preferred: first,
     }))
+}
+
+/// Picks which method sign-in asks for first. Both must be on to choose.
+pub async fn set_preferred(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(body): Json<PreferredBody>,
+) -> Result<StatusCode, ApiError> {
+    let f = factors(&state.db, user.id).await?;
+    let (method, label) = match body.method.as_str() {
+        "app" if f.totp_secret.is_some() => ("app", "the authenticator app"),
+        "email" if f.email_two_factor && f.email.is_some() => ("email", "email codes"),
+        _ => return Err(ApiError::BadRequest("Turn that method on first".into())),
+    };
+    if preferred(&f) == Some(method) {
+        return Ok(StatusCode::NO_CONTENT);
+    }
+    sqlx::query("UPDATE users SET two_factor_preferred = $1 WHERE id = $2")
+        .bind(method)
+        .bind(user.id)
+        .execute(&state.db)
+        .await?;
+    activity::record(
+        &state.db,
+        &user,
+        "account",
+        &format!("made {label} the first two-factor method"),
+        None,
+        "",
+        None,
+    )
+    .await;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Step one of the app: a new secret as a QR code, kept aside until confirmed.
@@ -412,15 +469,16 @@ pub(super) async fn challenge_for(
     details: Option<Value>,
 ) -> Result<Option<ChallengeView>, ApiError> {
     let f = factors(&state.db, user_id).await?;
-    let mut methods: Vec<&'static str> = Vec::new();
-    if f.totp_secret.is_some() {
+    // The preferred method comes first; the sign-in page opens on it.
+    let Some(first) = preferred(&f) else {
+        return Ok(None);
+    };
+    let mut methods: Vec<&'static str> = vec![first];
+    if first != "app" && f.totp_secret.is_some() {
         methods.push("app");
     }
-    if f.email_two_factor && f.email.is_some() {
+    if first != "email" && f.email_two_factor && f.email.is_some() {
         methods.push("email");
-    }
-    if methods.is_empty() {
-        return Ok(None);
     }
     methods.push("recovery");
 

@@ -11,6 +11,7 @@ import {
   startApp,
   startEmail,
 } from '@/app/manage/(panel)/profile/two-factor-actions'
+import { setPreferredMethod } from '@/app/manage/(panel)/profile/two-factor-preferred-action'
 import { useErrorToast, useToast } from '@/components/manage/toast/Toasts'
 import type { TwoFactorStatus } from '@/lib/two-factor'
 
@@ -264,6 +265,27 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
   }
 
   const anyOn = status.app || status.email
+  const bothOn = status.app && status.email
+
+  async function changePreferred(event: React.ChangeEvent<HTMLSelectElement>) {
+    const method = event.target.value
+    const result = await setPreferredMethod(method)
+    if (result.error) {
+      showToast(result.error, 'error')
+      return
+    }
+    let label = 'The authenticator app is asked for first'
+    if (method === 'email') {
+      label = 'Email codes are asked for first'
+    }
+    showToast(label)
+    router.refresh()
+  }
+
+  let preferredValue = 'app'
+  if (status.preferred === 'email') {
+    preferredValue = 'email'
+  }
 
   let appText = 'Off'
   if (status.app) {
@@ -347,6 +369,24 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
             </button>
           )}
         </li>
+        {bothOn && (
+          <li>
+            <span className="passkey-text">
+              <strong>Ask first</strong>
+              <small>The other one stays available at sign-in.</small>
+            </span>
+            <select
+              key={'preferred-' + preferredValue}
+              className="preferred-select"
+              defaultValue={preferredValue}
+              onChange={changePreferred}
+              aria-label="Method to ask for first"
+            >
+              <option value="app">Authenticator app</option>
+              <option value="email">Email codes</option>
+            </select>
+          </li>
+        )}
         {anyOn && (
           <li>
             <span className="passkey-text">

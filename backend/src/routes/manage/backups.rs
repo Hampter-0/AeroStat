@@ -33,6 +33,8 @@ pub struct BackupsView {
     total_bytes: u64,
     settings: BackupSettings,
     version: &'static str,
+    /// In Docker the folder is inside the container, so the page explains how to reach it.
+    in_docker: bool,
 }
 
 pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Json<BackupsView>, ApiError> {
@@ -50,6 +52,7 @@ pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Js
             before_update: site_settings::backup_before_update(&state.db).await,
         },
         version: CURRENT_VERSION,
+        in_docker: std::path::Path::new("/.dockerenv").exists(),
     }))
 }
 

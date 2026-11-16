@@ -6,6 +6,7 @@ export interface TwoFactorStatus {
   email_address: string | null
   recovery_codes_left: number
   required: boolean
+  preferred: 'app' | 'email' | null
 }
 
 export interface TwoFactorChallenge {

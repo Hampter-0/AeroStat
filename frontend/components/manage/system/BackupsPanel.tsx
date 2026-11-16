@@ -209,10 +209,38 @@ export default function BackupsPanel({ data, timezone }: { data: BackupsView; ti
           </div>
         )}
         <p className="field-hint backup-hint">
-          Stored in <code>{folder}</code>. Keep a copy somewhere else too, with your <code>.env</code>: a backup on the same
-          server is lost with the server. To move to another server, upload a backup there. Restoring is done from the server
-          with <code>aerostat cli</code> → <code>restore</code>.
+          Keep a copy somewhere else too, with your <code>.env</code>: a backup on the same server is lost with the server. To
+          move to another server, upload a backup there. Restoring is done from the server with <code>aerostat cli</code> →{' '}
+          <code>restore</code>.
         </p>
+      </section>
+
+      <section className="manage-panel">
+        <h2>Where they are</h2>
+        {data.in_docker && (
+          <div className="backup-location">
+            <p>
+              Inside the backend container in <code>{folder}</code>, which is the Docker volume <code>aerostat_backups</code> on
+              the server. Find that folder on the server:
+            </p>
+            <pre>{"docker volume inspect aerostat_backups --format '{{ .Mountpoint }}'"}</pre>
+            <p>
+              It is usually <code>/var/lib/docker/volumes/aerostat_backups/_data</code>, readable as root. Copy them all to the
+              folder you are in, next to <code>docker-compose.yml</code>:
+            </p>
+            <pre>docker compose cp backend:/data/backups ./aerostat-backups</pre>
+            <p className="field-hint">
+              Mapped the backups to a folder of your own in docker-compose.override.yml? Then they are in that folder.
+            </p>
+          </div>
+        )}
+        {!data.in_docker && (
+          <div className="backup-location">
+            <p>
+              In <code>{folder}</code> on this server. Change it with <code>BACKUP_DIR</code> in <code>.env</code>.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="manage-panel">

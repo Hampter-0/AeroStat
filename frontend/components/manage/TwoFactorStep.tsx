@@ -6,9 +6,9 @@ import type { TwoFactorChallenge } from '@/lib/two-factor'
 import { useErrorToast, useToast } from '@/components/manage/toast/Toasts'
 
 export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChallenge }) {
-  let firstMode = 'email'
-  if (challenge.methods.includes('app')) {
-    firstMode = 'app'
+  let firstMode = 'app'
+  if (challenge.methods[0] === 'email') {
+    firstMode = 'email'
   }
   const [mode, setMode] = useState(firstMode)
   const [code, setCode] = useState('')
