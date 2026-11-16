@@ -1,13 +1,15 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import Logo from '@/components/layout/Logo'
 import LoginForm from '@/components/manage/LoginForm'
-import PasskeyLoginButton from '@/components/manage/PasskeyLoginButton'
-import { getSiteConfig } from '@/lib/branding'
+import LoginShell from '@/components/manage/LoginShell'
 import { getCurrentUser, manageFetch } from '@/lib/manage'
 
 export const metadata = {
   title: 'Login',
+}
+
+interface LoginOptions {
+  passkeys: boolean
+  password_reset: boolean
 }
 
 export default async function LoginPage() {
@@ -16,41 +18,16 @@ export default async function LoginPage() {
     redirect('/manage')
   }
 
-  const config = await getSiteConfig()
-  let passkeys = false
+  let options: LoginOptions = { passkeys: false, password_reset: false }
   try {
-    const options = await manageFetch<{ passkeys: boolean }>('/login/options')
-    passkeys = options.passkeys
+    options = await manageFetch<LoginOptions>('/login/options')
   } catch {
-    passkeys = false
+    console.error('Could not load the sign-in options; showing password sign-in only')
   }
-  const siteName = config.siteName
-  const year = new Date().getUTCFullYear()
 
   return (
-    <div className="manage-login">
-      <div className="manage-login-inner">
-        <div className="manage-login-brand">
-          <Logo size={44} />
-          <span>{siteName}</span>
-        </div>
-
-        <div className="manage-login-heading">
-          <h1>Login</h1>
-          <p>Enter your username or email and password to continue</p>
-        </div>
-
-        <div className="manage-login-card">
-          <LoginForm />
-          {passkeys && <PasskeyLoginButton />}
-        </div>
-
-        <footer className="manage-login-footer">
-          <Logo size={14} />
-          <Link href="/">{siteName}</Link>
-          <span>© {year}</span>
-        </footer>
-      </div>
-    </div>
+    <LoginShell>
+      <LoginForm passkeys={options.passkeys} passwordReset={options.password_reset} />
+    </LoginShell>
   )
 }

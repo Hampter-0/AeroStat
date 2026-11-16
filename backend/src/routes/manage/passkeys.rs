@@ -343,11 +343,13 @@ pub async fn finish_login(
 #[derive(Serialize)]
 pub struct LoginOptions {
     passkeys: bool,
+    password_reset: bool,
 }
 
 /// What the sign-in page can offer, without saying anything about accounts.
 pub async fn login_options(State(state): State<AppState>) -> Json<LoginOptions> {
     Json(LoginOptions {
         passkeys: passkeys::available(&state.db).await,
+        password_reset: super::password_reset::available(&state.db).await,
     })
 }

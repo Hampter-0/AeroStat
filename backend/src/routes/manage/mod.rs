@@ -5,6 +5,7 @@ mod incidents;
 mod maintenance;
 mod notifications;
 mod passkeys;
+mod password_reset;
 mod profile;
 mod roles;
 mod services;
@@ -30,6 +31,9 @@ pub fn router() -> Router<AppState> {
         .route("/login/two-factor", post(two_factor::verify_login))
         .route("/login/two-factor/email", post(two_factor::send_login_code))
         .route("/login/passkey", post(passkeys::start_login))
+        .route("/password-reset", post(password_reset::request))
+        .route("/password-reset/check", get(password_reset::check))
+        .route("/password-reset/confirm", post(password_reset::confirm))
         .route("/login/passkey/finish", post(passkeys::finish_login))
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))

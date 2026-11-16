@@ -65,6 +65,9 @@ Open `.env` and set at least:
 
 - `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`: generate one with `openssl rand -base64 32`
 - `DB_PASSWORD`, and the same password in `DATABASE_URL`
+- `SECRET_KEY`: generate one with `openssl rand -hex 32`. Optional, but needed for two-factor sign-in with an authenticator app
+
+Keep a copy of `.env` somewhere safe, next to your backups (see [Backups](#backups)).
 
 Start it with the bundled Postgres:
 
@@ -208,6 +211,18 @@ Keep this key with your backups. If it changes or gets lost, everyone has to set
 
 Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method or add a passkey before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
 
+## Forgot password
+
+The sign-in page shows **Forgot password?** when email is set up and the status page address is filled in under **Settings → General**. People get a link that works once, for 30 minutes, and are signed out everywhere after they choose a new password. Two-factor sign-in still applies. The answer is the same for addresses that have no account, so the page can't be used to find out who has one.
+
+Without email, an admin can set a new password on the user's page, or from the server:
+
+```bash
+docker compose exec -it backend aerostat cli
+```
+
+and pick `reset-password`.
+
 ## Status API and badges
 
 Every AeroStat site has a small public API, so other sites and tools can show your status. Both endpoints allow cross-origin requests and are cached for a short time.
@@ -337,6 +352,16 @@ docker compose --profile postgres up -d
 
 Leave out `--profile postgres` if you use your own database. Database migrations run automatically on start.
 
+New releases sometimes add a setting to `.env.example`, like `SECRET_KEY` in 0.12.0. Docker only passes a setting to AeroStat when `docker-compose.yml` lists it, so get the newest compose file too. Your `.env` and `docker-compose.override.yml` stay as they are:
+
+```bash
+cp docker-compose.yml docker-compose.yml.bak
+curl -O https://raw.githubusercontent.com/Hampter-0/AeroStat/main/deploy/docker-compose.yml
+docker compose up -d
+```
+
+If you changed `docker-compose.yml` yourself, compare it with the `.bak` copy and move your changes to `docker-compose.override.yml`.
+
 The panel shows the running version at the bottom of the sidebar. When a newer release is out, people with the View system permission see a notice on the dashboard with a link to the release notes and a button that copies the update command. AeroStat checks GitHub for this every six hours and sends nothing about your installation; set `UPDATE_CHECK=false` to turn it off.
 
 AeroStat can't update itself: that would need access to the Docker socket, which is the same as root on your server. If you want automatic updates, run [Watchtower](https://containrrr.dev/watchtower/) next to it, limited to the AeroStat containers:
@@ -357,6 +382,8 @@ Everything worth keeping is in Postgres. With the bundled database:
 ```bash
 docker compose exec postgres pg_dump -U aerostat aerostat > aerostat.sql
 ```
+
+Also keep a copy of your `.env`. The database alone is not enough: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
 
 ## Development
 
