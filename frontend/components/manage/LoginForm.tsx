@@ -3,16 +3,19 @@
 import Link from 'next/link'
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { login, type LoginState } from '@/app/manage/actions'
-import { ChevronLeft, Lock, User } from '@/components/icons'
+import { User } from '@/components/icons'
 import LoginHeading from '@/components/manage/LoginHeading'
 import PasskeyLoginButton from '@/components/manage/PasskeyLoginButton'
+import PasswordInput from '@/components/manage/PasswordInput'
 import TwoFactorStep from '@/components/manage/TwoFactorStep'
 import { useKeepValuesSubmit } from '@/lib/use-form-submit'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: LoginState = { error: null, success: null, twoFactor: null }
 
 export default function LoginForm({ passkeys, passwordReset }: { passkeys: boolean; passwordReset: boolean }) {
   const [state, formAction, pending] = useActionState(login, initialState)
+  useResultToast(state)
   const onSubmit = useKeepValuesSubmit(formAction)
   const [step, setStep] = useState('name')
   const [username, setUsername] = useState('')
@@ -71,10 +74,10 @@ export default function LoginForm({ passkeys, passwordReset }: { passkeys: boole
     return (
       <>
         <LoginHeading
-          title="Welcome back"
+          title="Enter password"
           subtitle={
             <>
-              Enter the password for <strong>{username}</strong>
+              Please enter your password for <strong>{username}</strong>
             </>
           }
         />
@@ -82,34 +85,32 @@ export default function LoginForm({ passkeys, passwordReset }: { passkeys: boole
           <form action={formAction} onSubmit={onSubmit} className="manage-form">
             <input type="hidden" name="username" value={username} autoComplete="username" />
             <label>
-              <span className="label-row">
-                Password
-                {passwordReset && (
-                  <Link href="/manage/forgot-password" className="link-button">
-                    Forgot password?
-                  </Link>
-                )}
-              </span>
-              <div className="input-with-icon">
-                <Lock />
-                <input
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  ref={passwordRef}
-                  required
-                  autoFocus
-                />
-              </div>
+              <span>Password</span>
+              <PasswordInput
+                name="password"
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                inputRef={passwordRef}
+                autoFocus
+              />
             </label>
-            {state.error && <p className="form-error" role="alert">{state.error}</p>}
             <button type="submit" className="button-primary" disabled={pending}>
               {buttonText}
             </button>
-            <button type="button" className="login-back" onClick={back}>
-              <ChevronLeft /> Use another account
-            </button>
           </form>
+          <div className="passkey-login">
+            <div className="login-divider">
+              <span>or</span>
+            </div>
+            {passwordReset && (
+              <Link href="/manage/forgot-password" className="button-soft">
+                Forgot password
+              </Link>
+            )}
+            <button type="button" className="button-soft" onClick={back}>
+              Back
+            </button>
+          </div>
         </div>
       </>
     )
@@ -127,6 +128,7 @@ export default function LoginForm({ passkeys, passwordReset }: { passkeys: boole
               <input
                 name="username"
                 autoComplete="username"
+                placeholder="Enter your username or email"
                 value={username}
                 onChange={changeUsername}
                 required

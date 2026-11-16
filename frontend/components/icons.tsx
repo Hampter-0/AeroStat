@@ -426,3 +426,36 @@ export function LockOpen({ size }: { size?: number }) {
     </svg>
   )
 }
+
+export function Mail() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M3.5 4.5h13A1.5 1.5 0 0 1 18 6v.3l-8 4.9-8-4.9V6a1.5 1.5 0 0 1 1.5-1.5Z" />
+      <path d="M2 8.1V14a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 18 14V8.1l-7.6 4.6a.8.8 0 0 1-.8 0L2 8.1Z" />
+    </svg>
+  )
+}
+
+export function Eye() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10 4C5.5 4 2.4 7.4 1.4 9.6a1 1 0 0 0 0 .8C2.4 12.6 5.5 16 10 16s7.6-3.4 8.6-5.6a1 1 0 0 0 0-.8C17.6 7.4 14.5 4 10 4Zm0 9.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm0-5.3a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6Z" />
+    </svg>
+  )
+}
+
+export function EyeOff() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M3.3 2.3a.8.8 0 0 0-1.1 1.1l2 2C2.8 6.6 1.9 8.1 1.4 9.6a1 1 0 0 0 0 .8C2.4 12.6 5.5 16 10 16c1.6 0 3-.4 4.2-1.1l2.5 2.5a.8.8 0 0 0 1.1-1.1L3.3 2.3Zm6.7 11.2a3.5 3.5 0 0 1-3.3-4.6l1.4 1.4a1.8 1.8 0 0 0 2.1 2.1l1.4 1.4c-.5.2-1 .3-1.6.3ZM10 4c4.5 0 7.6 3.4 8.6 5.6a1 1 0 0 1 0 .8 9.8 9.8 0 0 1-2.6 3.3L13.4 11a3.5 3.5 0 0 0-4.4-4.4L7.2 4.8C8.1 4.3 9 4 10 4Z" />
+    </svg>
+  )
+}
+
+export function Upload() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 13V3.5M6 7.5l4-4 4 4M3.5 13v2.5a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}

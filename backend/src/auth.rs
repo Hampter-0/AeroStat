@@ -103,6 +103,12 @@ pub static PERMISSION_GROUPS: &[PermissionGroup] = &[
         permissions: &[
             perm("system.view", "View system", "Server info, version, updates and health.", None),
             perm("system.email", "Email settings", "See the mail server settings and send a test email.", Some("system.view")),
+            perm(
+                "system.backups",
+                "Backups",
+                "Make, download and delete backups and set the schedule. A backup holds everything, password hashes included.",
+                Some("system.view"),
+            ),
         ],
     },
     PermissionGroup {

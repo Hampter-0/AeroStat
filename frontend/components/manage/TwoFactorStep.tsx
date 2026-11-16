@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { sendLoginCode, verifyLoginCode } from '@/app/manage/two-factor-login'
 import type { TwoFactorChallenge } from '@/lib/two-factor'
+import { useErrorToast, useToast } from '@/components/manage/toast/Toasts'
 
 export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChallenge }) {
   let firstMode = 'email'
@@ -13,7 +14,8 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  useErrorToast(error)
+  const showToast = useToast()
   const sentOnce = useRef(false)
 
   let hint = 'your email address'
@@ -28,7 +30,7 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
       setError(result.error)
       return
     }
-    setNotice('We sent a code to ' + hint + '. It works for 5 minutes.')
+    showToast('We sent a code to ' + hint + '. It works for 5 minutes.')
   }
 
   useEffect(
@@ -41,11 +43,11 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
         if (result.error) {
           setError(result.error)
         } else {
-          setNotice('We sent a code to ' + hint + '. It works for 5 minutes.')
+          showToast('We sent a code to ' + hint + '. It works for 5 minutes.')
         }
       })
     },
-    [firstMode, challenge.challenge_id, hint],
+    [firstMode, challenge.challenge_id, hint, showToast],
   )
 
   function changeCode(event: React.ChangeEvent<HTMLInputElement>) {
@@ -61,14 +63,12 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
   function useRecovery() {
     setMode('recovery')
     setCode('')
-    setNotice(null)
     setError(null)
   }
 
   function useApp() {
     setMode('app')
     setCode('')
-    setNotice(null)
     setError(null)
   }
 
@@ -102,7 +102,6 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
   return (
     <form onSubmit={submit} className="manage-form two-factor-step">
       <p className="two-factor-title">{title}</p>
-      {notice && mode === 'email' && <p className="field-hint">{notice}</p>}
       <label>
         <span>Code</span>
         <input
@@ -116,7 +115,6 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
           maxLength={20}
         />
       </label>
-      {error && <p className="form-error" role="alert">{error}</p>}
       <button type="submit" className="button-primary" disabled={busy}>
         {buttonText}
       </button>
@@ -141,7 +139,12 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
             Use a recovery code
           </button>
         )}
-        <a href="/manage/login" className="link-button">
+      </div>
+      <div className="passkey-login">
+        <div className="login-divider">
+          <span>or</span>
+        </div>
+        <a href="/manage/login" className="button-soft">
           Back
         </a>
       </div>

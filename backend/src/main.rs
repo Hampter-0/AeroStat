@@ -1,5 +1,6 @@
 ﻿mod activity;
 mod auth;
+mod backups;
 mod cli;
 mod config;
 mod console;
@@ -42,6 +43,7 @@ async fn main() -> anyhow::Result<()> {
     let pool = db::connect(&settings.database_url).await?;
     let redis_pool = db::connect_redis(&settings.redis_url)?;
     tracing::info!("Connected to Redis");
+    backups::init(backups::BackupConfig::from_env(&settings.database_url));
 
     match cli.command {
         Some(Commands::Cli) => {
@@ -73,6 +75,7 @@ async fn main() -> anyhow::Result<()> {
         None => {}
     }
 
+    backups::before_update(&pool, services::update_checker::CURRENT_VERSION).await;
     db::migrate(&pool).await?;
     tracing::info!("Connected to Postgres and ran migrations");
 
@@ -84,6 +87,9 @@ async fn main() -> anyhow::Result<()> {
 
     services::spawn_all(pool.clone());
     tracing::info!("Service checker started");
+
+    backups::spawn_schedule(pool.clone(), services::update_checker::CURRENT_VERSION);
+    tracing::info!("Backup schedule started");
 
     services::spawn_cleanup(pool.clone(), settings.metrics_retention_days);
     tracing::info!("Metrics cleanup scheduled");

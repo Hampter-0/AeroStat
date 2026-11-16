@@ -1,31 +1,36 @@
 'use client'
 
-import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { requestPasswordReset } from '@/app/manage/password-reset-actions'
-import { AtSign, ChevronLeft } from '@/components/icons'
+import { Mail } from '@/components/icons'
 import { useKeepValuesSubmit } from '@/lib/use-form-submit'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function ForgotPasswordForm() {
   const [state, formAction, pending] = useActionState(requestPasswordReset, initialState)
+  useResultToast(state)
   const onSubmit = useKeepValuesSubmit(formAction)
+  const [email, setEmail] = useState('')
 
-  if (state.success) {
-    return (
-      <div className="manage-form">
-        <p className="login-notice">{state.success}</p>
-        <p className="field-hint">No email after a few minutes? Check your spam folder, or ask an admin.</p>
-        <Link href="/manage/login" className="login-back">
-          <ChevronLeft /> Back to sign in
-        </Link>
-      </div>
-    )
+  useEffect(
+    function () {
+      if (state.success) {
+        window.setTimeout(function () {
+          setEmail('')
+        }, 0)
+      }
+    },
+    [state],
+  )
+
+  function changeEmail(event: React.ChangeEvent<HTMLInputElement>) {
+    setEmail(event.target.value)
   }
 
-  let buttonText = 'Send reset link'
+  let buttonText = 'Request password reset'
   if (pending) {
     buttonText = 'Sending…'
   }
@@ -35,17 +40,23 @@ export default function ForgotPasswordForm() {
       <label>
         <span>Email</span>
         <div className="input-with-icon">
-          <AtSign />
-          <input name="email" type="email" autoComplete="email" required autoFocus />
+          <Mail />
+          <input
+            name="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={changeEmail}
+            required
+            autoFocus
+          />
         </div>
       </label>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
-      <button type="submit" className="button-primary" disabled={pending}>
+      <button type="submit" className="button-primary" disabled={pending || email.trim() === ''}>
         {buttonText}
       </button>
-      <Link href="/manage/login" className="login-back">
-        <ChevronLeft /> Back to sign in
-      </Link>
+      <small className="field-hint">No email after a few minutes? Check your spam folder, or ask an admin.</small>
     </form>
   )
 }

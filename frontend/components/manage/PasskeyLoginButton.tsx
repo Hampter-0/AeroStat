@@ -5,10 +5,12 @@ import { useState } from 'react'
 import { finishPasskeyLogin, startPasskeyLogin } from '@/app/manage/passkey-login'
 import { Key } from '@/components/icons'
 import { browserError } from '@/lib/passkeys'
+import { useErrorToast } from '@/components/manage/toast/Toasts'
 
 export default function PasskeyLoginButton() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useErrorToast(error)
 
   async function signIn() {
     setBusy(true)
@@ -48,7 +50,6 @@ export default function PasskeyLoginButton() {
       <button type="button" className="button-passkey" onClick={signIn} disabled={busy}>
         <Key /> {label}
       </button>
-      {error && <p className="form-error" role="alert">{error}</p>}
     </div>
   )
 }

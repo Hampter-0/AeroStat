@@ -1,7 +1,6 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ChevronLeft } from '@/components/icons'
 import ForgotPasswordForm from '@/components/manage/ForgotPasswordForm'
+import LoginBackLink from '@/components/manage/LoginBackLink'
 import LoginHeading from '@/components/manage/LoginHeading'
 import LoginShell from '@/components/manage/LoginShell'
 import { getCurrentUser, manageFetch } from '@/lib/manage'
@@ -26,19 +25,15 @@ export default async function ForgotPasswordPage() {
 
   return (
     <LoginShell>
-      <LoginHeading title="Forgot password" subtitle="We email you a link to choose a new one" />
+      <LoginHeading title="Forgot password" subtitle="Enter your email and we send you a link to choose a new password" />
       <div className="manage-login-card">
         {available && <ForgotPasswordForm />}
         {!available && (
-          <div className="manage-form">
-            <p className="login-notice">
-              Resetting by email is not set up on this server. Ask an admin to set a new password for you.
-            </p>
-            <Link href="/manage/login" className="login-back">
-              <ChevronLeft /> Back to sign in
-            </Link>
-          </div>
+          <p className="login-notice">
+            Resetting by email is not set up on this server. Ask an admin to set a new password for you.
+          </p>
         )}
+        <LoginBackLink label="Login" />
       </div>
     </LoginShell>
   )

@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { useConfirm } from '@/components/manage/confirm/Confirm'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import type { StatusUpdate } from '@/lib/types'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -33,9 +33,10 @@ export default function UpdateEntry({
 }) {
   const [editing, setEditing] = useState(false)
   const [saveState, saveFormAction, saving] = useActionState(editAction, initialState)
-  useSuccessToast(saveState)
+  useResultToast(saveState)
   const { formRef: saveFormRef, onSubmit: saveSubmit } = useFormSubmit(saveFormAction, saveState)
   const [deleteState, deleteFormAction, deleting] = useActionState(deleteAction, initialState)
+  useResultToast(deleteState)
 
   function toggleEditing() {
     setEditing(!editing)
@@ -108,8 +109,6 @@ export default function UpdateEntry({
               <span>Message</span>
               <textarea name="message" rows={3} required defaultValue={update.message} />
             </label>
-            {saveState.error && <p className="form-error" role="alert">{saveState.error}</p>}
-            {deleteState.error && <p className="form-error" role="alert">{deleteState.error}</p>}
             <div className="form-actions spread">
               {canDelete && (
                 <button

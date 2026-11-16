@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { checkAllNow } from '@/app/manage/(panel)/services/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -11,7 +11,7 @@ const FEEDBACK_MS = 3000
 
 export default function CheckNowButton() {
   const [state, formAction, pending] = useActionState(checkAllNow, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const [expiredState, setExpiredState] = useState<FormState | null>(null)
 
   useEffect(

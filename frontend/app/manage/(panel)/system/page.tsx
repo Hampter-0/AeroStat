@@ -2,8 +2,10 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { AlertTriangle, Check, Clock, Cpu, Database, ExternalLink, Layers, MemoryChip, Package, Terminal } from '@/components/icons'
+import BackupsPanel from '@/components/manage/system/BackupsPanel'
 import EmailTest from '@/components/manage/system/EmailTest'
 import UpdateCheck from '@/components/manage/system/UpdateCheck'
+import type { BackupsView } from '@/lib/backups'
 import { getSiteConfig } from '@/lib/branding'
 import { ENCRYPTION_LABELS, type EmailInfo } from '@/lib/email'
 import { can, manageFetch, requireUser } from '@/lib/manage'
@@ -20,6 +22,7 @@ const TABS = [
   { id: 'updates', label: 'Updates' },
   { id: 'health', label: 'Health' },
   { id: 'email', label: 'Email' },
+  { id: 'backups', label: 'Backups' },
 ]
 
 const SMTP_EXAMPLE = [
@@ -88,9 +91,13 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
   const { tab } = await searchParams
   const tabs = []
   for (const option of TABS) {
-    if (option.id !== 'email' || can(user, 'system.email')) {
-      tabs.push(option)
+    if (option.id === 'email' && !can(user, 'system.email')) {
+      continue
     }
+    if (option.id === 'backups' && !can(user, 'system.backups')) {
+      continue
+    }
+    tabs.push(option)
   }
   let activeTab = 'overview'
   for (const option of tabs) {
@@ -103,6 +110,10 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
   let email: EmailInfo | null = null
   if (activeTab === 'email') {
     email = await manageFetch<EmailInfo>('/email')
+  }
+  let backups: BackupsView | null = null
+  if (activeTab === 'backups') {
+    backups = await manageFetch<BackupsView>('/backups')
   }
   const system = await manageFetch<SystemInfo>('/system')
   const version = await getVersionInfo()
@@ -339,6 +350,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
           </div>
         </section>
       )}
+      {activeTab === 'backups' && backups && <BackupsPanel data={backups} timezone={timezone} />}
     </div>
   )
 }

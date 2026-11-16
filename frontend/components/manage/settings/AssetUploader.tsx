@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { removeAsset, uploadAsset } from '@/app/manage/(panel)/settings/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
@@ -22,10 +22,10 @@ export default function AssetUploader({
   isCustom: boolean
 }) {
   const [uploadState, uploadAction, uploading] = useActionState(uploadAsset, initialState)
-  useSuccessToast(uploadState)
+  useResultToast(uploadState)
   const { formRef: uploadFormRef, onSubmit: uploadSubmit } = useFormSubmit(uploadAction, uploadState)
   const [removeState, removeAction, removing] = useActionState(removeAsset, initialState)
-  useSuccessToast(removeState)
+  useResultToast(removeState)
 
   let uploadText = 'Upload'
   if (uploading) {
@@ -63,8 +63,6 @@ export default function AssetUploader({
             </button>
           </form>
         )}
-        {uploadState.error && <p className="form-error" role="alert">{uploadState.error}</p>}
-        {removeState.error && <p className="form-error" role="alert">{removeState.error}</p>}
       </div>
     </div>
   )

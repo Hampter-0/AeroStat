@@ -318,6 +318,8 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `SMTP_PASSWORD` | | Mail server password. Never shown in the panel |
 | `SMTP_FROM_ADDRESS` | `SMTP_USERNAME` | Address emails are sent from |
 | `SMTP_FROM_NAME` | Site name | Name emails are sent from |
+| `BACKUP_DIR` | `/data/backups` | Where backups are stored |
+| `PG_DUMP_PATH`, `PG_RESTORE_PATH`, `PSQL_PATH` | `pg_dump`, `pg_restore`, `psql` | The PostgreSQL tools, only needed outside Docker |
 | `RUST_LOG` | `info` | Backend log level |
 
 ## Command line
@@ -336,6 +338,9 @@ It can run migrations, create an admin, list accounts, reset a password (by user
 | `remove-passkeys` | Removes every passkey of an account and turns password sign-in back on |
 | `enable-password-login` | Turns password sign-in back on |
 | `set-email` | Changes or removes an email address |
+| `backups` | Lists the backups |
+| `backup` | Makes a backup now |
+| `restore` | Puts a backup back, after backing up the database as it is now |
 
 Each change shows up under Activity. Accounts made with `create-admin` are the owners of the install and get a crown in the users list. Single commands also work:
 
@@ -377,13 +382,38 @@ AeroStat can't update itself: that would need access to the Docker socket, which
 
 ## Backups
 
-Everything worth keeping is in Postgres. With the bundled database:
+Everything worth keeping is in Postgres. AeroStat backs it up with `pg_dump` into the `backups` volume:
 
-```bash
-docker compose exec postgres pg_dump -U aerostat aerostat > aerostat.sql
+- **Every day** after 03:00 in the site's timezone, keeping the last 7. Change this, or turn it off, under **System → Backups**.
+- **Before an update.** When a new version starts for the first time, it backs up the database before changing it. The last 3 are kept.
+- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included.
+
+A backup on the same server is gone when the server is. Download one now and then, or copy the volume elsewhere, and keep a copy of your `.env` with it: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
+
+To keep the backups in a folder of your own instead of a volume, add this to `docker-compose.override.yml`. The folder must be writable for user id 10001:
+
+```yaml
+services:
+  backend:
+    volumes:
+      - /srv/aerostat-backups:/data/backups
 ```
 
-Also keep a copy of your `.env`. The database alone is not enough: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
+### Restoring
+
+Restore from the server with the CLI. It lists the backups, makes a backup of the database as it is now, then puts the chosen one back. If anything fails, nothing is changed.
+
+```bash
+docker compose exec -it backend aerostat cli
+```
+
+Pick `restore`, then restart the backend so it runs any newer migrations:
+
+```bash
+docker compose restart backend
+```
+
+A backup from a newer AeroStat can't go back into an older one; update first. The Docker image has the PostgreSQL 17 tools, which work with PostgreSQL 17 and older.
 
 ## Development
 

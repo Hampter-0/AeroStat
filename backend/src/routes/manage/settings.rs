@@ -12,7 +12,7 @@ use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
 use crate::site_settings::{
-    self, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
+    self, BACKUP_BEFORE_UPDATE, BACKUP_KEEP, BACKUP_SCHEDULE, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
 };
 use crate::state::AppState;
 
@@ -102,6 +102,24 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 .map_err(|_| ApiError::BadRequest("Failed checks must be a whole number".into()))?;
             if !(1..=10).contains(&checks) {
                 return Err(ApiError::BadRequest("Failed checks must be between 1 and 10".into()));
+            }
+        }
+        BACKUP_SCHEDULE => {
+            if !matches!(value, "off" | "daily" | "weekly") {
+                return Err(ApiError::BadRequest("The schedule must be off, daily or weekly".into()));
+            }
+        }
+        BACKUP_KEEP => {
+            let keep: i64 = value
+                .parse()
+                .map_err(|_| ApiError::BadRequest("Backups to keep must be a whole number".into()))?;
+            if !(1..=365).contains(&keep) {
+                return Err(ApiError::BadRequest("Keep between 1 and 365 backups".into()));
+            }
+        }
+        BACKUP_BEFORE_UPDATE => {
+            if !matches!(value, "true" | "false") {
+                return Err(ApiError::BadRequest("Backup before update must be true or false".into()));
             }
         }
         _ => return Err(ApiError::BadRequest(format!("Unknown setting: {key}"))),

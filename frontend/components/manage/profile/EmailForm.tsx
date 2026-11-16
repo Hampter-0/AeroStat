@@ -3,14 +3,14 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { updateProfile } from '@/app/manage/(panel)/profile/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function EmailForm({ username, email }: { username: string; email: string | null }) {
   const [state, formAction, pending] = useActionState(updateProfile, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let emailValue = ''
@@ -36,7 +36,6 @@ export default function EmailForm({ username, email }: { username: string; email
         <input name="current_password" type="password" autoComplete="current-password" />
         <small className="field-hint">Needed to change your email address.</small>
       </label>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

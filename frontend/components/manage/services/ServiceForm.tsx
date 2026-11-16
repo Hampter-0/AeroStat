@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createService, updateService } from '@/app/manage/(panel)/services/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { INTERVAL_UNITS, splitInterval, type ManageGroup, type ManageService } from '@/lib/services'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
@@ -23,7 +23,7 @@ export default function ServiceForm({
     action = updateService
   }
   const [state, formAction, pending] = useActionState(action, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let name = ''
@@ -109,7 +109,6 @@ export default function ServiceForm({
           <small className="field-hint">Between 30 seconds and 24 hours.</small>
         </label>
       </div>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

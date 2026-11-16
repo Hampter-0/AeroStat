@@ -7,6 +7,8 @@ use sqlx::PgPool;
 
 use serde_json::json;
 
+use crate::backups::{self, Kind};
+use crate::services::update_checker::CURRENT_VERSION;
 use crate::{activity, db, login_guard, routes};
 
 const ACCENT: (u8, u8, u8) = (0x56, 0xc7, 0xe4);
@@ -17,7 +19,7 @@ struct MenuItem {
     description: &'static str,
 }
 
-const MENU: [MenuItem; 11] = [
+const MENU: [MenuItem; 14] = [
     MenuItem { number: "1", name: "help", description: "Show all commands" },
     MenuItem { number: "2", name: "migrate", description: "Run database migrations" },
     MenuItem { number: "3", name: "create-admin", description: "Create an admin account (or reset one)" },
@@ -28,6 +30,9 @@ const MENU: [MenuItem; 11] = [
     MenuItem { number: "8", name: "remove-passkeys", description: "Remove every passkey of an account" },
     MenuItem { number: "9", name: "enable-password-login", description: "Let an account sign in with its password again" },
     MenuItem { number: "10", name: "set-email", description: "Change or remove the email address of an account" },
+    MenuItem { number: "11", name: "backups", description: "List the backups" },
+    MenuItem { number: "12", name: "backup", description: "Make a backup now" },
+    MenuItem { number: "13", name: "restore", description: "Put a backup back (replaces the database)" },
     MenuItem { number: "0", name: "exit", description: "Leave the CLI" },
 ];
 
@@ -42,6 +47,9 @@ enum Action {
     RemovePasskeys,
     EnablePasswordLogin,
     SetEmail,
+    Backups,
+    Backup,
+    Restore,
     Exit,
 }
 
@@ -57,6 +65,9 @@ fn parse_action(input: &str) -> Option<Action> {
         "8" | "remove-passkeys" => Some(Action::RemovePasskeys),
         "9" | "enable-password-login" => Some(Action::EnablePasswordLogin),
         "10" | "set-email" => Some(Action::SetEmail),
+        "11" | "backups" => Some(Action::Backups),
+        "12" | "backup" => Some(Action::Backup),
+        "13" | "restore" => Some(Action::Restore),
         "0" | "exit" | "quit" | "q" => Some(Action::Exit),
         _ => None,
     }
@@ -101,6 +112,9 @@ pub async fn run(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
             Action::RemovePasskeys => remove_passkeys(pool).await,
             Action::EnablePasswordLogin => enable_password_login(pool).await,
             Action::SetEmail => set_email(pool).await,
+            Action::Backups => list_backups().await.map(|_| ()),
+            Action::Backup => make_backup().await,
+            Action::Restore => restore_backup().await,
             Action::Exit => break,
         };
 
@@ -196,6 +210,120 @@ async fn unblock(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
     } else {
         success(&format!("Sign-in block for '{}' lifted", input.to_lowercase()));
     }
+    Ok(())
+}
+
+fn size_text(bytes: u64) -> String {
+    let units = ["B", "KB", "MB", "GB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1024.0 && unit < units.len() - 1 {
+        value /= 1024.0;
+        unit += 1;
+    }
+    if unit == 0 {
+        format!("{bytes} B")
+    } else {
+        format!("{value:.1} {}", units[unit])
+    }
+}
+
+fn kind_text(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Manual => "manual",
+        Kind::Scheduled => "scheduled",
+        Kind::Update => "before update",
+        Kind::Restore => "before restore",
+        Kind::Upload => "uploaded",
+    }
+}
+
+/// Prints the backups with a number each, newest first, and returns them.
+async fn list_backups() -> anyhow::Result<Vec<backups::Backup>> {
+    let list = backups::list().await?;
+    if list.is_empty() {
+        println!("  No backups yet. Use {} to make one.\n", "backup".bold());
+        return Ok(list);
+    }
+    println!();
+    for (index, backup) in list.iter().enumerate() {
+        println!(
+            "  {}  {}  {:<15} v{:<9} {:>9}  {}",
+            format!("{:>2}", index + 1).truecolor(ACCENT.0, ACCENT.1, ACCENT.2).bold(),
+            backup.created_at.format("%Y-%m-%d %H:%M UTC").to_string().bold(),
+            kind_text(backup.kind),
+            backup.version,
+            size_text(backup.size_bytes),
+            backup.id.dimmed()
+        );
+    }
+    println!();
+    Ok(list)
+}
+
+async fn make_backup() -> anyhow::Result<()> {
+    println!("  Making a backup…");
+    let backup = backups::create(Kind::Manual, Some("command line".into()), CURRENT_VERSION, None).await?;
+    success(&format!("Backup {} made ({})", backup.id, size_text(backup.size_bytes)));
+    Ok(())
+}
+
+/// "1.2.3" as numbers, for comparing versions.
+fn version_parts(version: &str) -> Vec<u64> {
+    version.split('.').map(|part| part.trim().parse().unwrap_or(0)).collect()
+}
+
+async fn restore_backup() -> anyhow::Result<()> {
+    let list = list_backups().await?;
+    if list.is_empty() {
+        return Ok(());
+    }
+    let answer = ask("Number of the backup to restore")?;
+    let index: usize = answer.parse().map_err(|_| anyhow::anyhow!("'{answer}' is not a number from the list"))?;
+    let backup = list
+        .get(index.wrapping_sub(1))
+        .ok_or_else(|| anyhow::anyhow!("'{answer}' is not a number from the list"))?
+        .clone();
+
+    if version_parts(&backup.version) > version_parts(CURRENT_VERSION) {
+        anyhow::bail!(
+            "This backup is from v{}, newer than this AeroStat (v{CURRENT_VERSION}). Update AeroStat first, then restore it",
+            backup.version
+        );
+    }
+
+    println!();
+    println!(
+        "  {} This replaces everything in the database with the backup from {} (v{}).",
+        "!".yellow().bold(),
+        backup.created_at.format("%Y-%m-%d %H:%M UTC"),
+        backup.version
+    );
+    println!("    Everything that changed after it is gone, including users, sessions and check history.");
+    println!("    A backup of the database as it is now is made first.");
+    let typed = read_line("  Type restore to go on: ")?.unwrap_or_default();
+    if typed.trim() != "restore" {
+        println!("  Nothing changed.\n");
+        return Ok(());
+    }
+
+    println!("  Backing up the current database…");
+    let safety = backups::create(
+        Kind::Restore,
+        Some("command line".into()),
+        CURRENT_VERSION,
+        Some(format!("Before restoring {}", backup.id)),
+    )
+    .await
+    .map_err(|e| anyhow::anyhow!("Could not back up the current database, so nothing was restored: {e:#}"))?;
+    println!("  Saved as {}", safety.id.dimmed());
+
+    println!("  Restoring…");
+    backups::restore(&backup.id).await?;
+    success(&format!(
+        "Restored {}. Restart AeroStat so it picks this up and runs any newer migrations: docker compose restart backend",
+        backup.id
+    ));
     Ok(())
 }
 

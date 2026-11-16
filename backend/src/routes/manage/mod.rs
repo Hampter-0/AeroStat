@@ -1,4 +1,5 @@
 mod activity;
+mod backups;
 mod dashboard;
 mod email;
 mod incidents;
@@ -38,6 +39,13 @@ pub fn router() -> Router<AppState> {
         .route("/logout", post(session::logout))
         .route("/me", get(session::me))
         .route("/version", get(version::get))
+        .route("/backups", get(backups::list).post(backups::create))
+        .route(
+            "/backups/upload",
+            post(backups::upload).layer(axum::extract::DefaultBodyLimit::max(crate::backups::MAX_UPLOAD_BYTES as usize)),
+        )
+        .route("/backups/:id", delete(backups::delete))
+        .route("/backups/:id/download", get(backups::download))
         .route("/version/check", post(version::check))
         .route("/system", get(system::get))
         .route("/profile", patch(profile::update))

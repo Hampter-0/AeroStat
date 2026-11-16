@@ -1,6 +1,8 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import type { FormState } from '@/app/manage/actions'
+import { flash } from '@/lib/flash'
 import { errorMessage, manageFetch } from '@/lib/manage'
 
 export async function requestPasswordReset(_state: FormState, formData: FormData): Promise<FormState> {
@@ -31,5 +33,6 @@ export async function confirmPasswordReset(_state: FormState, formData: FormData
   } catch (error) {
     return { error: errorMessage(error), success: null }
   }
-  return { error: null, success: 'Your password is changed. You were signed out on every device.' }
+  await flash('Your password is changed. Sign in with your new password.')
+  redirect('/manage/login')
 }

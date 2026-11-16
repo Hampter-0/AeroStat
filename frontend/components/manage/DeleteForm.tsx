@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -21,7 +21,7 @@ export default function DeleteForm({
   confirmText: string
 }) {
   const [state, formAction, pending] = useActionState(action, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
 
   let title = confirmText
   let message: string | undefined = undefined
@@ -41,7 +41,6 @@ export default function DeleteForm({
     <form action={formAction} onSubmit={confirmDelete} className="danger-zone">
       <input type="hidden" name="id" value={id} />
       <p>{description}</p>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
       <button type="submit" className="button-danger" disabled={pending}>
         {buttonText}
       </button>

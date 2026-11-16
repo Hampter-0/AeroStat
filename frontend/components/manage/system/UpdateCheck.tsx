@@ -6,11 +6,13 @@ import { checkForUpdates } from '@/app/manage/(panel)/settings/actions'
 import CopyButton from '@/components/manage/CopyButton'
 import { UPDATE_COMMAND } from '@/lib/update-command'
 import type { VersionInfo } from '@/lib/version'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function UpdateCheck({ version, checkedText }: { version: VersionInfo; checkedText: string }) {
   const [state, formAction, pending] = useActionState(checkForUpdates, initialState)
+  useResultToast(state)
 
   let statusText = 'Not checked yet'
   if (version.check_error) {
@@ -46,7 +48,6 @@ export default function UpdateCheck({ version, checkedText }: { version: Version
           {buttonText}
         </button>
       </div>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
     </form>
   )
 }

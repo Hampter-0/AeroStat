@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { removeAvatar, uploadAvatar } from '@/app/manage/(panel)/profile/actions'
 import Avatar from '@/components/manage/Avatar'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
@@ -19,10 +19,10 @@ export default function AvatarForm({
   version: number | null
 }) {
   const [uploadState, uploadAction, uploading] = useActionState(uploadAvatar, initialState)
-  useSuccessToast(uploadState)
+  useResultToast(uploadState)
   const { formRef: uploadFormRef, onSubmit: uploadSubmit } = useFormSubmit(uploadAction, uploadState)
   const [removeState, removeAction, removing] = useActionState(removeAvatar, initialState)
-  useSuccessToast(removeState)
+  useResultToast(removeState)
 
   let uploadText = 'Upload'
   if (uploading) {
@@ -47,8 +47,6 @@ export default function AvatarForm({
             </button>
           </form>
         )}
-        {uploadState.error && <p className="form-error" role="alert">{uploadState.error}</p>}
-        {removeState.error && <p className="form-error" role="alert">{removeState.error}</p>}
       </div>
     </div>
   )

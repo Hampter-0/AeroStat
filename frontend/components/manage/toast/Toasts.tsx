@@ -6,16 +6,20 @@ import type { FormState } from '@/app/manage/actions'
 import { X } from '@/components/icons'
 
 const SHOW_MS = 4500
+const ERROR_SHOW_MS = 8000
 const LEAVE_MS = 220
 const FLASH_COOKIE = 'aerostat_toast'
+
+export type ToastTone = 'success' | 'error'
 
 interface Toast {
   id: number
   message: string
+  tone: ToastTone
   leaving: boolean
 }
 
-type ShowToast = (message: string) => void
+type ShowToast = (message: string, tone?: ToastTone) => void
 
 const ToastContext = createContext<ShowToast>(function () {})
 
@@ -25,15 +29,30 @@ export function useToast(): ShowToast {
   return useContext(ToastContext)
 }
 
-export function useSuccessToast(state: FormState) {
+export function useResultToast(state: FormState) {
   const show = useToast()
   useEffect(
     function () {
       if (state.success) {
-        show(state.success)
+        show(state.success, 'success')
+      }
+      if (state.error) {
+        show(state.error, 'error')
       }
     },
     [state, show],
+  )
+}
+
+export function useErrorToast(error: string | null) {
+  const show = useToast()
+  useEffect(
+    function () {
+      if (error) {
+        show(error, 'error')
+      }
+    },
+    [error, show],
   )
 }
 
@@ -70,7 +89,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
       setToasts(function (list) {
         return list.map(function (toast) {
           if (toast.id === id) {
-            return { id: toast.id, message: toast.message, leaving: true }
+            return { id: toast.id, message: toast.message, tone: toast.tone, leaving: true }
           }
           return toast
         })
@@ -83,15 +102,21 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   )
 
   const show = useCallback(
-    function (message: string) {
+    function (message: string, tone?: ToastTone) {
       const id = nextId
       nextId = nextId + 1
+      let kind: ToastTone = 'success'
+      let wait = SHOW_MS
+      if (tone === 'error') {
+        kind = 'error'
+        wait = ERROR_SHOW_MS
+      }
       setToasts(function (list) {
-        return list.concat([{ id: id, message: message, leaving: false }]).slice(-4)
+        return list.concat([{ id: id, message: message, tone: kind, leaving: false }]).slice(-4)
       })
       window.setTimeout(function () {
         dismiss(id)
-      }, SHOW_MS)
+      }, wait)
     },
     [dismiss],
   )
@@ -112,17 +137,21 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div className="toast-stack" role="status" aria-live="polite">
+      <div className="toast-stack" aria-live="polite">
         {toasts.map(function (toast) {
           function close() {
             dismiss(toast.id)
           }
-          let className = 'toast'
+          let className = 'toast ' + toast.tone
           if (toast.leaving) {
-            className = 'toast leaving'
+            className = className + ' leaving'
+          }
+          let role = 'status'
+          if (toast.tone === 'error') {
+            role = 'alert'
           }
           return (
-            <div className={className} key={toast.id}>
+            <div className={className} key={toast.id} role={role}>
               <span className="toast-bar" aria-hidden="true" />
               <span className="toast-message">{toast.message}</span>
               <button type="button" className="toast-close" onClick={close} aria-label="Close">

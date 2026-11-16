@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ChevronLeft } from '@/components/icons'
+import LoginBackLink from '@/components/manage/LoginBackLink'
 import LoginHeading from '@/components/manage/LoginHeading'
 import LoginShell from '@/components/manage/LoginShell'
 import ResetPasswordForm from '@/components/manage/ResetPasswordForm'
@@ -37,11 +37,9 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
             <Link href="/manage/forgot-password" className="button-primary login-button-link">
               Send a new link
             </Link>
-            <Link href="/manage/login" className="login-back">
-              <ChevronLeft /> Back to sign in
-            </Link>
           </div>
         )}
+        {!valid && <LoginBackLink label="Login" />}
       </div>
     </LoginShell>
   )

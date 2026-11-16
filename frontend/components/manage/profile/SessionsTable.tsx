@@ -5,20 +5,20 @@ import type { FormState } from '@/app/manage/actions'
 import { endOtherSessions, endSession } from '@/app/manage/(panel)/profile/actions'
 import { LogOut, Search } from '@/components/icons'
 import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import type { SessionRow } from '@/lib/sessions'
 
 const initialState: FormState = { error: null, success: null }
 
 function EndButton({ id }: { id: number }) {
   const [state, formAction, pending] = useActionState(endSession, initialState)
+  useResultToast(state)
   return (
     <form action={formAction}>
       <input type="hidden" name="id" value={id} />
       <button type="submit" className="button-secondary" disabled={pending}>
         Log out
       </button>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
     </form>
   )
 }
@@ -26,7 +26,7 @@ function EndButton({ id }: { id: number }) {
 export default function SessionsTable({ sessions }: { sessions: SessionRow[] }) {
   const [query, setQuery] = useState('')
   const [othersState, othersAction, endingOthers] = useActionState(endOtherSessions, initialState)
-  useSuccessToast(othersState)
+  useResultToast(othersState)
 
   function changeQuery(event: React.ChangeEvent<HTMLInputElement>) {
     setQuery(event.target.value)
@@ -70,7 +70,6 @@ export default function SessionsTable({ sessions }: { sessions: SessionRow[] }) 
           </form>
         )}
       </div>
-      {othersState.error && <p className="form-error" role="alert">{othersState.error}</p>}
       <div className="activity-table-wrap">
         <table className="activity-table sessions-table">
           <thead>

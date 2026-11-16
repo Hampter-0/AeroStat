@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { saveNotifications, sendTestNotification } from '@/app/manage/(panel)/settings/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { EVENT_GROUPS, type NotificationSettings } from '@/lib/notifications'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
@@ -11,10 +11,10 @@ const initialState: FormState = { error: null, success: null }
 
 export default function NotificationsForm({ settings }: { settings: NotificationSettings }) {
   const [state, formAction, pending] = useActionState(saveNotifications, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
   const [testState, testAction, testing] = useActionState(sendTestNotification, initialState)
-  useSuccessToast(testState)
+  useResultToast(testState)
 
   let webhookHint = 'Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.'
   let webhookPlaceholder = 'https://discord.com/api/webhooks/…'
@@ -77,7 +77,6 @@ export default function NotificationsForm({ settings }: { settings: Notification
           )
         })}
 
-        {state.error && <p className="form-error" role="alert">{state.error}</p>}
         <div className="form-actions">
           <button type="submit" className="button-primary" disabled={pending}>
             {saveText}
@@ -91,7 +90,6 @@ export default function NotificationsForm({ settings }: { settings: Notification
           <button type="submit" className="button-secondary" disabled={testing}>
             {testText}
           </button>
-          {testState.error && <p className="form-error" role="alert">{testState.error}</p>}
         </form>
       )}
     </>

@@ -6,6 +6,7 @@ import { deleteGroup, moveGroup, renameGroup } from '@/app/manage/(panel)/servic
 import MoveButtons from './MoveButtons'
 import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import { useFormSubmit } from '@/lib/use-form-submit'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -28,8 +29,10 @@ export default function GroupHeader({
 }) {
   const [editing, setEditing] = useState(false)
   const [renameState, renameAction, renaming] = useActionState(renameGroup, initialState)
+  useResultToast(renameState)
   const { formRef: renameFormRef, onSubmit: renameSubmit } = useFormSubmit(renameAction, renameState)
   const [deleteState, deleteAction, deleting] = useActionState(deleteGroup, initialState)
+  useResultToast(deleteState)
 
   function toggleEditing() {
     setEditing(!editing)
@@ -81,8 +84,6 @@ export default function GroupHeader({
           {canEdit && <MoveButtons id={id} label={name} isFirst={isFirst} isLast={isLast} action={moveGroup} />}
         </div>
       )}
-      {renameState.error && <p className="form-error" role="alert">{renameState.error}</p>}
-      {deleteState.error && <p className="form-error" role="alert">{deleteState.error}</p>}
     </div>
   )
 }

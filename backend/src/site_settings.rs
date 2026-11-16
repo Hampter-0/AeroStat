@@ -15,8 +15,16 @@ pub const PUBLIC_URL: &str = "public_url";
 /// Failed checks in a row before a service counts as down and people get a message.
 pub const DOWN_AFTER_CHECKS: &str = "down_after_checks";
 pub const DEFAULT_DOWN_AFTER_CHECKS: i64 = 2;
+/// "off", "daily" or "weekly". Scheduled backups run after 03:00 in the site's timezone.
+pub const BACKUP_SCHEDULE: &str = "backup_schedule";
+pub const DEFAULT_BACKUP_SCHEDULE: &str = "daily";
+/// How many scheduled backups to keep.
+pub const BACKUP_KEEP: &str = "backup_keep";
+pub const DEFAULT_BACKUP_KEEP: i64 = 7;
+/// "true" or "false": make a backup on start when a new version is about to change the database.
+pub const BACKUP_BEFORE_UPDATE: &str = "backup_before_update";
 
-pub const KEYS: [&str; 8] = [
+pub const KEYS: [&str; 11] = [
     SITE_NAME,
     SITE_DESCRIPTION,
     CONTACT_URL,
@@ -25,6 +33,9 @@ pub const KEYS: [&str; 8] = [
     TIMEZONE,
     METRICS_RETENTION_DAYS,
     DOWN_AFTER_CHECKS,
+    BACKUP_SCHEDULE,
+    BACKUP_KEEP,
+    BACKUP_BEFORE_UPDATE,
 ];
 
 /// The settings permission needed to change a key, one per tab in the panel.
@@ -33,6 +44,7 @@ pub fn permission_for(key: &str) -> &'static str {
         PRIMARY_COLOR => "settings.appearance",
         TIMEZONE => "settings.time",
         METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS => "settings.monitoring",
+        BACKUP_SCHEDULE | BACKUP_KEEP | BACKUP_BEFORE_UPDATE => "system.backups",
         _ => "settings.general",
     }
 }
@@ -81,6 +93,24 @@ pub async fn down_after_checks(db: &PgPool) -> i64 {
         Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_DOWN_AFTER_CHECKS),
         _ => DEFAULT_DOWN_AFTER_CHECKS,
     }
+}
+
+pub async fn backup_schedule(db: &PgPool) -> String {
+    match get(db, BACKUP_SCHEDULE).await {
+        Ok(Some(value)) => value,
+        _ => DEFAULT_BACKUP_SCHEDULE.to_string(),
+    }
+}
+
+pub async fn backup_keep(db: &PgPool) -> i64 {
+    match get(db, BACKUP_KEEP).await {
+        Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_BACKUP_KEEP),
+        _ => DEFAULT_BACKUP_KEEP,
+    }
+}
+
+pub async fn backup_before_update(db: &PgPool) -> bool {
+    !matches!(get(db, BACKUP_BEFORE_UPDATE).await, Ok(Some(value)) if value == "false")
 }
 
 pub fn today(tz: Tz) -> NaiveDate {

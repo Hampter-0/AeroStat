@@ -26,6 +26,8 @@ services:
         required: false
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - backups:/data/backups
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
       REDIS_URL: redis://redis:6379
@@ -73,3 +75,4 @@ services:
 
 volumes:
   postgres-data:
+  backups:

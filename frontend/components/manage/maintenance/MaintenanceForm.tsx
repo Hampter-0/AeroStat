@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createMaintenance, updateMaintenance } from '@/app/manage/(panel)/maintenance/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
@@ -33,7 +33,7 @@ export default function MaintenanceForm({
     action = updateMaintenance
   }
   const [state, formAction, pending] = useActionState(action, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   let title = ''
@@ -91,7 +91,6 @@ export default function MaintenanceForm({
         </label>
       )}
 
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

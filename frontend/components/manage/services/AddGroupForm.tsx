@@ -3,14 +3,14 @@
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createGroup } from '@/app/manage/(panel)/services/actions'
-import { useSuccessToast } from '@/components/manage/toast/Toasts'
+import { useResultToast } from '@/components/manage/toast/Toasts'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
 export default function AddGroupForm() {
   const [state, formAction, pending] = useActionState(createGroup, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
 
   return (
@@ -21,7 +21,6 @@ export default function AddGroupForm() {
           Add group
         </button>
       </div>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
     </form>
   )
 }

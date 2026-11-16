@@ -7,7 +7,7 @@ import type { FormState } from '@/app/manage/actions'
 import { finishPasskey, removePasskey, startPasskey } from '@/app/manage/(panel)/profile/passkey-actions'
 import { Key } from '@/components/icons'
 import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
-import { useSuccessToast, useToast } from '@/components/manage/toast/Toasts'
+import { useErrorToast, useResultToast, useToast } from '@/components/manage/toast/Toasts'
 import { browserError, type PasskeyInfo } from '@/lib/passkeys'
 
 const initialState: FormState = { error: null, success: null }
@@ -19,7 +19,7 @@ export interface PasskeyRow extends PasskeyInfo {
 
 function RemoveButton({ id, name }: { id: number; name: string }) {
   const [state, formAction, pending] = useActionState(removePasskey, initialState)
-  useSuccessToast(state)
+  useResultToast(state)
 
   const confirmRemove = useConfirmedSubmit(formAction, {
     title: 'Remove the passkey "' + name + '"?',
@@ -34,7 +34,6 @@ function RemoveButton({ id, name }: { id: number; name: string }) {
       <button type="submit" className="link-button danger" disabled={pending}>
         Remove
       </button>
-      {state.error && <p className="form-error" role="alert">{state.error}</p>}
     </form>
   )
 }
@@ -48,6 +47,7 @@ export default function SecurityKeys({ passkeys, available }: { passkeys: Passke
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useErrorToast(error)
 
   function open() {
     setAdding(true)
@@ -162,7 +162,6 @@ export default function SecurityKeys({ passkeys, available }: { passkeys: Passke
             <span>Current password</span>
             <input type="password" value={password} onChange={changePassword} required autoComplete="current-password" />
           </label>
-          {error && <p className="form-error" role="alert">{error}</p>}
           <div className="form-actions passkey-actions">
             <button type="button" className="button-secondary" onClick={close} disabled={busy}>
               Cancel

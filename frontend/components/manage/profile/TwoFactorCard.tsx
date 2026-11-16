@@ -11,7 +11,7 @@ import {
   startApp,
   startEmail,
 } from '@/app/manage/(panel)/profile/two-factor-actions'
-import { useToast } from '@/components/manage/toast/Toasts'
+import { useErrorToast, useToast } from '@/components/manage/toast/Toasts'
 import type { TwoFactorStatus } from '@/lib/two-factor'
 
 type Step =
@@ -36,6 +36,7 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
   const [codes, setCodes] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  useErrorToast(error)
 
   function go(next: Step) {
     setStep(next)
@@ -250,7 +251,6 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
             />
           </label>
         )}
-        {error && <p className="form-error" role="alert">{error}</p>}
         <div className="form-actions">
           <button type="button" className="button-secondary" onClick={cancel} disabled={busy}>
             Cancel
