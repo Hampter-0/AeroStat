@@ -53,30 +53,42 @@ main {
 }
 
 .notice {
+    position: relative;
     width: min(860px, calc(100% - 44px));
     min-height: 62px;
     margin: 0 auto 0;
-    padding: 0 18px;
+    padding: 12px 18px 12px 30px;
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 14px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 8px;
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
+    box-shadow: 0 8px 24px var(--shadow);
 }
 
-.notice.scheduled {
-    border-color: var(--warning-border);
+.notice::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--muted);
 }
 
-.notice.ongoing-maintenance {
-    border-color: var(--info-border);
+.notice.scheduled::before {
+    background: var(--warning);
 }
 
-.notice.incident {
-    border-color: var(--danger-border);
+.notice.ongoing-maintenance::before {
+    background: var(--info);
+}
+
+.notice.incident::before {
+    background: var(--danger-text);
 }
 
 .notice-icon {
@@ -113,20 +125,8 @@ main {
 
 .notice-copy p {
     margin: 0;
-    color: var(--muted);
+    color: var(--text-soft);
     font-size: 9px;
-}
-
-.notice-copy p.scheduled-text {
-    color: var(--warning-text);
-}
-
-.notice-copy p.ongoing-text {
-    color: var(--info);
-}
-
-.notice-copy p.incident-text {
-    color: var(--danger-text);
 }
 
 .text-button {
@@ -436,6 +436,20 @@ a.bar {
     font-size: 9px;
 }
 
+.tooltip-calm {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text);
+    font-size: 9px;
+}
+
+.tooltip-uptime {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-soft);
+    font-size: 9px;
+}
+
 .bar-tooltip time {
     display: block;
     padding-top: 9px;
@@ -497,7 +511,7 @@ a.bar {
 
     .notice {
         min-height: 0;
-        padding: 14px;
+        padding: 14px 14px 14px 28px;
         grid-template-columns: auto 1fr;
         align-items: start;
         gap: 6px 12px;

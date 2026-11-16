@@ -49,6 +49,38 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
     <td align="center">Admin dashboard</td>
     <td align="center">Incident timeline</td>
   </tr>
+  <tr>
+    <td><img src="docs/screenshots/users.png" alt="Users with their roles and sign-in security" /></td>
+    <td><img src="docs/screenshots/role.png" alt="A role with its permissions" /></td>
+  </tr>
+  <tr>
+    <td align="center">Users, roles and sign-in security</td>
+    <td align="center">Permissions per role</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/profile.png" alt="Profile with passkeys and two-factor sign-in" /></td>
+    <td><img src="docs/screenshots/backups.png" alt="Backups with schedule, download and restore" /></td>
+  </tr>
+  <tr>
+    <td align="center">Passkeys and two-factor sign-in</td>
+    <td align="center">Backups</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/activity.png" alt="Activity log with filters" /></td>
+    <td><img src="docs/screenshots/help.png" alt="Help page with install checks" /></td>
+  </tr>
+  <tr>
+    <td align="center">Activity log</td>
+    <td align="center">Help and install checks</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/status-page-mobile.png" alt="Status page on a phone" /></td>
+    <td><img src="docs/screenshots/login.png" alt="Sign-in page" /></td>
+  </tr>
+  <tr>
+    <td align="center">Status page on a phone</td>
+    <td align="center">Sign-in</td>
+  </tr>
 </table>
 
 ## Install with Docker

@@ -23,6 +23,14 @@ function formatMinutes(minutes: number) {
   return text
 }
 
+function formatPercent(value: number) {
+  let text = value.toFixed(3)
+  while (text.includes('.') && (text.endsWith('0') || text.endsWith('.'))) {
+    text = text.slice(0, -1)
+  }
+  return text + '% uptime'
+}
+
 export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayNote: string }) {
   let shownDays = days
   if (shownDays.length === 0) {
@@ -87,6 +95,11 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
             showDowntime = true
           }
 
+          let uptimeText = ''
+          if (typeof day.uptime_percent === 'number') {
+            uptimeText = formatPercent(day.uptime_percent)
+          }
+
           let dateText = ''
           if (day.date) {
             dateText = formatDay(day.date) + dayNote
@@ -107,6 +120,8 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
                 )
               })}
               {showDowntime && <span className="downtime-duration">Down for {formatMinutes(day.downtime_minutes)}</span>}
+              {!showDowntime && !hasEvents && uptimeText && <span className="tooltip-calm">No problems</span>}
+              {uptimeText && <span className="tooltip-uptime">{uptimeText}</span>}
               {dateText && <time dateTime={day.date}>{dateText}</time>}
             </span>
           )

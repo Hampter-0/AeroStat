@@ -1,5 +1,6 @@
 .manage-shell {
     min-height: 100vh;
+    min-height: 100dvh;
     display: grid;
     grid-template-columns: 232px 1fr;
     background: var(--panel-soft);
@@ -9,6 +10,7 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    height: 100dvh;
     padding: 20px 14px;
     display: flex;
     flex-direction: column;
@@ -490,6 +492,7 @@
 
 .manage-login {
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 32px 16px;
     display: flex;
     align-items: center;
@@ -667,6 +670,7 @@
 body:has(.manage-shell),
 body:has(.manage-login) {
     min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .manage-form textarea,
@@ -2016,7 +2020,12 @@ a.page-button:hover {
 }
 
 .activity-event {
-    overflow-wrap: anywhere;
+    min-width: 180px;
+    overflow-wrap: break-word;
+}
+
+.activity-ip-cell {
+    white-space: nowrap;
 }
 
 .activity-event a {
@@ -2140,7 +2149,7 @@ a.page-button:hover {
 
 @media (max-width: 640px) {
     .activity-table {
-        min-width: 640px;
+        min-width: 760px;
     }
 }
 
@@ -3474,4 +3483,42 @@ a.page-button:hover {
     to {
         transform: rotate(360deg);
     }
+}
+
+.manage-content select,
+.manage-login select {
+    appearance: none;
+    padding-right: 30px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%238b949e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    background-size: 14px;
+}
+
+.manage-content select {
+    padding-left: 10px;
+}
+
+.manage-content input[type="file"] {
+    max-width: 100%;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+}
+
+.manage-content input[type="file"]::file-selector-button {
+    margin-right: 10px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.manage-content input[type="file"]::file-selector-button:hover {
+    border-color: var(--link);
 }

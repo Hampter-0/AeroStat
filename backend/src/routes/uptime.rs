@@ -23,6 +23,9 @@ pub struct DayHistory {
     /// "online" | "degraded" | "offline" | "no_data"
     status: String,
     downtime_minutes: i64,
+    /// Share of the day the service was up, for the bar's tooltip. Today
+    /// counts only the part that has passed. None without checks.
+    uptime_percent: Option<f64>,
     events: Vec<DayEvent>,
 }
 
@@ -180,11 +183,20 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         }
 
         let (status, downtime_minutes) = parse_rollup(statuses[i].as_deref());
+        let uptime_percent = if status == "no_data" {
+            None
+        } else {
+            let (start, end) = site_settings::day_bounds(*date, tz);
+            let minutes = (end.min(Utc::now()) - start).num_minutes().max(1);
+            let share = 1.0 - (downtime_minutes as f64 / minutes as f64);
+            Some((share.clamp(0.0, 1.0) * 100_000.0).round() / 1000.0)
+        };
 
         history.push(DayHistory {
             date: date_texts[i].clone(),
             status,
             downtime_minutes,
+            uptime_percent,
             events,
         });
     }

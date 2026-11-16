@@ -38,6 +38,7 @@ export interface DayHistory {
   date: string
   status: 'online' | 'degraded' | 'offline' | 'no_data'
   downtime_minutes: number
+  uptime_percent?: number | null
   events: DayEvent[]
 }
 
