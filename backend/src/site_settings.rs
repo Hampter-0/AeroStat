@@ -12,8 +12,11 @@ pub const TIMEZONE: &str = "timezone";
 pub const METRICS_RETENTION_DAYS: &str = "metrics_retention_days";
 /// The address visitors use, for links in notifications and for passkeys.
 pub const PUBLIC_URL: &str = "public_url";
+/// Failed checks in a row before a service counts as down and people get a message.
+pub const DOWN_AFTER_CHECKS: &str = "down_after_checks";
+pub const DEFAULT_DOWN_AFTER_CHECKS: i64 = 2;
 
-pub const KEYS: [&str; 7] = [
+pub const KEYS: [&str; 8] = [
     SITE_NAME,
     SITE_DESCRIPTION,
     CONTACT_URL,
@@ -21,6 +24,7 @@ pub const KEYS: [&str; 7] = [
     PRIMARY_COLOR,
     TIMEZONE,
     METRICS_RETENTION_DAYS,
+    DOWN_AFTER_CHECKS,
 ];
 
 /// The settings permission needed to change a key, one per tab in the panel.
@@ -28,7 +32,7 @@ pub fn permission_for(key: &str) -> &'static str {
     match key {
         PRIMARY_COLOR => "settings.appearance",
         TIMEZONE => "settings.time",
-        METRICS_RETENTION_DAYS => "settings.monitoring",
+        METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS => "settings.monitoring",
         _ => "settings.general",
     }
 }
@@ -69,6 +73,13 @@ pub async fn retention_days(db: &PgPool, fallback: i32) -> i32 {
     match get(db, METRICS_RETENTION_DAYS).await {
         Ok(Some(value)) => value.parse().unwrap_or(fallback),
         _ => fallback,
+    }
+}
+
+pub async fn down_after_checks(db: &PgPool) -> i64 {
+    match get(db, DOWN_AFTER_CHECKS).await {
+        Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_DOWN_AFTER_CHECKS),
+        _ => DEFAULT_DOWN_AFTER_CHECKS,
     }
 }
 

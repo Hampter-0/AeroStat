@@ -6,6 +6,7 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { finishPasskey, removePasskey, startPasskey } from '@/app/manage/(panel)/profile/passkey-actions'
 import { Key } from '@/components/icons'
+import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import { useSuccessToast, useToast } from '@/components/manage/toast/Toasts'
 import { browserError, type PasskeyInfo } from '@/lib/passkeys'
 
@@ -20,11 +21,12 @@ function RemoveButton({ id, name }: { id: number; name: string }) {
   const [state, formAction, pending] = useActionState(removePasskey, initialState)
   useSuccessToast(state)
 
-  function confirmRemove(event: React.FormEvent<HTMLFormElement>) {
-    if (!window.confirm('Remove the passkey "' + name + '"? You can no longer sign in with it.')) {
-      event.preventDefault()
-    }
-  }
+  const confirmRemove = useConfirmedSubmit(formAction, {
+    title: 'Remove the passkey "' + name + '"?',
+    message: 'You can no longer sign in with it.',
+    confirmText: 'Remove',
+    danger: true,
+  })
 
   return (
     <form action={formAction} onSubmit={confirmRemove} className="passkey-remove">

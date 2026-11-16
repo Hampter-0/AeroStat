@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
+import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import { useSuccessToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
@@ -22,11 +23,19 @@ export default function DeleteForm({
   const [state, formAction, pending] = useActionState(action, initialState)
   useSuccessToast(state)
 
-  function confirmDelete(event: React.FormEvent<HTMLFormElement>) {
-    if (!window.confirm(confirmText)) {
-      event.preventDefault()
-    }
+  let title = confirmText
+  let message: string | undefined = undefined
+  const split = confirmText.indexOf('? ')
+  if (split > 0) {
+    title = confirmText.slice(0, split + 1)
+    message = confirmText.slice(split + 2)
   }
+  const confirmDelete = useConfirmedSubmit(formAction, {
+    title: title,
+    message: message,
+    confirmText: buttonText,
+    danger: true,
+  })
 
   return (
     <form action={formAction} onSubmit={confirmDelete} className="danger-zone">

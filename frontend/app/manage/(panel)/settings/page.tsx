@@ -15,7 +15,7 @@ export const metadata = {
 
 interface ManageSettings {
   values: Record<string, string | null>
-  defaults: { timezone: string; metrics_retention_days: number }
+  defaults: { timezone: string; metrics_retention_days: number; down_after_checks: number }
   logo_version: number | null
   favicon_version: number | null
 }
@@ -239,6 +239,22 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               />
               <small className="field-hint">
                 Older checks are deleted once a day. The uptime percentage and the bars cover the last 60 days, so keep at least 60.
+              </small>
+            </label>
+            <label>
+              <span>Failed checks before a service is down</span>
+              <input
+                key={'down_after_checks-' + value(settings, 'down_after_checks')}
+                name="down_after_checks"
+                type="number"
+                min={1}
+                max={10}
+                defaultValue={value(settings, 'down_after_checks')}
+                placeholder={String(settings.defaults.down_after_checks)}
+              />
+              <small className="field-hint">
+                Discord and email messages go out after this many failed checks in a row. 1 sends one right away, 2 keeps a
+                single hiccup quiet.
               </small>
             </label>
           </SettingsForm>

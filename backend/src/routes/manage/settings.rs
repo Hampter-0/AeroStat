@@ -12,7 +12,7 @@ use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
 use crate::site_settings::{
-    self, CONTACT_URL, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
+    self, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
 };
 use crate::state::AppState;
 
@@ -31,6 +31,7 @@ const ALLOWED_TYPES: [&str; 6] = [
 pub struct Defaults {
     timezone: &'static str,
     metrics_retention_days: i32,
+    down_after_checks: i64,
 }
 
 #[derive(Serialize)]
@@ -95,6 +96,14 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 return Err(ApiError::BadRequest("Retention must be between 7 and 3650 days".into()));
             }
         }
+        DOWN_AFTER_CHECKS => {
+            let checks: i64 = value
+                .parse()
+                .map_err(|_| ApiError::BadRequest("Failed checks must be a whole number".into()))?;
+            if !(1..=10).contains(&checks) {
+                return Err(ApiError::BadRequest("Failed checks must be between 1 and 10".into()));
+            }
+        }
         _ => return Err(ApiError::BadRequest(format!("Unknown setting: {key}"))),
     }
     Ok(value.to_string())
@@ -116,6 +125,7 @@ pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Jso
         defaults: Defaults {
             timezone: "UTC",
             metrics_retention_days: state.default_retention_days,
+            down_after_checks: site_settings::DEFAULT_DOWN_AFTER_CHECKS,
         },
         logo_version,
         favicon_version,

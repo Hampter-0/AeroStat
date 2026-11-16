@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { deleteGroup, moveGroup, renameGroup } from '@/app/manage/(panel)/services/actions'
 import MoveButtons from './MoveButtons'
+import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
@@ -34,15 +35,16 @@ export default function GroupHeader({
     setEditing(!editing)
   }
 
-  function confirmDelete(event: React.FormEvent<HTMLFormElement>) {
-    let message = 'Delete the group "' + name + '"?'
-    if (serviceCount > 0) {
-      message = message + ' Its ' + serviceCount + ' service(s) are kept and move to "Other".'
-    }
-    if (!window.confirm(message)) {
-      event.preventDefault()
-    }
+  let deleteMessage = 'This cannot be undone.'
+  if (serviceCount > 0) {
+    deleteMessage = 'Its ' + serviceCount + ' service(s) are kept and move to "Other".'
   }
+  const confirmDelete = useConfirmedSubmit(deleteAction, {
+    title: 'Delete the group "' + name + '"?',
+    message: deleteMessage,
+    confirmText: 'Delete group',
+    danger: true,
+  })
 
   let renameLabel = 'Rename'
   if (editing) {

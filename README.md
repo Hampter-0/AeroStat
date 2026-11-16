@@ -313,7 +313,16 @@ The backend image includes an interactive CLI for tasks that need server access:
 docker compose exec -it backend aerostat cli
 ```
 
-It can run migrations, create an admin, list accounts, reset a password (by username or email) and lift a sign-in block. Single commands also work:
+It can run migrations, create an admin, list accounts, reset a password (by username or email) and lift a sign-in block. For someone who is locked out it can also:
+
+| Command | What it does |
+|---|---|
+| `reset-2fa` | Turns off the authenticator app and email codes and removes the recovery codes |
+| `remove-passkeys` | Removes every passkey of an account and turns password sign-in back on |
+| `enable-password-login` | Turns password sign-in back on |
+| `set-email` | Changes or removes an email address |
+
+Each change shows up under Activity. Accounts made with `create-admin` are the owners of the install and get a crown in the users list. Single commands also work:
 
 ```bash
 docker compose exec -it backend aerostat create-admin --username admin

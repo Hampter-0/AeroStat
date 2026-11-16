@@ -11,6 +11,8 @@ export interface UserRecord {
   two_factor: boolean
   two_factor_required: boolean
   passkeys: number
+  password_login: boolean
+  owner: boolean
   created_at: string
   last_login_at: string | null
   avatar_version: number | null

@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { startTransition, useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
+import { useConfirm } from '@/components/manage/confirm/Confirm'
 import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import type { StatusUpdate } from '@/lib/types'
@@ -40,10 +41,26 @@ export default function UpdateEntry({
     setEditing(!editing)
   }
 
+  const confirm = useConfirm()
+
   function confirmDelete(event: React.MouseEvent<HTMLButtonElement>) {
-    if (!window.confirm('Delete this update? It disappears from the status page too.')) {
-      event.preventDefault()
+    const form = event.currentTarget.form
+    if (!form) {
+      return
     }
+    const formData = new FormData(form)
+    confirm({
+      title: 'Delete this update?',
+      message: 'It disappears from the status page too.',
+      confirmText: 'Delete update',
+      danger: true,
+    }).then(function (ok) {
+      if (ok) {
+        startTransition(function () {
+          deleteFormAction(formData)
+        })
+      }
+    })
   }
 
   let editLabel = 'Edit'
@@ -96,9 +113,7 @@ export default function UpdateEntry({
             <div className="form-actions spread">
               {canDelete && (
                 <button
-                  type="submit"
-                  formAction={deleteFormAction}
-                  formNoValidate
+                  type="button"
                   className="button-danger"
                   disabled={deleting}
                   onClick={confirmDelete}

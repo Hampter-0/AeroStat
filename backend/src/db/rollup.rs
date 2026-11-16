@@ -40,15 +40,28 @@ pub async fn day_status(
     let (start, end) = site_settings::day_bounds(date, tz);
     let counts: DayCounts = sqlx::query_as(
         r#"
+        WITH checks AS (
+            SELECT
+                m.status,
+                m.checked_at,
+                LEAD(m.checked_at) OVER (ORDER BY m.checked_at) AS next_at,
+                s.check_interval_seconds
+            FROM metrics m
+            JOIN services s ON s.id = m.service_id
+            WHERE m.service_id = $1
+            AND m.checked_at >= $2
+            AND m.checked_at < $3
+        )
         SELECT
             COUNT(*) AS total_checks,
-            SUM(CASE WHEN m.status = 'offline' THEN 1 ELSE 0 END) AS offline_checks,
-            SUM(CASE WHEN m.status = 'offline' THEN s.check_interval_seconds ELSE 0 END)::bigint AS downtime_seconds
-        FROM metrics m
-        JOIN services s ON s.id = m.service_id
-        WHERE m.service_id = $1
-        AND m.checked_at >= $2
-        AND m.checked_at < $3
+            SUM(CASE WHEN status = 'offline' THEN 1 ELSE 0 END) AS offline_checks,
+            -- An offline check counts until the next check, at most one interval,
+            -- so an extra "check now" doesn't add a whole interval of downtime.
+            SUM(CASE WHEN status = 'offline' THEN LEAST(
+                EXTRACT(EPOCH FROM (COALESCE(next_at, LEAST(now(), $3)) - checked_at)),
+                check_interval_seconds
+            ) ELSE 0 END)::bigint AS downtime_seconds
+        FROM checks
         "#,
     )
     .bind(service_id)

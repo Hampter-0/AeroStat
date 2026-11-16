@@ -100,10 +100,19 @@ pub async fn get(State(state): State<AppState>, _user: CurrentUser) -> Result<Js
 
     let (downtime_seconds,): (Option<i64>,) = sqlx::query_as(
         r#"
-        SELECT SUM(s.check_interval_seconds)::bigint
-        FROM metrics m
-        JOIN services s ON s.id = m.service_id
-        WHERE m.status = 'offline' AND m.checked_at >= now() - make_interval(days => $1)
+        WITH checks AS (
+            SELECT
+                m.status,
+                m.checked_at,
+                LEAD(m.checked_at) OVER (PARTITION BY m.service_id ORDER BY m.checked_at) AS next_at,
+                s.check_interval_seconds
+            FROM metrics m
+            JOIN services s ON s.id = m.service_id
+            WHERE m.checked_at >= now() - make_interval(days => $1)
+        )
+        SELECT SUM(LEAST(EXTRACT(EPOCH FROM (COALESCE(next_at, now()) - checked_at)), check_interval_seconds))::bigint
+        FROM checks
+        WHERE status = 'offline'
         "#,
     )
     .bind(HISTORY_DAYS as i32)

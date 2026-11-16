@@ -11,11 +11,12 @@ export default function CancelMaintenanceForm({ id, cancelled }: { id: number; c
   const [cancelState, cancelAction, cancelling] = useActionState(cancelMaintenance, initialState)
   const [reactivateState, reactivateAction, reactivating] = useActionState(reactivateMaintenance, initialState)
 
-  function confirmCancel() {
-    return window.confirm('Cancel this maintenance? Visitors will see it as cancelled.')
-  }
-
-  const { formRef: cancelFormRef, onSubmit: cancelSubmit } = useFormSubmit(cancelAction, cancelState, confirmCancel)
+  const { formRef: cancelFormRef, onSubmit: cancelSubmit } = useFormSubmit(cancelAction, cancelState, {
+    title: 'Cancel this maintenance?',
+    message: 'Visitors will see it as cancelled.',
+    confirmText: 'Cancel maintenance',
+    danger: true,
+  })
 
   if (cancelled) {
     return (

@@ -727,14 +727,16 @@ fn email_body(site: &str, content: &Content, settings: &NotificationSettings) ->
     (html, text)
 }
 
-/// Called after every check. Sends "down" on the second failed check in a row
-/// and "up" on the first good check after such an outage, so a single hiccup
-/// stays quiet.
+/// Called after every check. Sends "down" once the set number of checks in a
+/// row failed (two by default, so a single hiccup stays quiet) and "up" on the
+/// first good check after such an outage.
 pub async fn after_check(db: &PgPool, service_id: &str) {
+    let needed = crate::site_settings::down_after_checks(db).await.max(1) as usize;
     let rows: Vec<(String, DateTime<Utc>, Option<i32>)> = match sqlx::query_as(
-        "SELECT status, checked_at, status_code FROM metrics WHERE service_id = $1 ORDER BY checked_at DESC LIMIT 3",
+        "SELECT status, checked_at, status_code FROM metrics WHERE service_id = $1 ORDER BY checked_at DESC LIMIT $2",
     )
     .bind(service_id)
+    .bind(needed as i64 + 1)
     .fetch_all(db)
     .await
     {
@@ -747,16 +749,18 @@ pub async fn after_check(db: &PgPool, service_id: &str) {
     let offline = |index: usize| rows.get(index).map(|row| row.0 == "offline").unwrap_or(false);
     let online = |index: usize| rows.get(index).map(|row| row.0 == "online").unwrap_or(false);
 
-    if offline(0) && offline(1) && (rows.len() < 3 || online(2)) {
+    let all_offline = |from: usize, to: usize| (from..to).all(|index| offline(index));
+
+    if all_offline(0, needed) && (rows.len() <= needed || online(needed)) {
         notify(
             db,
             Event::ServiceDown {
                 service_id: service_id.to_string(),
                 status_code: rows[0].2,
-                since: rows[1].1,
+                since: rows[needed - 1].1,
             },
         );
-    } else if online(0) && offline(1) && offline(2) {
+    } else if online(0) && all_offline(1, needed + 1) {
         let since: Option<(Option<DateTime<Utc>>,)> = sqlx::query_as(
             r#"
             SELECT MIN(checked_at) FROM metrics
@@ -772,7 +776,7 @@ pub async fn after_check(db: &PgPool, service_id: &str) {
         .await
         .ok()
         .flatten();
-        let down_since = since.and_then(|(at,)| at).unwrap_or(rows[1].1);
+        let down_since = since.and_then(|(at,)| at).unwrap_or(rows[needed].1);
         notify(
             db,
             Event::ServiceUp {

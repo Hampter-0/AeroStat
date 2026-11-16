@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import ManageSidebar from '@/components/manage/ManageSidebar'
+import ConfirmProvider from '@/components/manage/confirm/Confirm'
 import ToastProvider from '@/components/manage/toast/Toasts'
 import { getSiteConfig } from '@/lib/branding'
 import { requireUser } from '@/lib/manage'
@@ -16,10 +17,12 @@ export default async function PanelLayout({ children }: { children: ReactNode })
 
   return (
     <ToastProvider>
-      <div className="manage-shell">
-        <ManageSidebar siteName={config.siteName} user={user} version={version} />
-        <div className="manage-content">{children}</div>
-      </div>
+      <ConfirmProvider>
+        <div className="manage-shell">
+          <ManageSidebar siteName={config.siteName} user={user} version={version} />
+          <div className="manage-content">{children}</div>
+        </div>
+      </ConfirmProvider>
     </ToastProvider>
   )
 }

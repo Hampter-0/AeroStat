@@ -106,14 +106,13 @@ export default function UsersTable({
                 lastLogin = formatDateTimeShort(user.last_login_at, timezone)
               }
               const userRoles = rolesOf(user)
-              const secured = user.two_factor || user.passkeys > 0
-              let secureText = 'Password only'
-              if (user.two_factor && user.passkeys > 0) {
-                secureText = 'Two-factor and passkeys'
-              } else if (user.two_factor) {
-                secureText = 'Two-factor sign-in'
-              } else if (user.passkeys > 0) {
-                secureText = 'Passkeys'
+              const passkeyOnly = user.passkeys > 0 && !user.password_login
+              const secured = user.two_factor || passkeyOnly
+              let secureText = 'No two-factor sign-in'
+              if (user.two_factor) {
+                secureText = 'Two-factor sign-in is on'
+              } else if (passkeyOnly) {
+                secureText = 'Signs in with a passkey only'
               }
               return (
                 <tr key={user.id}>
@@ -123,8 +122,8 @@ export default function UsersTable({
                       <span className="user-row-names">
                         <span className="user-row-title">
                           <strong>{user.username}</strong>
-                          {user.is_admin && (
-                            <span className="user-badge super" title="Super user">
+                          {user.owner && (
+                            <span className="user-badge super" title="Owner">
                               <Crown />
                             </span>
                           )}

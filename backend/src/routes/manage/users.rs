@@ -30,6 +30,9 @@ pub struct UserRow {
     two_factor: bool,
     two_factor_required: bool,
     passkeys: i64,
+    password_login: bool,
+    /// Made with create-admin on the command line.
+    owner: bool,
     created_at: DateTime<Utc>,
     last_login_at: Option<DateTime<Utc>>,
     avatar_version: Option<i64>,
@@ -39,6 +42,7 @@ const USER_COLUMNS: &str = "u.id, u.username, u.email, user_is_super(u.id) AS is
      ARRAY(SELECT role_id FROM user_roles WHERE user_id = u.id ORDER BY role_id) AS role_ids, \
      u.super_user, u.permissions, (u.totp_secret IS NOT NULL OR u.email_two_factor) AS two_factor, \
      u.two_factor_required, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkeys, \
+     u.password_login, u.owner, \
      u.created_at, u.last_login_at, \
      EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version";
 
@@ -477,9 +481,9 @@ pub async fn create_admin_from_cli(pool: &sqlx::PgPool, username: &str, password
     let password_hash = auth::hash_password(password).await?;
     let id: i64 = sqlx::query_scalar(
         r#"
-        INSERT INTO users (username, password_hash)
-        VALUES ($1, $2)
-        ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
+        INSERT INTO users (username, password_hash, owner)
+        VALUES ($1, $2, true)
+        ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, owner = true
         RETURNING id
         "#,
     )

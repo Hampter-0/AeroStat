@@ -2,9 +2,11 @@
 
 import { startTransition, useEffect, useRef, type FormEvent } from 'react'
 import type { FormState } from '@/app/manage/actions'
+import { useConfirm, type ConfirmOptions } from '@/components/manage/confirm/Confirm'
 
-export function useFormSubmit(formAction: (payload: FormData) => void, state: FormState, confirm?: () => boolean) {
+export function useFormSubmit(formAction: (payload: FormData) => void, state: FormState, confirmOptions?: ConfirmOptions) {
   const formRef = useRef<HTMLFormElement>(null)
+  const confirm = useConfirm()
 
   useEffect(
     function () {
@@ -25,13 +27,20 @@ export function useFormSubmit(formAction: (payload: FormData) => void, state: Fo
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (confirm && !confirm()) {
-      return
-    }
     const submitter = (event.nativeEvent as SubmitEvent).submitter
     const formData = new FormData(event.currentTarget, submitter)
-    startTransition(function () {
-      formAction(formData)
+    if (!confirmOptions) {
+      startTransition(function () {
+        formAction(formData)
+      })
+      return
+    }
+    confirm(confirmOptions).then(function (ok) {
+      if (ok) {
+        startTransition(function () {
+          formAction(formData)
+        })
+      }
     })
   }
 

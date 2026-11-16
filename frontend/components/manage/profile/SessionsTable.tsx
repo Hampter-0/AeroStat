@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { endOtherSessions, endSession } from '@/app/manage/(panel)/profile/actions'
 import { LogOut, Search } from '@/components/icons'
+import { useConfirmedSubmit } from '@/components/manage/confirm/Confirm'
 import { useSuccessToast } from '@/components/manage/toast/Toasts'
 import type { SessionRow } from '@/lib/sessions'
 
@@ -31,11 +32,12 @@ export default function SessionsTable({ sessions }: { sessions: SessionRow[] }) 
     setQuery(event.target.value)
   }
 
-  function confirmOthers(event: React.FormEvent<HTMLFormElement>) {
-    if (!window.confirm('Log out every other device? You stay signed in here.')) {
-      event.preventDefault()
-    }
-  }
+  const confirmOthers = useConfirmedSubmit(othersAction, {
+    title: 'Log out every other device?',
+    message: 'You stay signed in here.',
+    confirmText: 'Log out others',
+    danger: true,
+  })
 
   const needle = query.trim().toLowerCase()
   const shown: SessionRow[] = []
