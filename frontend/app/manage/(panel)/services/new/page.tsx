@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function NewServicePage({ searchParams }: { searchParams: Promise<{ group?: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'services')) {
+  if (!can(user, 'services.create')) {
     redirect('/manage')
   }
 

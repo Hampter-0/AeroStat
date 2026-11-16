@@ -1,9 +1,8 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { hasPermission } from './permissions'
 
 export const SESSION_COOKIE = 'aerostat_session'
-
-export { PERMISSION_LABELS } from './permissions'
 
 export interface ManageUser {
   id: number
@@ -11,6 +10,9 @@ export interface ManageUser {
   email: string | null
   is_admin: boolean
   permissions: string[]
+  roles: string[]
+  super_roles: string[]
+  extra_permissions: string[]
   avatar_version: number | null
 }
 
@@ -92,10 +94,7 @@ export async function requireUser(): Promise<ManageUser> {
 }
 
 export function can(user: ManageUser, permission: string): boolean {
-  if (user.is_admin) {
-    return true
-  }
-  return user.permissions.includes(permission)
+  return hasPermission(user, permission)
 }
 
 export function errorMessage(error: unknown): string {

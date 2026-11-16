@@ -183,14 +183,15 @@ async fn unblock(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
 struct UserListRow {
     username: String,
     email: Option<String>,
-    is_admin: bool,
-    permissions: Vec<String>,
+    roles: Vec<String>,
     created_at: DateTime<Utc>,
 }
 
 async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
     let users: Vec<UserListRow> = sqlx::query_as(
-        "SELECT username, email, is_admin, permissions, created_at FROM users ORDER BY username",
+        "SELECT u.username, u.email, \
+         (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
+         u.created_at FROM users u ORDER BY u.username",
     )
     .fetch_all(pool)
     .await?;
@@ -203,12 +204,10 @@ async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
     let rows: Vec<(&str, String, String, String)> = users
         .iter()
         .map(|user| {
-            let access = if user.is_admin {
-                "admin".to_string()
-            } else if user.permissions.is_empty() {
-                "no access".to_string()
+            let access = if user.roles.is_empty() {
+                "no roles".to_string()
             } else {
-                user.permissions.join(", ")
+                user.roles.join(", ")
             };
             let email = user.email.clone().unwrap_or_else(|| "-".to_string());
             (user.username.as_str(), email, access, user.created_at.format("%Y-%m-%d").to_string())
@@ -217,14 +216,14 @@ async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
 
     let name_width = rows.iter().map(|row| row.0.len()).max().unwrap_or(0).max("USERNAME".len()) + 3;
     let email_width = rows.iter().map(|row| row.1.len()).max().unwrap_or(0).max("EMAIL".len()) + 3;
-    let access_width = rows.iter().map(|row| row.2.len()).max().unwrap_or(0).max("ACCESS".len()) + 3;
+    let access_width = rows.iter().map(|row| row.2.len()).max().unwrap_or(0).max("ROLES".len()) + 3;
 
     println!();
     println!(
         "  {}{}{}{}",
         pad("USERNAME", name_width).dimmed(),
         pad("EMAIL", email_width).dimmed(),
-        pad("ACCESS", access_width).dimmed(),
+        pad("ROLES", access_width).dimmed(),
         "CREATED".dimmed()
     );
     for (username, email, access, created) in &rows {

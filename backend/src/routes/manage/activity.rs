@@ -64,18 +64,31 @@ fn like_pattern(text: &str) -> String {
     format!("%{escaped}%")
 }
 
-/// Newest first. Users only see the categories they have a permission for;
-/// users and account entries are admin only.
+/// Whether the user may see entries of this category, next to activity.view.
+fn can_see(user: &CurrentUser, category: &str) -> bool {
+    match category {
+        "incidents" => user.has("incidents.view"),
+        "maintenance" => user.has("maintenance.view"),
+        "services" => user.has("services.view"),
+        "settings" => user.has("settings.general") || user.has("settings.notifications") || user.has("system.email"),
+        "users" | "account" => user.has("users.view") || user.has("roles.view"),
+        _ => user.is_admin,
+    }
+}
+
+/// Newest first, and only the categories the user can see elsewhere in the
+/// panel; sign-ins and user changes need users.view or roles.view.
 pub async fn list(
     State(state): State<AppState>,
     user: CurrentUser,
     Query(query): Query<ActivityQuery>,
 ) -> Result<Json<ActivityResponse>, ApiError> {
-    let allowed: Vec<String> = if user.is_admin {
-        CATEGORIES.iter().map(|category| category.to_string()).collect()
-    } else {
-        user.permissions.clone()
-    };
+    user.require("activity.view")?;
+    let allowed: Vec<String> = CATEGORIES
+        .iter()
+        .filter(|category| can_see(&user, category))
+        .map(|category| category.to_string())
+        .collect();
     let categories: Vec<String> = match query.category.filter(|category| !category.is_empty()) {
         Some(category) => allowed.into_iter().filter(|item| *item == category).collect(),
         None => allowed,

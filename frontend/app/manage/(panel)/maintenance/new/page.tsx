@@ -12,7 +12,7 @@ export const metadata = {
 
 export default async function NewMaintenancePage() {
   const user = await requireUser()
-  if (!can(user, 'maintenance')) {
+  if (!can(user, 'maintenance.create')) {
     redirect('/manage')
   }
 

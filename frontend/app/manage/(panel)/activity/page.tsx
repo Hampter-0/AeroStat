@@ -15,7 +15,7 @@ import {
   type ActivityResponse,
 } from '@/lib/activity'
 import { getSiteConfig } from '@/lib/branding'
-import { manageFetch, requireUser } from '@/lib/manage'
+import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatDateTimeShort } from '@/lib/time'
 
 export const metadata = {
@@ -58,7 +58,7 @@ function readQuery(params: SearchParams): ActivityQuery {
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const user = await requireUser()
-  if (!user.is_admin) {
+  if (!can(user, 'activity.view')) {
     redirect('/manage')
   }
   const { timezone } = await getSiteConfig()

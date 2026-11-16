@@ -1,64 +1,45 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import NewUserForm from '@/components/manage/NewUserForm'
-import UserRow from '@/components/manage/UserRow'
-import { manageFetch, requireUser } from '@/lib/manage'
+import UsersTable from '@/components/manage/users/UsersTable'
+import { getSiteConfig } from '@/lib/branding'
+import { can, manageFetch, requireUser } from '@/lib/manage'
+import type { UsersResponse } from '@/lib/users'
 
 export const metadata = {
   title: 'Users',
 }
 
-interface UserRecord {
-  id: number
-  username: string
-  email: string | null
-  is_admin: boolean
-  permissions: string[]
-  created_at: string
-}
-
-interface UsersResponse {
-  users: UserRecord[]
-  available_permissions: string[]
-}
-
 export default async function UsersPage() {
   const currentUser = await requireUser()
-  if (!currentUser.is_admin) {
+  if (!can(currentUser, 'users.view')) {
     redirect('/manage')
   }
 
   const data = await manageFetch<UsersResponse>('/users')
+  const { timezone } = await getSiteConfig()
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Users</h1>
-        <p>Admins can do everything. Other users can only manage the parts you tick.</p>
+      <header className="manage-page-header with-action">
+        <div>
+          <h1>Users</h1>
+          <p>Everyone who can sign in to the panel. What they can do comes from their roles and extra permissions.</p>
+        </div>
+        {can(currentUser, 'users.create') && (
+          <Link href="/manage/users/new" className="button-primary">
+            Create user
+          </Link>
+        )}
       </header>
 
       <section className="manage-panel">
-        <h2>Add user</h2>
-        <NewUserForm permissions={data.available_permissions} />
-      </section>
-
-      <section className="manage-panel">
-        <h2>All users</h2>
-        <div className="user-list">
-          {data.users.map(function (user) {
-            let isSelf = false
-            if (user.id === currentUser.id) {
-              isSelf = true
-            }
-            return (
-              <UserRow
-                key={user.id + '-' + user.is_admin + '-' + user.permissions.join(',')}
-                user={user}
-                permissions={data.available_permissions}
-                isSelf={isSelf}
-              />
-            )
-          })}
-        </div>
+        <UsersTable
+          users={data.users}
+          roles={data.roles}
+          currentUserId={currentUser.id}
+          timezone={timezone}
+          canEdit={can(currentUser, 'users.edit')}
+        />
       </section>
     </div>
   )

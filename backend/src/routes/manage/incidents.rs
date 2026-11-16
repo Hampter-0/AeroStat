@@ -134,7 +134,7 @@ pub async fn create(
     user: CurrentUser,
     Json(body): Json<CreateIncident>,
 ) -> Result<(StatusCode, Json<Incident>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.create")?;
     let title = clean_title(&body.title)?;
     let message = clean_message(&body.message)?;
     check_status(&body.status)?;
@@ -188,7 +188,7 @@ pub async fn update(
     Path(id): Path<i64>,
     Json(body): Json<UpdateIncident>,
 ) -> Result<Json<Incident>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.edit")?;
     find_incident(&state.db, id).await?;
     let before = snapshot(&state, "incidents", id).await;
     let title = clean_title(&body.title)?;
@@ -216,7 +216,7 @@ pub async fn delete(
     user: CurrentUser,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.delete")?;
     let incident = find_incident(&state.db, id).await?;
     let before = snapshot(&state, "incidents", id).await;
     sqlx::query("DELETE FROM incidents WHERE id = $1")
@@ -233,7 +233,7 @@ pub async fn add_update(
     Path(id): Path<i64>,
     Json(body): Json<UpdateBody>,
 ) -> Result<(StatusCode, Json<StatusUpdate>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.update")?;
     let incident = find_incident(&state.db, id).await?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
@@ -278,7 +278,7 @@ pub async fn edit_update(
     Path((id, update_id)): Path<(i64, i64)>,
     Json(body): Json<UpdateBody>,
 ) -> Result<Json<StatusUpdate>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.edit")?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
     let before = snapshot(&state, "incident_updates", update_id).await;
@@ -310,7 +310,7 @@ pub async fn delete_update(
     user: CurrentUser,
     Path((id, update_id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("incidents.edit")?;
 
     let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM incident_updates WHERE incident_id = $1")
         .bind(id)

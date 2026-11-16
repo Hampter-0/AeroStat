@@ -18,7 +18,7 @@ export const metadata = {
 
 export default async function ManageIncidentPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'incidents')) {
+  if (!can(user, 'incidents.view')) {
     redirect('/manage')
   }
 
@@ -30,8 +30,9 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
   const services = await getStatus()
   const { timezone } = await getSiteConfig()
 
+  const canEdit = can(user, 'incidents.edit')
   let canDeleteUpdates = false
-  if (incident.updates.length > 1) {
+  if (canEdit && incident.updates.length > 1) {
     canDeleteUpdates = true
   }
 
@@ -52,16 +53,18 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
         </a>
       </header>
 
-      <section className="manage-panel">
-        <h2>Post an update</h2>
-        <PostUpdateForm
-          parentId={incident.id}
-          currentStatus={incident.status}
-          statuses={INCIDENT_STATUSES}
-          hints={STATUS_HINTS}
-          action={postUpdate}
-        />
-      </section>
+      {can(user, 'incidents.update') && (
+        <section className="manage-panel">
+          <h2>Post an update</h2>
+          <PostUpdateForm
+            parentId={incident.id}
+            currentStatus={incident.status}
+            statuses={INCIDENT_STATUSES}
+            hints={STATUS_HINTS}
+            action={postUpdate}
+          />
+        </section>
+      )}
 
       <section className="manage-panel">
         <h2>Timeline</h2>
@@ -74,6 +77,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
                 update={update}
                 timezone={timezone}
                 statuses={INCIDENT_STATUSES}
+                canEdit={canEdit}
                 canDelete={canDeleteUpdates}
                 editAction={editUpdate}
                 deleteAction={deleteUpdate}
@@ -83,21 +87,25 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
         </ol>
       </section>
 
-      <section className="manage-panel">
-        <h2>Details</h2>
-        <IncidentForm services={services} incident={incident} />
-      </section>
+      {canEdit && (
+        <section className="manage-panel">
+          <h2>Details</h2>
+          <IncidentForm services={services} incident={incident} />
+        </section>
+      )}
 
-      <section className="manage-panel danger">
-        <h2>Delete incident</h2>
-        <DeleteForm
-          id={incident.id}
-          action={deleteIncident}
-          buttonText="Delete incident"
-          description="Deleting removes the incident and its whole timeline from the status page."
-          confirmText="Delete this incident and all its updates? This removes it from the status page and cannot be undone."
-        />
-      </section>
+      {can(user, 'incidents.delete') && (
+        <section className="manage-panel danger">
+          <h2>Delete incident</h2>
+          <DeleteForm
+            id={incident.id}
+            action={deleteIncident}
+            buttonText="Delete incident"
+            description="Deleting removes the incident and its whole timeline from the status page."
+            confirmText="Delete this incident and all its updates? This removes it from the status page and cannot be undone."
+          />
+        </section>
+      )}
     </div>
   )
 }

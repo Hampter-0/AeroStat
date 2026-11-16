@@ -24,10 +24,12 @@ function ServiceRows({
   services,
   liveStatus,
   stats,
+  canMove,
 }: {
   services: ManageService[]
   liveStatus: Map<string, string | null>
   stats: Map<string, ServiceStats>
+  canMove: boolean
 }) {
   if (services.length === 0) {
     return <p className="manage-empty">No services in this group yet.</p>
@@ -62,13 +64,15 @@ function ServiceRows({
               </span>
             </Link>
             <ServiceStatsCell stats={stats.get(service.id)} />
-            <MoveButtons
-              id={service.id}
-              label={service.name}
-              isFirst={index === 0}
-              isLast={index === services.length - 1}
-              action={moveService}
-            />
+            {canMove && (
+              <MoveButtons
+                id={service.id}
+                label={service.name}
+                isFirst={index === 0}
+                isLast={index === services.length - 1}
+                action={moveService}
+              />
+            )}
           </div>
         )
       })}
@@ -98,12 +102,16 @@ function ServiceStatsCell({ stats }: { stats: ServiceStats | undefined }) {
 
 export default async function ManageServicesPage() {
   const user = await requireUser()
-  if (!can(user, 'services')) {
+  if (!can(user, 'services.view')) {
     redirect('/manage')
   }
 
   const data = await manageFetch<ManageServicesResponse>('/services')
   const status = await getStatus()
+  const canCreate = can(user, 'services.create')
+  const canEdit = can(user, 'services.edit')
+  const canEditGroups = can(user, 'groups.edit')
+  const canDeleteGroups = can(user, 'groups.delete')
 
   const liveStatus = new Map<string, string | null>()
   for (const service of status) {
@@ -149,10 +157,12 @@ export default async function ManageServicesPage() {
           <p>What AeroStat checks, grouped the way visitors see it on the status page.</p>
         </div>
         <div className="header-actions">
-          <CheckNowButton />
-          <Link href="/manage/services/new" className="button-primary">
-            Add service
-          </Link>
+          {can(user, 'services.check') && <CheckNowButton />}
+          {canCreate && (
+            <Link href="/manage/services/new" className="button-primary">
+              Add service
+            </Link>
+          )}
         </div>
       </header>
 
@@ -169,11 +179,15 @@ export default async function ManageServicesPage() {
               serviceCount={services.length}
               isFirst={index === 0}
               isLast={index === data.groups.length - 1}
+              canEdit={canEditGroups}
+              canDelete={canDeleteGroups}
             />
-            <ServiceRows services={services} liveStatus={liveStatus} stats={stats} />
-            <Link href={'/manage/services/new?group=' + encodeURIComponent(group.id)} className="link-button add-to-group">
-              + Add service to {group.name}
-            </Link>
+            <ServiceRows services={services} liveStatus={liveStatus} stats={stats} canMove={canEdit} />
+            {canCreate && (
+              <Link href={'/manage/services/new?group=' + encodeURIComponent(group.id)} className="link-button add-to-group">
+                + Add service to {group.name}
+              </Link>
+            )}
           </section>
         )
       })}
@@ -183,14 +197,16 @@ export default async function ManageServicesPage() {
           <div className="group-header">
             <h2>Other</h2>
           </div>
-          <ServiceRows services={ungrouped} liveStatus={liveStatus} stats={stats} />
+          <ServiceRows services={ungrouped} liveStatus={liveStatus} stats={stats} canMove={canEdit} />
         </section>
       )}
 
-      <section className="manage-panel">
-        <h2>Add group</h2>
-        <AddGroupForm />
-      </section>
+      {can(user, 'groups.create') && (
+        <section className="manage-panel">
+          <h2>Add group</h2>
+          <AddGroupForm />
+        </section>
+      )}
     </div>
   )
 }

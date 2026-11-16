@@ -158,7 +158,7 @@ async fn check_group(db: &PgPool, group_id: &Option<String>) -> Result<(), ApiEr
 }
 
 pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Json<ServicesResponse>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.view")?;
     let groups: Vec<GroupRow> = sqlx::query_as("SELECT id, name, sort_order FROM groups ORDER BY sort_order, name")
         .fetch_all(&state.db)
         .await?;
@@ -178,7 +178,7 @@ pub async fn create(
     user: CurrentUser,
     Json(body): Json<ServiceBody>,
 ) -> Result<(StatusCode, Json<Created>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.create")?;
     let name = clean_name(&body.name)?;
     let url = clean_url(&body.url)?;
     let statuses = clean_statuses(&body.expected_status)?;
@@ -213,7 +213,7 @@ pub async fn update(
     Path(id): Path<String>,
     Json(body): Json<ServiceBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.edit")?;
     let name = clean_name(&body.name)?;
     let url = clean_url(&body.url)?;
     let statuses = clean_statuses(&body.expected_status)?;
@@ -252,7 +252,7 @@ pub async fn delete(
     user: CurrentUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.delete")?;
 
     let before = activity::snapshot(&state.db, "services", &id).await;
     let mut tx = state.db.begin().await?;
@@ -281,7 +281,7 @@ pub async fn move_service(
     Path(id): Path<String>,
     Json(body): Json<MoveBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.edit")?;
     check_direction(&body.direction)?;
 
     let row: Option<(Option<String>,)> = sqlx::query_as("SELECT group_id FROM services WHERE id = $1")
@@ -303,7 +303,7 @@ pub async fn move_service(
 }
 
 pub async fn check_now(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("services.check")?;
     sqlx::query("UPDATE services SET next_check_at = now()")
         .execute(&state.db)
         .await?;
@@ -316,7 +316,7 @@ pub async fn create_group(
     user: CurrentUser,
     Json(body): Json<GroupBody>,
 ) -> Result<(StatusCode, Json<Created>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("groups.create")?;
     let name = clean_name(&body.name)?;
     let id = unique_id(&state.db, "groups", &name, "group").await?;
 
@@ -339,7 +339,7 @@ pub async fn update_group(
     Path(id): Path<String>,
     Json(body): Json<GroupBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("groups.edit")?;
     let name = clean_name(&body.name)?;
     let before = activity::snapshot(&state.db, "groups", &id).await;
     let updated = sqlx::query("UPDATE groups SET name = $1 WHERE id = $2")
@@ -362,7 +362,7 @@ pub async fn delete_group(
     user: CurrentUser,
     Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("groups.delete")?;
     let before = activity::snapshot(&state.db, "groups", &id).await;
     let deleted: Option<(String,)> = sqlx::query_as("DELETE FROM groups WHERE id = $1 RETURNING name")
         .bind(&id)
@@ -379,7 +379,7 @@ pub async fn move_group(
     Path(id): Path<String>,
     Json(body): Json<MoveBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("groups.edit")?;
     check_direction(&body.direction)?;
 
     let rows: Vec<(String,)> = sqlx::query_as("SELECT id FROM groups ORDER BY sort_order, name")

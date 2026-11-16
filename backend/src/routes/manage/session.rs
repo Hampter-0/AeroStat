@@ -71,6 +71,10 @@ pub async fn login(
     };
     login_guard::clear_account(&state.redis, &account).await;
 
+    sqlx::query("UPDATE users SET last_login_at = now() WHERE id = $1")
+        .bind(user_id)
+        .execute(&state.db)
+        .await?;
     sqlx::query("DELETE FROM sessions WHERE expires_at <= now()")
         .execute(&state.db)
         .await?;

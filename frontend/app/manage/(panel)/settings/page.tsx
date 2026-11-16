@@ -36,18 +36,58 @@ function value(settings: ManageSettings, key: string): string {
   return ''
 }
 
+function NotificationsTab({ notifications }: { notifications: NotificationSettings }) {
+  return (
+    <>
+      <section className="manage-panel">
+        <h2>Discord</h2>
+        <p className="panel-intro">Post a message in a Discord channel when something happens. Only people with the Notifications permission can see or change this.</p>
+        <NotificationsForm settings={notifications} />
+      </section>
+      <section className="manage-panel">
+        <h2>Email</h2>
+        <p className="panel-intro">
+          Everyone picks their own email notifications on their <Link href="/manage/profile">Profile</Link>, and only gets the ones they have access
+          to.
+        </p>
+      </section>
+    </>
+  )
+}
+
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'settings')) {
+  const canGeneral = can(user, 'settings.general')
+  const canNotifications = can(user, 'settings.notifications')
+  if (!canGeneral && !canNotifications) {
     redirect('/manage')
+  }
+  const { tab } = await searchParams
+
+  if (!canGeneral) {
+    const onlyNotifications = await manageFetch<NotificationSettings>('/notifications')
+    return (
+      <div className="manage-page">
+        <header className="manage-page-header">
+          <h1>Settings</h1>
+          <p>Where the status page sends notifications.</p>
+        </header>
+        <NotificationsTab notifications={onlyNotifications} />
+      </div>
+    )
   }
 
   const settings = await manageFetch<ManageSettings>('/settings')
   const defaults = envDefaults()
-  const { tab } = await searchParams
 
-  let activeTab = 'general'
+  const tabs = []
   for (const option of TABS) {
+    if (option.id !== 'notifications' || canNotifications) {
+      tabs.push(option)
+    }
+  }
+  let activeTab = 'general'
+  for (const option of tabs) {
     if (option.id === tab) {
       activeTab = option.id
     }
@@ -86,7 +126,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       </header>
 
       <nav className="settings-tabs" aria-label="Settings sections">
-        {TABS.map(function (option) {
+        {tabs.map(function (option) {
           let className = ''
           if (option.id === activeTab) {
             className = 'active'
@@ -197,23 +237,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         </section>
       )}
 
-      {activeTab === 'notifications' && notifications && (
-        <section className="manage-panel">
-          <h2>Discord</h2>
-          <p className="panel-intro">Post a message in a Discord channel when something happens. Only people with access to Settings can see or change this.</p>
-          <NotificationsForm settings={notifications} />
-        </section>
-      )}
-
-      {activeTab === 'notifications' && (
-        <section className="manage-panel">
-          <h2>Email</h2>
-          <p className="panel-intro">
-            Everyone picks their own email notifications on their <Link href="/manage/profile">Profile</Link>, and only gets the ones they have
-            access to.
-          </p>
-        </section>
-      )}
+      {activeTab === 'notifications' && notifications && <NotificationsTab notifications={notifications} />}
 
       {activeTab === 'time' && (
         <section className="manage-panel">

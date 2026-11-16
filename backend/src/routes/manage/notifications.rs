@@ -36,7 +36,7 @@ fn hint(url: &str) -> String {
 }
 
 pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Json<NotificationView>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.notifications")?;
     let settings = notifications::load(&state.db).await?;
     Ok(Json(NotificationView {
         discord_configured: settings.discord_webhook_url.is_some(),
@@ -65,7 +65,7 @@ pub async fn update(
     user: CurrentUser,
     Json(body): Json<NotificationBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.notifications")?;
     for kind in &body.events {
         if !EVENT_KINDS.contains(&kind.as_str()) {
             return Err(ApiError::BadRequest(format!("Unknown notification: {kind}")));
@@ -112,7 +112,7 @@ pub async fn update(
 
 /// Sends a sample message right away, so a wrong webhook shows up as an error.
 pub async fn test(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.notifications")?;
     let settings = notifications::load(&state.db).await?;
     let Some(webhook) = settings.discord_webhook_url.clone() else {
         return Err(ApiError::BadRequest("Save a Discord webhook first".into()));

@@ -5,6 +5,7 @@ mod incidents;
 mod maintenance;
 mod notifications;
 mod profile;
+mod roles;
 mod services;
 mod session;
 mod settings;
@@ -38,6 +39,8 @@ pub fn router() -> Router<AppState> {
         .route("/dashboard", get(dashboard::get))
         .route("/activity", get(activity::list))
         .route("/users", get(users::list).post(users::create))
+        .route("/roles", get(roles::list).post(roles::create))
+        .route("/roles/:id", get(roles::get).patch(roles::update).delete(roles::delete))
         .route("/users/:id", patch(users::update).delete(users::delete))
         .route("/incidents", post(incidents::create))
         .route("/incidents/:id", patch(incidents::update).delete(incidents::delete))

@@ -4,7 +4,7 @@ import { ChevronLeft } from '@/components/icons'
 import DeleteForm from '@/components/manage/DeleteForm'
 import ServiceForm from '@/components/manage/services/ServiceForm'
 import { can, manageFetch, requireUser } from '@/lib/manage'
-import type { ManageServicesResponse } from '@/lib/services'
+import { intervalLabel, type ManageServicesResponse } from '@/lib/services'
 import { deleteService } from '../actions'
 
 export const metadata = {
@@ -13,7 +13,7 @@ export const metadata = {
 
 export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'services')) {
+  if (!can(user, 'services.view')) {
     redirect('/manage')
   }
 
@@ -42,19 +42,41 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
           ID <code>{service.id}</code>. Used in links and the API, it doesn&apos;t change when you rename the service.
         </p>
       </header>
-      <section className="manage-panel">
-        <ServiceForm groups={data.groups} service={service} defaultGroupId="" />
-      </section>
-      <section className="manage-panel danger">
-        <h2>Delete service</h2>
-        <DeleteForm
-          id={service.id}
-          action={deleteService}
-          buttonText="Delete service"
-          description="Removes the service and all its check history from the status page. Incidents and maintenance that mention it are kept."
-          confirmText={'Delete ' + service.name + ' and all its check history? This cannot be undone.'}
-        />
-      </section>
+      {can(user, 'services.edit') && (
+        <section className="manage-panel">
+          <ServiceForm groups={data.groups} service={service} defaultGroupId="" />
+        </section>
+      )}
+      {!can(user, 'services.edit') && (
+        <section className="manage-panel">
+          <dl className="config-list">
+            <div className="config-row">
+              <dt>URL to check</dt>
+              <dd>{service.url}</dd>
+            </div>
+            <div className="config-row">
+              <dt>Expected status codes</dt>
+              <dd>{service.expected_status.join(', ')}</dd>
+            </div>
+            <div className="config-row">
+              <dt>Check every</dt>
+              <dd>{intervalLabel(service.check_interval_seconds).toLowerCase()}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
+      {can(user, 'services.delete') && (
+        <section className="manage-panel danger">
+          <h2>Delete service</h2>
+          <DeleteForm
+            id={service.id}
+            action={deleteService}
+            buttonText="Delete service"
+            description="Removes the service and all its check history from the status page. Incidents and maintenance that mention it are kept."
+            confirmText={'Delete ' + service.name + ' and all its check history? This cannot be undone.'}
+          />
+        </section>
+      )}
     </div>
   )
 }

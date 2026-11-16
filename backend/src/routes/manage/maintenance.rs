@@ -117,7 +117,7 @@ pub async fn create(
     user: CurrentUser,
     Json(body): Json<MaintenanceBody>,
 ) -> Result<(StatusCode, Json<Created>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.create")?;
     let title = clean_title(&body.title)?;
     check_window(body.scheduled_start, body.scheduled_end)?;
     check_services(&state.db, &body.affected_services).await?;
@@ -167,7 +167,7 @@ pub async fn update(
     Path(id): Path<i64>,
     Json(body): Json<MaintenanceBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.edit")?;
     find_title(&state.db, id).await?;
     let before = snapshot(&state, "maintenance", id).await;
     let title = clean_title(&body.title)?;
@@ -203,7 +203,7 @@ pub async fn cancel(
     Path(id): Path<i64>,
     Json(body): Json<CancelBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.cancel")?;
     let title = find_title(&state.db, id).await?;
     let message = clean_optional(body.message).unwrap_or_else(|| DEFAULT_CANCELLED_MESSAGE.to_string());
     let before = snapshot(&state, "maintenance", id).await;
@@ -246,7 +246,7 @@ pub async fn reactivate(
     user: CurrentUser,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.cancel")?;
     let title = find_title(&state.db, id).await?;
     let before = snapshot(&state, "maintenance", id).await;
 
@@ -284,7 +284,7 @@ pub async fn delete(
     user: CurrentUser,
     Path(id): Path<i64>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.delete")?;
     let title = find_title(&state.db, id).await?;
     let before = snapshot(&state, "maintenance", id).await;
     sqlx::query("DELETE FROM maintenance WHERE id = $1")
@@ -301,7 +301,7 @@ pub async fn add_update(
     Path(id): Path<i64>,
     Json(body): Json<UpdateBody>,
 ) -> Result<(StatusCode, Json<StatusUpdate>), ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.update")?;
     let title = find_title(&state.db, id).await?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
@@ -330,7 +330,7 @@ pub async fn edit_update(
     Path((id, update_id)): Path<(i64, i64)>,
     Json(body): Json<UpdateBody>,
 ) -> Result<Json<StatusUpdate>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.edit")?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
     let before = snapshot(&state, "maintenance_updates", update_id).await;
@@ -361,7 +361,7 @@ pub async fn delete_update(
     user: CurrentUser,
     Path((id, update_id)): Path<(i64, i64)>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("maintenance.edit")?;
     let before = snapshot(&state, "maintenance_updates", update_id).await;
     let deleted = sqlx::query("DELETE FROM maintenance_updates WHERE id = $1 AND maintenance_id = $2")
         .bind(update_id)

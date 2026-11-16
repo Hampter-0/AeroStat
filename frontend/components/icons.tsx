@@ -175,6 +175,15 @@ export function Users() {
   )
 }
 
+export function Shield() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2.5 4 4.8v4.6c0 3.8 2.5 6.7 6 8.1 3.5-1.4 6-4.3 6-8.1V4.8L10 2.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="m7.5 10 1.8 1.8L12.8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function LogOut() {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">

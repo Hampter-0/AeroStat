@@ -1,3 +1,4 @@
+mod cards;
 mod incidents;
 pub mod manage;
 mod maintenance;
@@ -22,6 +23,7 @@ pub fn build(state: AppState) -> Router {
         .route("/", get(root))
         .route("/health", get(health))
         .route("/api/status", get(status::get))
+        .route("/api/cards/:id", get(cards::get))
         .route("/api/incidents", get(incidents::list))
         .route("/api/incidents/:id", get(incidents::get))
         .route("/api/maintenance", get(maintenance::list))

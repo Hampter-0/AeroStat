@@ -88,7 +88,7 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
 }
 
 pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Json<ManageSettings>, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.general")?;
     let stored = site_settings::all(&state.db).await?;
     let mut values = HashMap::new();
     for key in site_settings::KEYS {
@@ -114,7 +114,7 @@ pub async fn update(
     user: CurrentUser,
     Json(body): Json<HashMap<String, Option<String>>>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.general")?;
 
     let mut changes: Vec<(String, Option<String>)> = Vec::new();
     for (key, value) in body {
@@ -189,7 +189,7 @@ pub async fn upload_asset(
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.general")?;
     if !BRAND_ASSETS.contains(&name.as_str()) {
         return Err(ApiError::NotFound);
     }
@@ -236,7 +236,7 @@ pub async fn delete_asset(
     user: CurrentUser,
     Path(name): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-    user.require(PERMISSION)?;
+    user.require("settings.general")?;
     if !BRAND_ASSETS.contains(&name.as_str()) {
         return Err(ApiError::NotFound);
     }

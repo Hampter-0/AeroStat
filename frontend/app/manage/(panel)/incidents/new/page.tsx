@@ -11,7 +11,7 @@ export const metadata = {
 
 export default async function NewIncidentPage({ searchParams }: { searchParams: Promise<{ service?: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'incidents')) {
+  if (!can(user, 'incidents.create')) {
     redirect('/manage')
   }
 

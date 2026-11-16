@@ -2,7 +2,6 @@
 
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
 import { SESSION_COOKIE, errorMessage, manageFetch } from '@/lib/manage'
 
 export interface FormState {
@@ -70,67 +69,4 @@ export async function logout() {
   const store = await cookies()
   store.delete(SESSION_COOKIE)
   redirect('/manage/login')
-}
-
-function selectedPermissions(formData: FormData): string[] {
-  const permissions: string[] = []
-  for (const value of formData.getAll('permissions')) {
-    permissions.push(String(value))
-  }
-  return permissions
-}
-
-export async function createUser(_state: FormState, formData: FormData): Promise<FormState> {
-  const username = String(formData.get('username') || '')
-  try {
-    await manageFetch('/users', {
-      method: 'POST',
-      body: JSON.stringify({
-        username: username,
-        password: String(formData.get('password') || ''),
-        is_admin: formData.get('is_admin') === 'on',
-        permissions: selectedPermissions(formData),
-        email: String(formData.get('email') || '').trim(),
-      }),
-    })
-  } catch (error) {
-    return { error: errorMessage(error), success: null }
-  }
-  revalidatePath('/manage/users')
-  return { error: null, success: 'User ' + username.trim().toLowerCase() + ' created' }
-}
-
-export async function updateUser(_state: FormState, formData: FormData): Promise<FormState> {
-  const id = String(formData.get('id') || '')
-  const body: { is_admin: boolean; permissions: string[]; email: string; password?: string } = {
-    is_admin: formData.get('is_admin') === 'on',
-    permissions: selectedPermissions(formData),
-    email: String(formData.get('email') || '').trim(),
-  }
-  const password = String(formData.get('password') || '')
-  if (password) {
-    body.password = password
-  }
-
-  try {
-    await manageFetch('/users/' + encodeURIComponent(id), {
-      method: 'PATCH',
-      body: JSON.stringify(body),
-    })
-  } catch (error) {
-    return { error: errorMessage(error), success: null }
-  }
-  revalidatePath('/manage/users')
-  return { error: null, success: 'Saved' }
-}
-
-export async function deleteUser(_state: FormState, formData: FormData): Promise<FormState> {
-  const id = String(formData.get('id') || '')
-  try {
-    await manageFetch('/users/' + encodeURIComponent(id), { method: 'DELETE' })
-  } catch (error) {
-    return { error: errorMessage(error), success: null }
-  }
-  revalidatePath('/manage/users')
-  return { error: null, success: null }
 }

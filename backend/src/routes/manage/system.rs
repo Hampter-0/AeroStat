@@ -93,7 +93,7 @@ async fn redis_info(state: &AppState) -> (Option<String>, Option<u64>, Option<f6
 
 /// Everything on the System page in one request. Admin only.
 pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Json<SystemInfo>, ApiError> {
-    user.require_admin()?;
+    user.require("system.view")?;
     let machine = system_info::machine();
 
     let started = Instant::now();

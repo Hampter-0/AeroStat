@@ -6,7 +6,7 @@ import EmailTest from '@/components/manage/system/EmailTest'
 import UpdateCheck from '@/components/manage/system/UpdateCheck'
 import { getSiteConfig } from '@/lib/branding'
 import { ENCRYPTION_LABELS, type EmailInfo } from '@/lib/email'
-import { manageFetch, requireUser } from '@/lib/manage'
+import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatBytes, formatCount, formatMs, type SystemInfo } from '@/lib/system'
 import { currentTimeMs, formatAgo, formatDateTimeShort, formatDuration } from '@/lib/time'
 import { getVersionInfo } from '@/lib/version'
@@ -82,12 +82,18 @@ function HealthTile({ ok, label, value, note }: { ok: boolean; label: string; va
 
 export default async function SystemPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await requireUser()
-  if (!user.is_admin) {
+  if (!can(user, 'system.view')) {
     redirect('/manage')
   }
   const { tab } = await searchParams
-  let activeTab = 'overview'
+  const tabs = []
   for (const option of TABS) {
+    if (option.id !== 'email' || can(user, 'system.email')) {
+      tabs.push(option)
+    }
+  }
+  let activeTab = 'overview'
+  for (const option of tabs) {
     if (option.id === tab) {
       activeTab = option.id
     }
@@ -165,7 +171,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
       </header>
 
       <nav className="settings-tabs" aria-label="System sections">
-        {TABS.map(function (option) {
+        {tabs.map(function (option) {
           let className = ''
           if (option.id === activeTab) {
             className = 'active'

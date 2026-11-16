@@ -45,7 +45,7 @@ pub async fn get(State(state): State<AppState>, _user: CurrentUser) -> Json<Vers
 /// The "Check for updates" button. Works even with UPDATE_CHECK=false, since
 /// an admin clicking it is asking for exactly this one request.
 pub async fn check(State(state): State<AppState>, user: CurrentUser) -> Result<Json<VersionInfo>, ApiError> {
-    user.require_admin()?;
+    user.require("system.view")?;
     update_checker::check_now(&state.update_state).await;
     Ok(Json(info(&state).await))
 }

@@ -3,7 +3,7 @@ import AvatarForm from '@/components/manage/profile/AvatarForm'
 import EmailNotificationsForm from '@/components/manage/profile/EmailNotificationsForm'
 import PasswordForm from '@/components/manage/profile/PasswordForm'
 import type { MyNotifications } from '@/lib/email'
-import { manageFetch, PERMISSION_LABELS, requireUser } from '@/lib/manage'
+import { manageFetch, requireUser } from '@/lib/manage'
 
 export const metadata = {
   title: 'Profile',
@@ -12,13 +12,6 @@ export const metadata = {
 export default async function ProfilePage() {
   const user = await requireUser()
   const notifications = await manageFetch<MyNotifications>('/profile/notifications')
-
-  const access: string[] = []
-  if (!user.is_admin) {
-    for (const permission of user.permissions) {
-      access.push(PERMISSION_LABELS[permission] || permission)
-    }
-  }
 
   return (
     <div className="manage-page">
@@ -49,25 +42,26 @@ export default async function ProfilePage() {
 
       <section className="manage-panel">
         <h2>Your access</h2>
-        {user.is_admin && (
-          <div className="user-row-access">
-            <span className="chip admin">Admin</span>
-          </div>
+        {user.roles.length === 0 && user.extra_permissions.length === 0 && (
+          <p className="manage-empty">You don&apos;t have a role yet. Ask an admin to give you access.</p>
         )}
-        {!user.is_admin && access.length === 0 && (
-          <p className="manage-empty">You don&apos;t have any permissions yet. Ask an admin to give you access.</p>
-        )}
-        {!user.is_admin && access.length > 0 && (
+        {(user.roles.length > 0 || user.extra_permissions.length > 0) && (
           <div className="user-row-access">
-            {access.map(function (label) {
+            {user.roles.map(function (name) {
+              let className = 'chip'
+              if (user.super_roles.includes(name)) {
+                className = 'chip admin'
+              }
               return (
-                <span className="chip" key={label}>
-                  {label}
+                <span className={className} key={name}>
+                  {name}
                 </span>
               )
             })}
+            {user.extra_permissions.length > 0 && <span className="chip">+{user.extra_permissions.length} extra</span>}
           </div>
         )}
+        {user.is_admin && <p className="panel-intro role-note">You are a super user and can do everything in the panel.</p>}
       </section>
     </div>
   )

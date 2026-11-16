@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
+use rand::RngCore;
 use serde_json::{json, Value};
 use sqlx::PgPool;
 
@@ -105,11 +106,11 @@ impl Event {
 /// The panel permission someone needs to get this kind of event by email.
 pub fn permission_for(kind: &str) -> &'static str {
     if kind.starts_with("service_") {
-        "services"
+        "services.view"
     } else if kind.starts_with("incident_") {
-        "incidents"
+        "incidents.view"
     } else {
-        "maintenance"
+        "maintenance.view"
     }
 }
 
@@ -152,36 +153,48 @@ pub fn notify(db: &PgPool, event: Event) {
                 return;
             }
         };
-        if let Err(e) = deliver_discord(&db, &settings, &event).await {
+        let image = card_image(&db, &settings, event_card(&db, &event).await).await;
+        if let Err(e) = deliver_discord(&db, &settings, &event, image.clone()).await {
             tracing::warn!("Could not send a Discord notification: {e}");
         }
-        if let Err(e) = deliver_email(&db, &settings, &event).await {
+        if let Err(e) = deliver_email(&db, &settings, &event, image).await {
             tracing::warn!("Could not send email notifications: {e}");
         }
     });
 }
 
-async fn deliver_discord(db: &PgPool, settings: &NotificationSettings, event: &Event) -> anyhow::Result<()> {
+async fn deliver_discord(
+    db: &PgPool,
+    settings: &NotificationSettings,
+    event: &Event,
+    image: Option<String>,
+) -> anyhow::Result<()> {
     if !settings.events.iter().any(|kind| kind == event.kind()) {
         return Ok(());
     }
     let Some(webhook) = settings.discord_webhook_url.as_deref() else {
         return Ok(());
     };
-    let payload = discord_payload(db, settings, event).await?;
-    send_discord(webhook, &payload).await
+    let site = site_name(db).await;
+    let content = content(db, settings, event, &Times::Discord, image).await;
+    send_discord(webhook, &discord_embed(&site, content)).await
 }
 
 /// Mails every panel user who turned this event on and is allowed to see it.
 /// Each person gets their own email, so addresses are never shared.
-async fn deliver_email(db: &PgPool, settings: &NotificationSettings, event: &Event) -> anyhow::Result<()> {
+async fn deliver_email(
+    db: &PgPool,
+    settings: &NotificationSettings,
+    event: &Event,
+    image: Option<String>,
+) -> anyhow::Result<()> {
     if mailer::config().is_none() {
         return Ok(());
     }
     let recipients: Vec<(String,)> = sqlx::query_as(
         r#"
         SELECT email FROM users
-        WHERE email IS NOT NULL AND $1 = ANY(email_events) AND (is_admin OR $2 = ANY(permissions))
+        WHERE email IS NOT NULL AND $1 = ANY(email_events) AND (user_is_super(id) OR $2 = ANY(user_permissions(id)))
         "#,
     )
     .bind(event.kind())
@@ -194,7 +207,7 @@ async fn deliver_email(db: &PgPool, settings: &NotificationSettings, event: &Eve
 
     let site = site_name(db).await;
     let times = Times::Email(site_settings::timezone(db).await);
-    let content = content(db, settings, event, &times).await;
+    let content = content(db, settings, event, &times, image).await;
     let (html, text) = email_body(&site, &content, settings);
     for (to,) in recipients {
         let email = mailer::Email {
@@ -260,19 +273,109 @@ fn link(settings: &NotificationSettings, path: &str) -> Option<String> {
         .map(|base| format!("{}{}", base.trim_end_matches('/'), path))
 }
 
-/// The share card for a page, with a version so Discord does not reuse an old image.
-fn image(settings: &NotificationSettings, path: &str) -> Option<String> {
-    link(settings, &format!("{path}?v={}", Utc::now().timestamp()))
+/// The picture shown with a message. The frontend draws it at /og/card/<id>.
+struct Card {
+    icon: &'static str,
+    color: &'static str,
+    headline: String,
+    subline: String,
 }
 
-fn image_path(event: &Event) -> String {
+/// Saves the card and returns its address. Stored once, so the picture keeps
+/// showing what happened when the message was sent, not today's status.
+async fn card_image(db: &PgPool, settings: &NotificationSettings, card: Card) -> Option<String> {
+    settings.public_url.as_ref()?;
+    let mut bytes = [0u8; 16];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    let id = hex::encode(bytes);
+    let saved = sqlx::query("INSERT INTO share_cards (id, icon, color, headline, subline) VALUES ($1, $2, $3, $4, $5)")
+        .bind(&id)
+        .bind(card.icon)
+        .bind(card.color)
+        .bind(card.headline.chars().take(200).collect::<String>())
+        .bind(card.subline.chars().take(200).collect::<String>())
+        .execute(db)
+        .await;
+    if let Err(e) = saved {
+        tracing::warn!("Could not save the picture for a notification: {e}");
+        return None;
+    }
+    link(settings, &format!("/og/card/{id}"))
+}
+
+async fn event_card(db: &PgPool, event: &Event) -> Card {
+    let times = Times::Email(site_settings::timezone(db).await);
     match event {
-        Event::ServiceDown { .. } | Event::ServiceUp { .. } => "/og/status".to_string(),
-        Event::IncidentCreated { id, .. } | Event::IncidentUpdated { id, .. } => format!("/og/incidents/{id}"),
-        Event::MaintenanceScheduled { id, .. }
-        | Event::MaintenanceStarted { id, .. }
-        | Event::MaintenanceCompleted { id, .. }
-        | Event::MaintenanceCancelled { id, .. } => format!("/og/maintenance/{id}"),
+        Event::ServiceDown { service_id, since, .. } => {
+            let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
+            Card {
+                icon: "cross",
+                color: "red",
+                headline: format!("{name} is down"),
+                subline: format!("Down since {}", times.format(*since)),
+            }
+        }
+        Event::ServiceUp { service_id, down_since } => {
+            let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
+            let seconds = (Utc::now() - *down_since).num_seconds().max(0);
+            Card {
+                icon: "check",
+                color: "green",
+                headline: format!("{name} is back up"),
+                subline: format!("It was down for {}", duration_text(seconds)),
+            }
+        }
+        Event::IncidentCreated { title, status, .. } => Card {
+            icon: "alert",
+            color: "amber",
+            headline: title.clone(),
+            subline: format!("New incident · {}", capitalize(status)),
+        },
+        Event::IncidentUpdated { title, status, .. } if status == "resolved" => Card {
+            icon: "check",
+            color: "green",
+            headline: title.clone(),
+            subline: "Incident · Resolved".to_string(),
+        },
+        Event::IncidentUpdated { title, status, .. } => Card {
+            icon: "alert",
+            color: "amber",
+            headline: title.clone(),
+            subline: format!("Ongoing incident · {}", capitalize(status)),
+        },
+        Event::MaintenanceScheduled { title, start, end, .. } => Card {
+            icon: "wrench",
+            color: "blue",
+            headline: title.clone(),
+            subline: format!("Scheduled maintenance · {} to {}", times.format(*start), times.format(*end)),
+        },
+        Event::MaintenanceStarted { title, end, .. } => Card {
+            icon: "wrench",
+            color: "blue",
+            headline: title.clone(),
+            subline: format!("Ongoing maintenance · until {}", times.format(*end)),
+        },
+        Event::MaintenanceCompleted { title, .. } => Card {
+            icon: "check",
+            color: "green",
+            headline: title.clone(),
+            subline: "Completed maintenance".to_string(),
+        },
+        Event::MaintenanceCancelled { title, .. } => Card {
+            icon: "wrench",
+            color: "grey",
+            headline: title.clone(),
+            subline: "Cancelled maintenance".to_string(),
+        },
+    }
+}
+
+async fn test_card(db: &PgPool) -> Card {
+    Card {
+        icon: "check",
+        color: "green",
+        headline: "Notifications are working".to_string(),
+        subline: site_name(db).await,
     }
 }
 
@@ -337,15 +440,37 @@ struct Content {
     fields: Vec<Field>,
 }
 
-async fn content(db: &PgPool, settings: &NotificationSettings, event: &Event, times: &Times) -> Content {
+/// "200 or 204" for the codes a service is expected to answer with.
+async fn expected_codes(db: &PgPool, service_id: &str) -> Option<String> {
+    let codes: Vec<i32> = sqlx::query_scalar("SELECT expected_status FROM services WHERE id = $1")
+        .bind(service_id)
+        .fetch_optional(db)
+        .await
+        .ok()
+        .flatten()?;
+    if codes.is_empty() {
+        return None;
+    }
+    let texts: Vec<String> = codes.iter().map(|code| code.to_string()).collect();
+    Some(texts.join(" or "))
+}
+
+async fn content(
+    db: &PgPool,
+    settings: &NotificationSettings,
+    event: &Event,
+    times: &Times,
+    image: Option<String>,
+) -> Content {
     let mut fields: Vec<Field> = Vec::new();
 
     let (title, description, color, url, services) = match event {
         Event::ServiceDown { service_id, status_code, since } => {
             let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
-            let reason = match status_code {
-                Some(code) => format!("It answered with status {code}."),
-                None => "It did not answer.".to_string(),
+            let reason = match (status_code, expected_codes(db, service_id).await) {
+                (Some(code), Some(expected)) => format!("It answered with status {code} instead of {expected}."),
+                (Some(code), None) => format!("It answered with status {code}."),
+                (None, _) => "It did not answer.".to_string(),
             };
             (
                 format!("{name} is down"),
@@ -437,12 +562,12 @@ async fn content(db: &PgPool, settings: &NotificationSettings, event: &Event, ti
         description: description.chars().take(2000).collect(),
         color,
         url,
-        image: image(settings, &image_path(event)),
+        image,
         fields,
     }
 }
 
-fn test_content(settings: &NotificationSettings, channel: &str) -> Content {
+async fn test_content(db: &PgPool, settings: &NotificationSettings, channel: &str) -> Content {
     Content {
         title: "Notifications are working".to_string(),
         description: format!(
@@ -450,7 +575,7 @@ fn test_content(settings: &NotificationSettings, channel: &str) -> Content {
         ),
         color: GREEN,
         url: link(settings, "/"),
-        image: image(settings, "/og/status"),
+        image: card_image(db, settings, test_card(db).await).await,
         fields: Vec::new(),
     }
 }
@@ -478,24 +603,17 @@ fn discord_embed(site: &str, content: Content) -> Value {
     json!({ "username": site, "embeds": [embed] })
 }
 
-/// The Discord message for an event.
-pub async fn discord_payload(db: &PgPool, settings: &NotificationSettings, event: &Event) -> anyhow::Result<Value> {
-    let site = site_name(db).await;
-    let content = content(db, settings, event, &Times::Discord).await;
-    Ok(discord_embed(&site, content))
-}
-
 /// A sample message for the "Send test message" button.
 pub async fn test_payload(db: &PgPool, settings: &NotificationSettings) -> Value {
     let site = site_name(db).await;
-    discord_embed(&site, test_content(settings, "channel"))
+    discord_embed(&site, test_content(db, settings, "channel").await)
 }
 
 /// A sample email for the "Send test email" button.
 pub async fn test_email(db: &PgPool, to: String) -> anyhow::Result<mailer::Email> {
     let settings = load(db).await?;
     let site = site_name(db).await;
-    let content = test_content(&settings, "address");
+    let content = test_content(db, &settings, "address").await;
     let (html, text) = email_body(&site, &content, &settings);
     Ok(mailer::Email {
         to,

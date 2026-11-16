@@ -15,6 +15,7 @@ export default function UpdateEntry({
   update,
   timezone,
   statuses,
+  canEdit,
   canDelete,
   editAction,
   deleteAction,
@@ -23,6 +24,7 @@ export default function UpdateEntry({
   update: StatusUpdate
   timezone: string
   statuses: string[]
+  canEdit: boolean
   canDelete: boolean
   editAction: UpdateAction
   deleteAction: UpdateAction
@@ -57,9 +59,11 @@ export default function UpdateEntry({
       <div className="manage-update-head">
         <span className={'status-chip status-' + update.status}>{formatStatus(update.status)}</span>
         <time>{formatDateTime(update.created_at, timezone)}</time>
-        <button type="button" className="link-button" onClick={toggleEditing}>
-          {editLabel}
-        </button>
+        {canEdit && (
+          <button type="button" className="link-button" onClick={toggleEditing}>
+            {editLabel}
+          </button>
+        )}
       </div>
 
       {!editing && <p>{update.message}</p>}

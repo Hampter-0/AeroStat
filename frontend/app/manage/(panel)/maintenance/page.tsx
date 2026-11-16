@@ -44,7 +44,7 @@ function MaintenanceList({
 
 export default async function ManageMaintenancePage() {
   const user = await requireUser()
-  if (!can(user, 'maintenance')) {
+  if (!can(user, 'maintenance.view')) {
     redirect('/manage')
   }
 
@@ -73,9 +73,11 @@ export default async function ManageMaintenancePage() {
           <h1>Maintenance</h1>
           <p>Plan work ahead so visitors know what to expect.</p>
         </div>
-        <Link href="/manage/maintenance/new" className="button-primary">
-          Schedule maintenance
-        </Link>
+        {can(user, 'maintenance.create') && (
+          <Link href="/manage/maintenance/new" className="button-primary">
+            Schedule maintenance
+          </Link>
+        )}
       </header>
 
       {inProgress.length > 0 && (

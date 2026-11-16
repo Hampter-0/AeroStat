@@ -5,6 +5,8 @@ use sqlx::PgPool;
 use crate::site_settings;
 
 const ACTIVITY_RETENTION_DAYS: i32 = 365;
+/// Pictures in old notifications; long after anyone looks at them.
+const CARD_RETENTION_DAYS: i32 = 365;
 
 /// Runs metrics cleanup once a day. The retention comes from the panel
 /// settings, with the METRICS_RETENTION_DAYS env value as fallback. The
@@ -24,6 +26,13 @@ pub fn spawn(pool: PgPool, default_retention_days: i32) {
             }
             if let Err(e) = crate::activity::cleanup(&pool, ACTIVITY_RETENTION_DAYS).await {
                 tracing::error!("Activity log cleanup failed: {e}");
+            }
+            let cards = sqlx::query("DELETE FROM share_cards WHERE created_at < now() - make_interval(days => $1)")
+                .bind(CARD_RETENTION_DAYS)
+                .execute(&pool)
+                .await;
+            if let Err(e) = cards {
+                tracing::error!("Notification picture cleanup failed: {e}");
             }
 
             tokio::time::sleep(interval).await;

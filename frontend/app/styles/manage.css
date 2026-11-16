@@ -243,14 +243,6 @@
     gap: 14px;
 }
 
-.permission-fields {
-    margin: 0;
-    padding: 0;
-    display: grid;
-    gap: 10px;
-    border: 0;
-}
-
 .permission-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -535,7 +527,7 @@
     pointer-events: none;
 }
 
-.manage-form .input-with-icon input {
+.manage-form .input-with-icon input:not([type="checkbox"]):not([type="radio"]) {
     width: 100%;
     height: 42px;
     padding-left: 38px;
@@ -2447,5 +2439,102 @@ a.page-button:hover {
     .config-row {
         grid-template-columns: 1fr;
         gap: 2px;
+    }
+}
+
+.permission-tree {
+    display: grid;
+    gap: 8px;
+}
+
+.manage-form .permission-child {
+    margin-left: 26px;
+}
+
+.manage-form .check-row:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.manage-form > .manage-panel {
+    margin: 0;
+    display: grid;
+    gap: 14px;
+}
+
+.manage-form > .manage-panel > h2 {
+    margin-bottom: 0;
+}
+
+.manage-form > .manage-panel > .panel-heading {
+    margin-bottom: 0;
+}
+
+.role-permissions-head {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.role-permissions-head h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 15px;
+}
+
+.role-note {
+    margin: 12px 0 0;
+}
+
+.table-toolbar {
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.table-count {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.table-user {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.activity-table .table-muted,
+.table-muted {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.activity-table .table-action {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.users-table td,
+.roles-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.user-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+@media (max-width: 760px) {
+    .manage-form .permission-child {
+        margin-left: 14px;
     }
 }

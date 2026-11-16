@@ -44,7 +44,7 @@ function IncidentList({
 
 export default async function ManageIncidentsPage() {
   const user = await requireUser()
-  if (!can(user, 'incidents')) {
+  if (!can(user, 'incidents.view')) {
     redirect('/manage')
   }
 
@@ -69,9 +69,11 @@ export default async function ManageIncidentsPage() {
           <h1>Incidents</h1>
           <p>Report problems and keep visitors posted with updates.</p>
         </div>
-        <Link href="/manage/incidents/new" className="button-primary">
-          New incident
-        </Link>
+        {can(user, 'incidents.create') && (
+          <Link href="/manage/incidents/new" className="button-primary">
+            New incident
+          </Link>
+        )}
       </header>
 
       <section className="manage-panel">

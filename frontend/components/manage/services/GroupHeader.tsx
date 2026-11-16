@@ -14,12 +14,16 @@ export default function GroupHeader({
   serviceCount,
   isFirst,
   isLast,
+  canEdit,
+  canDelete,
 }: {
   id: string
   name: string
   serviceCount: number
   isFirst: boolean
   isLast: boolean
+  canEdit: boolean
+  canDelete: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const [renameState, renameAction, renaming] = useActionState(renameGroup, initialState)
@@ -57,18 +61,24 @@ export default function GroupHeader({
           </button>
         </form>
       )}
-      <div className="group-header-actions">
-        <button type="button" className="link-button" onClick={toggleEditing}>
-          {renameLabel}
-        </button>
-        <form action={deleteAction} onSubmit={confirmDelete}>
-          <input type="hidden" name="id" value={id} />
-          <button type="submit" className="link-button danger" disabled={deleting}>
-            Delete
-          </button>
-        </form>
-        <MoveButtons id={id} label={name} isFirst={isFirst} isLast={isLast} action={moveGroup} />
-      </div>
+      {(canEdit || canDelete) && (
+        <div className="group-header-actions">
+          {canEdit && (
+            <button type="button" className="link-button" onClick={toggleEditing}>
+              {renameLabel}
+            </button>
+          )}
+          {canDelete && (
+            <form action={deleteAction} onSubmit={confirmDelete}>
+              <input type="hidden" name="id" value={id} />
+              <button type="submit" className="link-button danger" disabled={deleting}>
+                Delete
+              </button>
+            </form>
+          )}
+          {canEdit && <MoveButtons id={id} label={name} isFirst={isFirst} isLast={isLast} action={moveGroup} />}
+        </div>
+      )}
       {renameState.error && <p className="form-error" role="alert">{renameState.error}</p>}
       {deleteState.error && <p className="form-error" role="alert">{deleteState.error}</p>}
     </div>

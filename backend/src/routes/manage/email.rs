@@ -32,7 +32,7 @@ pub struct TestBody {
 
 /// The SMTP settings from the environment, for admins only.
 pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Json<EmailView>, ApiError> {
-    user.require_admin()?;
+    user.require("system.email")?;
     let (recipients,): (i64,) =
         sqlx::query_as("SELECT COUNT(*) FROM users WHERE email IS NOT NULL AND cardinality(email_events) > 0")
             .fetch_one(&state.db)
@@ -70,7 +70,7 @@ pub async fn test(
     user: CurrentUser,
     Json(body): Json<TestBody>,
 ) -> Result<StatusCode, ApiError> {
-    user.require_admin()?;
+    user.require("system.email")?;
     if mailer::config().is_none() {
         return Err(ApiError::BadRequest("Email is not set up. Add the SMTP settings to .env first".into()));
     }

@@ -24,7 +24,7 @@ export const metadata = {
 
 export default async function ManageMaintenanceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser()
-  if (!can(user, 'maintenance')) {
+  if (!can(user, 'maintenance.view')) {
     redirect('/manage')
   }
 
@@ -40,6 +40,8 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
   if (maintenance.status === 'cancelled') {
     isCancelled = true
   }
+
+  const canEdit = can(user, 'maintenance.edit')
 
   let updateStatus = maintenance.status
   if (isCancelled) {
@@ -65,16 +67,18 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
         </a>
       </header>
 
-      <section className="manage-panel">
-        <h2>Post an update</h2>
-        <PostUpdateForm
-          parentId={maintenance.id}
-          currentStatus={updateStatus}
-          statuses={MAINTENANCE_UPDATE_STATUSES}
-          hints={MAINTENANCE_HINTS}
-          action={postMaintenanceUpdate}
-        />
-      </section>
+      {can(user, 'maintenance.update') && (
+        <section className="manage-panel">
+          <h2>Post an update</h2>
+          <PostUpdateForm
+            parentId={maintenance.id}
+            currentStatus={updateStatus}
+            statuses={MAINTENANCE_UPDATE_STATUSES}
+            hints={MAINTENANCE_HINTS}
+            action={postMaintenanceUpdate}
+          />
+        </section>
+      )}
 
       <section className="manage-panel">
         <h2>Timeline</h2>
@@ -88,7 +92,8 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
                 update={update}
                 timezone={timezone}
                 statuses={MAINTENANCE_UPDATE_STATUSES}
-                canDelete={true}
+                canEdit={canEdit}
+                canDelete={canEdit}
                 editAction={editMaintenanceUpdate}
                 deleteAction={deleteMaintenanceUpdate}
               />
@@ -97,26 +102,32 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
         </ol>
       </section>
 
-      <section className="manage-panel">
-        <h2>Details</h2>
-        <MaintenanceForm services={services} maintenance={maintenance} timezone={timezone} />
-      </section>
+      {canEdit && (
+        <section className="manage-panel">
+          <h2>Details</h2>
+          <MaintenanceForm services={services} maintenance={maintenance} timezone={timezone} />
+        </section>
+      )}
 
-      <section className="manage-panel danger">
-        <h2>Cancel maintenance</h2>
-        <CancelMaintenanceForm id={maintenance.id} cancelled={isCancelled} />
-      </section>
+      {can(user, 'maintenance.cancel') && (
+        <section className="manage-panel danger">
+          <h2>Cancel maintenance</h2>
+          <CancelMaintenanceForm id={maintenance.id} cancelled={isCancelled} />
+        </section>
+      )}
 
-      <section className="manage-panel danger">
-        <h2>Delete maintenance</h2>
-        <DeleteForm
-          id={maintenance.id}
-          action={deleteMaintenance}
-          buttonText="Delete maintenance"
-          description="Deleting removes it and its timeline from the status page. To keep a record, cancel it instead."
-          confirmText="Delete this maintenance and all its updates? This cannot be undone."
-        />
-      </section>
+      {can(user, 'maintenance.delete') && (
+        <section className="manage-panel danger">
+          <h2>Delete maintenance</h2>
+          <DeleteForm
+            id={maintenance.id}
+            action={deleteMaintenance}
+            buttonText="Delete maintenance"
+            description="Deleting removes it and its timeline from the status page. To keep a record, cancel it instead."
+            confirmText="Delete this maintenance and all its updates? This cannot be undone."
+          />
+        </section>
+      )}
     </div>
   )
 }

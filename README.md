@@ -30,7 +30,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 ## Features
 
 - Public status page with daily uptime bars, incidents and maintenance
-- Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users with permissions, activity log
+- Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
 - Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
@@ -185,7 +185,7 @@ SMTP_PASSWORD=your-password
 SMTP_FROM_ADDRESS=noreply@example.com
 ```
 
-Restart with `docker compose up -d`. Admins see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones they have permission for: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
+Restart with `docker compose up -d`. People with the Email settings permission see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones their roles let them see: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
 
 ## Status API and badges
 
@@ -273,7 +273,7 @@ All settings go in `.env` next to `docker-compose.yml`. Site name, contact link,
 | `LOGIN_MAX_FAILURES_PER_IP` | `10` | Failed sign-ins from one IP before a block |
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before a block |
 | `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
-| `UPDATE_CHECK` | `true` | Show admins when a newer release is out |
+| `UPDATE_CHECK` | `true` | Show people who can view System when a newer release is out |
 | `SMTP_HOST` | | Mail server for email notifications. Empty turns email off |
 | `SMTP_PORT` | `465` or `587` | Mail server port, follows `SMTP_ENCRYPTION` |
 | `SMTP_ENCRYPTION` | `starttls`, or `tls` on port 465 | `tls`, `starttls` or `none` |
@@ -306,7 +306,7 @@ docker compose --profile postgres up -d
 
 Leave out `--profile postgres` if you use your own database. Database migrations run automatically on start.
 
-The panel shows the running version at the bottom of the sidebar. When a newer release is out, admins see a notice on the dashboard with a link to the release notes and a button that copies the update command. AeroStat checks GitHub for this every six hours and sends nothing about your installation; set `UPDATE_CHECK=false` to turn it off.
+The panel shows the running version at the bottom of the sidebar. When a newer release is out, people with the View system permission see a notice on the dashboard with a link to the release notes and a button that copies the update command. AeroStat checks GitHub for this every six hours and sends nothing about your installation; set `UPDATE_CHECK=false` to turn it off.
 
 AeroStat can't update itself: that would need access to the Docker socket, which is the same as root on your server. If you want automatic updates, run [Watchtower](https://containrrr.dev/watchtower/) next to it, limited to the AeroStat containers:
 

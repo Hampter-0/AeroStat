@@ -34,14 +34,17 @@ function minutesText(minutes: number | null): string {
 export default async function ManageOverviewPage() {
   const user = await requireUser()
   const { timezone } = await getSiteConfig()
-  const canIncidents = can(user, 'incidents')
-  const canMaintenance = can(user, 'maintenance')
-  const canServices = can(user, 'services')
+  const canIncidents = can(user, 'incidents.view')
+  const canMaintenance = can(user, 'maintenance.view')
+  const canServices = can(user, 'services.view')
 
   const services: ServiceStatus[] = await getStatus()
   const dashboard = await manageFetch<DashboardData>('/dashboard')
   const version = await getVersionInfo()
-  const activity = await manageFetch<ActivityResponse>('/activity?per_page=' + RECENT_ACTIVITY)
+  let activity: ActivityResponse | null = null
+  if (can(user, 'activity.view')) {
+    activity = await manageFetch<ActivityResponse>('/activity?per_page=' + RECENT_ACTIVITY)
+  }
   const now = currentTimeMs()
 
   const ongoing: IncidentDetail[] = []
@@ -128,7 +131,7 @@ export default async function ManageOverviewPage() {
         <h1>Welcome, {user.username}</h1>
       </header>
 
-      {user.is_admin && version && version.update_available && (
+      {can(user, 'system.view') && version && version.update_available && (
         <section className="update-notice">
           <div>
             <strong>AeroStat v{version.latest} is available</strong>
@@ -161,7 +164,7 @@ export default async function ManageOverviewPage() {
         </a>
       </section>
 
-      {canIncidents && unexplained.length > 0 && (
+      {can(user, 'incidents.create') && unexplained.length > 0 && (
         <section className="manage-panel dashboard-warning">
           <h2>
             <AlertTriangle size={16} /> Down without an incident
@@ -189,9 +192,11 @@ export default async function ManageOverviewPage() {
         <section className="manage-panel">
           <div className="panel-heading">
             <h2>Ongoing incidents</h2>
-            <Link href="/manage/incidents/new" className="link-button">
-              + New incident
-            </Link>
+            {can(user, 'incidents.create') && (
+              <Link href="/manage/incidents/new" className="link-button">
+                + New incident
+              </Link>
+            )}
           </div>
           {ongoing.length === 0 && <p className="manage-empty">No ongoing incidents.</p>}
           <div className="manage-list">
@@ -228,9 +233,11 @@ export default async function ManageOverviewPage() {
         <section className="manage-panel">
           <div className="panel-heading">
             <h2>Maintenance</h2>
-            <Link href="/manage/maintenance/new" className="link-button">
-              + Schedule
-            </Link>
+            {can(user, 'maintenance.create') && (
+              <Link href="/manage/maintenance/new" className="link-button">
+                + Schedule
+              </Link>
+            )}
           </div>
           {inProgress.length === 0 && upcoming.length === 0 && (
             <p className="manage-empty">Nothing in progress or planned for the next {UPCOMING_DAYS} days.</p>
@@ -310,18 +317,18 @@ export default async function ManageOverviewPage() {
         </div>
       </section>
 
-      <section className="manage-panel">
-        <div className="panel-heading">
-          <h2>Recent activity</h2>
-          {user.is_admin && (
+      {activity && (
+        <section className="manage-panel">
+          <div className="panel-heading">
+            <h2>Recent activity</h2>
             <Link href="/manage/activity" className="link-button">
               View all <Arrow />
             </Link>
-          )}
-        </div>
-        {activity.entries.length === 0 && <p className="manage-empty">No changes yet.</p>}
-        <ActivityList entries={activity.entries} timezone={timezone} showIp={false} />
-      </section>
+          </div>
+          {activity.entries.length === 0 && <p className="manage-empty">No changes yet.</p>}
+          <ActivityList entries={activity.entries} timezone={timezone} showIp={false} />
+        </section>
+      )}
     </div>
   )
 }

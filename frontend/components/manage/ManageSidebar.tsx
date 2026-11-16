@@ -6,9 +6,10 @@ import type { ReactNode } from 'react'
 import Logo from '@/components/layout/Logo'
 import Avatar from '@/components/manage/Avatar'
 import ThemeSwitcher from '@/components/layout/ThemeSwitcher'
-import { Activity, AlertTriangle, ExternalLink, Gauge, Home, LogOut, Server, Settings, Tool, Users } from '@/components/icons'
+import { Activity, AlertTriangle, ExternalLink, Gauge, Home, LogOut, Server, Settings, Shield, Tool, Users } from '@/components/icons'
 import { logout } from '@/app/manage/actions'
 import type { ManageUser } from '@/lib/manage'
+import { hasPermission } from '@/lib/permissions'
 import type { VersionInfo } from '@/lib/version'
 
 interface NavItem {
@@ -29,21 +30,28 @@ export default function ManageSidebar({
   const pathname = usePathname()
 
   const items: NavItem[] = [{ href: '/manage', label: 'Overview', icon: <Home /> }]
-  if (user.is_admin || user.permissions.includes('incidents')) {
+  if (hasPermission(user, 'incidents.view')) {
     items.push({ href: '/manage/incidents', label: 'Incidents', icon: <AlertTriangle size={16} /> })
   }
-  if (user.is_admin || user.permissions.includes('maintenance')) {
+  if (hasPermission(user, 'maintenance.view')) {
     items.push({ href: '/manage/maintenance', label: 'Maintenance', icon: <Tool size={16} /> })
   }
-  if (user.is_admin || user.permissions.includes('services')) {
+  if (hasPermission(user, 'services.view')) {
     items.push({ href: '/manage/services', label: 'Services', icon: <Server /> })
   }
-  if (user.is_admin || user.permissions.includes('settings')) {
+  if (hasPermission(user, 'settings.general') || hasPermission(user, 'settings.notifications')) {
     items.push({ href: '/manage/settings', label: 'Settings', icon: <Settings /> })
   }
-  if (user.is_admin) {
+  if (hasPermission(user, 'users.view')) {
     items.push({ href: '/manage/users', label: 'Users', icon: <Users /> })
+  }
+  if (hasPermission(user, 'roles.view')) {
+    items.push({ href: '/manage/roles', label: 'Roles', icon: <Shield /> })
+  }
+  if (hasPermission(user, 'activity.view')) {
     items.push({ href: '/manage/activity', label: 'Activity', icon: <Activity /> })
+  }
+  if (hasPermission(user, 'system.view')) {
     items.push({ href: '/manage/system', label: 'System', icon: <Gauge /> })
   }
 
@@ -57,9 +65,9 @@ export default function ManageSidebar({
     return ''
   }
 
-  let roleLabel = 'Editor'
-  if (user.is_admin) {
-    roleLabel = 'Admin'
+  let roleLabel = 'No role'
+  if (user.roles.length > 0) {
+    roleLabel = user.roles.join(', ')
   }
 
   return (
@@ -87,7 +95,7 @@ export default function ManageSidebar({
       {version && (
         <div className="manage-version">
           <span>AeroStat v{version.current}</span>
-          {user.is_admin && version.update_available && (
+          {hasPermission(user, 'system.view') && version.update_available && (
             <Link href="/manage/system?tab=updates" className="version-update" title={'v' + version.latest + ' is available'}>
               Update available
             </Link>
