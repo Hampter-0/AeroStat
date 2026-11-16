@@ -263,15 +263,51 @@ impl FromRequestParts<AppState> for CurrentUser {
 
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Self::Rejection> {
         let token = bearer_token(&parts.headers).ok_or(ApiError::Unauthorized)?;
+        let token_hash = hash_token(&token);
 
         let query = format!(
             "SELECT {CURRENT_USER_COLUMNS} FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()"
         );
         let user: Option<CurrentUser> = sqlx::query_as(&query)
-        .bind(hash_token(&token))
-        .fetch_optional(&state.db)
-        .await?;
+            .bind(&token_hash)
+            .fetch_optional(&state.db)
+            .await?;
+        let user = user.ok_or(ApiError::Unauthorized)?;
 
-        user.ok_or(ApiError::Unauthorized)
+        // At most once a minute, so browsing the panel doesn't write on every request.
+        let ip = crate::login_guard::client_ip(&parts.headers);
+        let touched = sqlx::query(
+            r#"
+            UPDATE sessions
+            SET last_used_at = now(), ip = COALESCE($2, ip), user_agent = COALESCE($3, user_agent)
+            WHERE token_hash = $1 AND last_used_at < now() - interval '1 minute'
+            "#,
+        )
+        .bind(&token_hash)
+        .bind(known_ip(&ip))
+        .bind(user_agent(&parts.headers))
+        .execute(&state.db)
+        .await;
+        if let Err(e) = touched {
+            tracing::warn!("Could not update the session's last use: {e}");
+        }
+
+        Ok(user)
     }
+}
+
+/// None when the frontend didn't pass the visitor's IP on.
+pub fn known_ip(ip: &str) -> Option<String> {
+    if ip == "unknown" {
+        None
+    } else {
+        Some(ip.chars().take(64).collect())
+    }
+}
+
+pub fn user_agent(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|value| value.to_str().ok())
+        .map(|agent| agent.chars().take(400).collect())
 }

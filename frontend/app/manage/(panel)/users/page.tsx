@@ -32,7 +32,7 @@ export default async function UsersPage() {
         )}
       </header>
 
-      <section className="manage-panel">
+      <section className="manage-panel activity-panel">
         <UsersTable
           users={data.users}
           roles={data.roles}

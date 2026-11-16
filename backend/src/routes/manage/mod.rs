@@ -8,12 +8,13 @@ mod profile;
 mod roles;
 mod services;
 mod session;
+mod sessions;
 mod settings;
 mod system;
 mod users;
 mod version;
 
-use axum::routing::{get, patch, post, put};
+use axum::routing::{delete, get, patch, post, put};
 use axum::Router;
 
 use crate::state::AppState;
@@ -30,6 +31,9 @@ pub fn router() -> Router<AppState> {
         .route("/system", get(system::get))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
+        .route("/profile/sessions", get(sessions::list))
+        .route("/profile/sessions/others", delete(sessions::end_others))
+        .route("/profile/sessions/:id", delete(sessions::end))
         .route(
             "/profile/notifications",
             get(email::my_notifications).put(email::update_my_notifications),

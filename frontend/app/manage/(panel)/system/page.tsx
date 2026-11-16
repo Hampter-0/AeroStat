@@ -255,9 +255,11 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
             </section>
           )}
 
-          <section className="manage-panel">
-            <h2>Version history</h2>
-            {system.history.length === 0 && <p className="manage-empty">No releases found yet. Check for updates to load them.</p>}
+          <section className="manage-panel activity-panel">
+            <div className="activity-bar">
+              <h2>Version history</h2>
+            </div>
+            {system.history.length === 0 && <p className="manage-empty activity-empty">No releases found yet. Check for updates to load them.</p>}
             {system.history.length > 0 && (
               <div className="activity-table-wrap">
                 <table className="activity-table history-table">

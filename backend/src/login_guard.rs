@@ -6,9 +6,9 @@ use sqlx::PgPool;
 use crate::error::ApiError;
 
 /// Set with LOGIN_MAX_FAILURES_PER_IP, LOGIN_MAX_FAILURES_PER_ACCOUNT and
-/// LOGIN_LOCKOUT_MINUTES. The account limit is higher than the IP limit so one
-/// attacker can't easily lock a real user out, but it still caps guessing from
-/// many addresses.
+/// LOGIN_LOCKOUT_MINUTES. The account limit caps guessing from many addresses.
+/// It doesn't apply to IPs the account already signed in from, so strangers
+/// can't lock the owner out.
 #[derive(Debug, Clone, Copy)]
 pub struct LoginLimits {
     pub per_ip: i64,
@@ -29,8 +29,14 @@ pub fn account_key(user_id: Option<i64>, login: &str) -> String {
     }
 }
 
-fn limits(config: &LoginLimits, ip: &str, account: &str) -> [(String, i64); 2] {
-    [(ip_key(ip), config.per_ip), (account.to_string(), config.per_account)]
+/// The counters that apply to this attempt. The account counter is left out for
+/// an IP the account already signed in from.
+fn limits(config: &LoginLimits, ip: &str, account: Option<&str>) -> Vec<(String, i64)> {
+    let mut list = vec![(ip_key(ip), config.per_ip)];
+    if let Some(account) = account {
+        list.push((account.to_string(), config.per_account));
+    }
+    list
 }
 
 /// The visitor's IP as passed on by the frontend. Without the header every
@@ -47,7 +53,7 @@ pub fn client_ip(headers: &HeaderMap) -> String {
 
 /// Refuses the attempt while this IP or account has too many recent failures.
 /// If Redis is unreachable, sign-in keeps working.
-pub async fn check(redis: &Pool, config: &LoginLimits, ip: &str, account: &str) -> Result<(), ApiError> {
+pub async fn check(redis: &Pool, config: &LoginLimits, ip: &str, account: Option<&str>) -> Result<(), ApiError> {
     let blocked = match blocked_seconds(redis, config, ip, account).await {
         Ok(seconds) => seconds,
         Err(e) => {
@@ -65,7 +71,7 @@ pub async fn check(redis: &Pool, config: &LoginLimits, ip: &str, account: &str) 
     Ok(())
 }
 
-async fn blocked_seconds(redis: &Pool, config: &LoginLimits, ip: &str, account: &str) -> anyhow::Result<Option<i64>> {
+async fn blocked_seconds(redis: &Pool, config: &LoginLimits, ip: &str, account: Option<&str>) -> anyhow::Result<Option<i64>> {
     let mut conn = redis.get().await?;
     let mut longest: Option<i64> = None;
     for (key, max) in limits(config, ip, account) {
@@ -80,7 +86,7 @@ async fn blocked_seconds(redis: &Pool, config: &LoginLimits, ip: &str, account: 
 
 /// Counts a failed attempt. Returns true when this failure hit a limit, so the
 /// caller can log the lockout once.
-pub async fn record_failure(redis: &Pool, config: &LoginLimits, ip: &str, account: &str) -> bool {
+pub async fn record_failure(redis: &Pool, config: &LoginLimits, ip: &str, account: Option<&str>) -> bool {
     match count_failure(redis, config, ip, account).await {
         Ok(reached) => reached,
         Err(e) => {
@@ -90,7 +96,7 @@ pub async fn record_failure(redis: &Pool, config: &LoginLimits, ip: &str, accoun
     }
 }
 
-async fn count_failure(redis: &Pool, config: &LoginLimits, ip: &str, account: &str) -> anyhow::Result<bool> {
+async fn count_failure(redis: &Pool, config: &LoginLimits, ip: &str, account: Option<&str>) -> anyhow::Result<bool> {
     let mut conn = redis.get().await?;
     let mut reached = false;
     for (key, max) in limits(config, ip, account) {

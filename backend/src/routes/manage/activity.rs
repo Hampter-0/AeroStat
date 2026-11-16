@@ -69,15 +69,17 @@ fn can_see(user: &CurrentUser, category: &str) -> bool {
     match category {
         "incidents" => user.has("incidents.view"),
         "maintenance" => user.has("maintenance.view"),
-        "services" => user.has("services.view"),
-        "settings" => user.has("settings.general") || user.has("settings.notifications") || user.has("system.email"),
-        "users" | "account" => user.has("users.view") || user.has("roles.view"),
+        "services" | "groups" => user.has("services.view"),
+        "settings" => user.has("settings.general") || user.has("settings.notifications"),
+        "system" => user.has("system.view"),
+        "users" | "account" => user.has("users.view"),
+        "roles" => user.has("roles.view"),
         _ => user.is_admin,
     }
 }
 
 /// Newest first, and only the categories the user can see elsewhere in the
-/// panel; sign-ins and user changes need users.view or roles.view.
+/// panel; sign-ins and account changes need users.view.
 pub async fn list(
     State(state): State<AppState>,
     user: CurrentUser,

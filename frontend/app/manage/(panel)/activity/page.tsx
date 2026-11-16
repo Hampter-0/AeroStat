@@ -95,6 +95,15 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     </div>
   )
 
+  const categories = ACTIVITY_CATEGORIES.filter(function (item) {
+    for (const permission of item.anyOf) {
+      if (can(user, permission)) {
+        return true
+      }
+    }
+    return false
+  })
+
   let allClass = 'activity-filter'
   let allCurrent: 'page' | undefined = undefined
   if (query.category === '') {
@@ -121,7 +130,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         <Link href={activityHref({ ...query, category: '', page: 1 })} className={allClass} aria-current={allCurrent}>
           All
         </Link>
-        {ACTIVITY_CATEGORIES.map(function (item) {
+        {categories.map(function (item) {
           let itemClass = 'activity-filter'
           let current: 'page' | undefined = undefined
           if (item.value === query.category) {

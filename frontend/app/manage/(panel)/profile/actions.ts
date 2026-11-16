@@ -86,3 +86,29 @@ export async function removeAvatar(): Promise<FormState> {
   refresh()
   return { error: null, success: 'Photo removed' }
 }
+
+export async function endSession(_state: FormState, formData: FormData): Promise<FormState> {
+  const id = text(formData, 'id')
+  try {
+    await manageFetch('/profile/sessions/' + encodeURIComponent(id), { method: 'DELETE' })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  revalidatePath('/manage/profile/sessions')
+  return { error: null, success: null }
+}
+
+export async function endOtherSessions(): Promise<FormState> {
+  let result: { count: number }
+  try {
+    result = await manageFetch<{ count: number }>('/profile/sessions/others', { method: 'DELETE' })
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  revalidatePath('/manage/profile/sessions')
+  let message = 'Logged out ' + result.count + ' other devices'
+  if (result.count === 1) {
+    message = 'Logged out 1 other device'
+  }
+  return { error: null, success: message }
+}

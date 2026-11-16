@@ -2,6 +2,7 @@ import AccountForm from '@/components/manage/profile/AccountForm'
 import AvatarForm from '@/components/manage/profile/AvatarForm'
 import EmailNotificationsForm from '@/components/manage/profile/EmailNotificationsForm'
 import PasswordForm from '@/components/manage/profile/PasswordForm'
+import ProfileTabs from '@/components/manage/profile/ProfileTabs'
 import type { MyNotifications } from '@/lib/email'
 import { manageFetch, requireUser } from '@/lib/manage'
 
@@ -19,6 +20,7 @@ export default async function ProfilePage() {
         <h1>Profile</h1>
         <p>How you sign in and how others see you in the panel.</p>
       </header>
+      <ProfileTabs active="/manage/profile" />
 
       <section className="manage-panel">
         <h2>Photo</h2>

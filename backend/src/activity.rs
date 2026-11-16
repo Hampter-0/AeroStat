@@ -5,7 +5,17 @@ use crate::auth::CurrentUser;
 
 /// Every category; admins see all of them. Other users only see the
 /// categories that match their permissions.
-pub const CATEGORIES: [&str; 6] = ["incidents", "maintenance", "services", "settings", "users", "account"];
+pub const CATEGORIES: [&str; 9] = [
+    "incidents",
+    "maintenance",
+    "services",
+    "groups",
+    "settings",
+    "system",
+    "users",
+    "roles",
+    "account",
+];
 
 /// Columns that change on their own and would only add noise to a diff.
 const IGNORED_FIELDS: [&str; 2] = ["next_check_at", "updated_at"];

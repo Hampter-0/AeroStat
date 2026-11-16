@@ -2489,7 +2489,7 @@ a.page-button:hover {
 }
 
 .table-toolbar {
-    margin-bottom: 14px;
+    padding: 12px 16px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -2537,4 +2537,43 @@ a.page-button:hover {
     .manage-form .permission-child {
         margin-left: 14px;
     }
+}
+
+.session-device {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.session-device strong {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.session-device small {
+    max-width: 360px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-toolbar .button-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.activity-bar h2 {
+    margin: 0;
+}
+
+.activity-panel > .activity-table-wrap:last-child tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.activity-panel > .form-error,
+.activity-panel > .form-success {
+    margin: 0 16px 12px;
 }

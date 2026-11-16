@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { hasPermission } from './permissions'
 
@@ -34,6 +34,28 @@ export async function getSessionToken(): Promise<string | null> {
   return cookie.value
 }
 
+async function visitorHeaders(): Promise<Record<string, string>> {
+  const result: Record<string, string> = {}
+  try {
+    const store = await headers()
+    const forwarded = store.get('x-forwarded-for')
+    if (forwarded) {
+      let ip = forwarded.split(',')[0].trim()
+      if (ip.startsWith('::ffff:')) {
+        ip = ip.slice(7)
+      }
+      result['x-forwarded-for'] = ip
+    }
+    const agent = store.get('user-agent')
+    if (agent) {
+      result['user-agent'] = agent
+    }
+  } catch {
+    return result
+  }
+  return result
+}
+
 export async function manageFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await getSessionToken()
   const headers = new Headers(init.headers)
@@ -42,6 +64,12 @@ export async function manageFetch<T>(path: string, init: RequestInit = {}): Prom
   }
   if (token) {
     headers.set('authorization', 'Bearer ' + token)
+  }
+  const visitor = await visitorHeaders()
+  for (const name of Object.keys(visitor)) {
+    if (!headers.has(name)) {
+      headers.set(name, visitor[name])
+    }
   }
 
   const res = await fetch(process.env.API_URL + '/api/manage' + path, {

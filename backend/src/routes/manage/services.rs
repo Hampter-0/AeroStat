@@ -329,7 +329,7 @@ pub async fn create_group(
     .await?;
 
     let details = activity::created(activity::snapshot(&state.db, "groups", &id).await);
-    activity::record(&state.db, &user, PERMISSION, "added group", None, &name, details).await;
+    activity::record(&state.db, &user, "groups", "added group", None, &name, details).await;
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
 
@@ -352,7 +352,7 @@ pub async fn update_group(
         return Err(ApiError::NotFound);
     }
     let details = activity::changes(before, activity::snapshot(&state.db, "groups", &id).await);
-    activity::record(&state.db, &user, PERMISSION, "renamed group", None, &name, details).await;
+    activity::record(&state.db, &user, "groups", "renamed group", None, &name, details).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -369,7 +369,7 @@ pub async fn delete_group(
         .fetch_optional(&state.db)
         .await?;
     let (name,) = deleted.ok_or(ApiError::NotFound)?;
-    activity::record(&state.db, &user, PERMISSION, "deleted group", None, &name, activity::deleted(before)).await;
+    activity::record(&state.db, &user, "groups", "deleted group", None, &name, activity::deleted(before)).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

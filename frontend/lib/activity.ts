@@ -19,13 +19,16 @@ export interface ActivityResponse {
   per_page: number
 }
 
-export const ACTIVITY_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'incidents', label: 'Incidents' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'services', label: 'Services' },
-  { value: 'settings', label: 'Settings' },
-  { value: 'users', label: 'Users' },
-  { value: 'account', label: 'Sign-ins' },
+export const ACTIVITY_CATEGORIES: { value: string; label: string; anyOf: string[] }[] = [
+  { value: 'incidents', label: 'Incidents', anyOf: ['incidents.view'] },
+  { value: 'maintenance', label: 'Maintenance', anyOf: ['maintenance.view'] },
+  { value: 'services', label: 'Services', anyOf: ['services.view'] },
+  { value: 'groups', label: 'Groups', anyOf: ['services.view'] },
+  { value: 'settings', label: 'Settings', anyOf: ['settings.general', 'settings.notifications'] },
+  { value: 'system', label: 'System', anyOf: ['system.view'] },
+  { value: 'users', label: 'Users', anyOf: ['users.view'] },
+  { value: 'roles', label: 'Roles', anyOf: ['roles.view'] },
+  { value: 'account', label: 'Account', anyOf: ['users.view'] },
 ]
 
 export const PER_PAGE_OPTIONS = [10, 25, 50, 100]

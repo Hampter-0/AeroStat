@@ -82,7 +82,7 @@ pub async fn test(
     mailer::send(email)
         .await
         .map_err(|e| ApiError::BadRequest(format!("The mail server refused the email: {e}")))?;
-    activity::record(&state.db, &user, "settings", "sent a test email", None, "", Some(json!({ "to": to }))).await;
+    activity::record(&state.db, &user, "system", "sent a test email", None, "", Some(json!({ "to": to }))).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

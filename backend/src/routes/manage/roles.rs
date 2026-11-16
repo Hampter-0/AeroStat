@@ -174,7 +174,7 @@ pub async fn create(
     };
 
     let details = json!({ "handle": role.handle, "super_user": role.super_user, "permissions": role.permissions });
-    activity::record(&state.db, &user, "users", "created role", None, &role.name, Some(details)).await;
+    activity::record(&state.db, &user, "roles", "created role", None, &role.name, Some(details)).await;
     Ok((StatusCode::CREATED, Json(find_role(&state.db, id).await?)))
 }
 
@@ -225,7 +225,7 @@ pub async fn update(
     if !removed.is_empty() {
         details["permissions_removed"] = json!(removed);
     }
-    activity::record(&state.db, &user, "users", "edited role", None, &role.name, Some(details)).await;
+    activity::record(&state.db, &user, "roles", "edited role", None, &role.name, Some(details)).await;
     Ok(Json(find_role(&state.db, id).await?))
 }
 
@@ -247,6 +247,6 @@ pub async fn delete(
     tx.commit().await?;
 
     let details = json!({ "users": before.users, "super_user": before.super_user, "permissions": before.permissions });
-    activity::record(&state.db, &user, "users", "deleted role", None, &before.name, Some(details)).await;
+    activity::record(&state.db, &user, "roles", "deleted role", None, &before.name, Some(details)).await;
     Ok(StatusCode::NO_CONTENT)
 }

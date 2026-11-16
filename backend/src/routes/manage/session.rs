@@ -53,7 +53,26 @@ pub async fn login(
 
     let limits = state.login_limits;
     let account = login_guard::account_key(row.as_ref().map(|row| row.id), &login);
-    login_guard::check(&state.redis, &limits, &ip, &account).await?;
+    // An IP this account signed in from lately belongs to its owner, so the
+    // account-wide block (meant for guessing from many addresses) skips it.
+    let known_ip = match &row {
+        Some(row) if ip != "unknown" => sqlx::query_scalar(
+            r#"
+            SELECT EXISTS (
+                SELECT 1 FROM activity_log
+                WHERE user_id = $1 AND ip = $2 AND action = 'signed in' AND created_at > now() - interval '90 days'
+            )
+            "#,
+        )
+        .bind(row.id)
+        .bind(&ip)
+        .fetch_one(&state.db)
+        .await
+        .unwrap_or(false),
+        _ => false,
+    };
+    let account_limit = if known_ip { None } else { Some(account.as_str()) };
+    login_guard::check(&state.redis, &limits, &ip, account_limit).await?;
 
     let (found_id, hash) = match row {
         Some(row) => (Some(row.id), row.password_hash),
@@ -63,7 +82,7 @@ pub async fn login(
     let user_id = match found_id {
         Some(id) if valid => id,
         _ => {
-            if login_guard::record_failure(&state.redis, &limits, &ip, &account).await {
+            if login_guard::record_failure(&state.redis, &limits, &ip, account_limit).await {
                 activity::record_account(&state.db, found_id, &login, "was blocked after too many failed sign-ins", &ip, details).await;
             }
             return Err(ApiError::BadRequest("Invalid username, email or password".into()));
@@ -81,11 +100,17 @@ pub async fn login(
 
     let (token, token_hash) = auth::new_session_token();
     let (expires_at,): (DateTime<Utc>,) = sqlx::query_as(
-        "INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + make_interval(days => $3)) RETURNING expires_at",
+        r#"
+        INSERT INTO sessions (token_hash, user_id, expires_at, ip, user_agent)
+        VALUES ($1, $2, now() + make_interval(days => $3), $4, $5)
+        RETURNING expires_at
+        "#,
     )
     .bind(&token_hash)
     .bind(user_id)
     .bind(state.session_days)
+    .bind(auth::known_ip(&ip))
+    .bind(auth::user_agent(&headers))
     .fetch_one(&state.db)
     .await?;
 

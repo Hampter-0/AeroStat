@@ -19,6 +19,10 @@ export default async function RolesPage() {
   }
 
   const data = await manageFetch<RolesResponse>('/roles')
+  let rolesText = data.roles.length + ' roles'
+  if (data.roles.length === 1) {
+    rolesText = '1 role'
+  }
   let openText = 'View'
   if (can(user, 'roles.edit')) {
     openText = 'Edit'
@@ -38,8 +42,11 @@ export default async function RolesPage() {
         )}
       </header>
 
-      <section className="manage-panel">
-        {data.roles.length === 0 && <p className="manage-empty">No roles yet.</p>}
+      <section className="manage-panel activity-panel">
+        <div className="activity-bar">
+          <p>{rolesText}</p>
+        </div>
+        {data.roles.length === 0 && <p className="manage-empty activity-empty">No roles yet.</p>}
         {data.roles.length > 0 && (
           <div className="activity-table-wrap">
             <table className="activity-table roles-table">
