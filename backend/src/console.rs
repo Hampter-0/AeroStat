@@ -19,7 +19,7 @@ struct MenuItem {
     description: &'static str,
 }
 
-const MENU: [MenuItem; 14] = [
+const MENU: [MenuItem; 15] = [
     MenuItem { number: "1", name: "help", description: "Show all commands" },
     MenuItem { number: "2", name: "migrate", description: "Run database migrations" },
     MenuItem { number: "3", name: "create-admin", description: "Create an admin account (or reset one)" },
@@ -33,6 +33,7 @@ const MENU: [MenuItem; 14] = [
     MenuItem { number: "11", name: "backups", description: "List the backups" },
     MenuItem { number: "12", name: "backup", description: "Make a backup now" },
     MenuItem { number: "13", name: "restore", description: "Put a backup back (replaces the database)" },
+    MenuItem { number: "14", name: "set-owner", description: "Make an account the owner, the others stop being owner" },
     MenuItem { number: "0", name: "exit", description: "Leave the CLI" },
 ];
 
@@ -50,6 +51,7 @@ enum Action {
     Backups,
     Backup,
     Restore,
+    SetOwner,
     Exit,
 }
 
@@ -68,6 +70,7 @@ fn parse_action(input: &str) -> Option<Action> {
         "11" | "backups" => Some(Action::Backups),
         "12" | "backup" => Some(Action::Backup),
         "13" | "restore" => Some(Action::Restore),
+        "14" | "set-owner" => Some(Action::SetOwner),
         "0" | "exit" | "quit" | "q" => Some(Action::Exit),
         _ => None,
     }
@@ -115,6 +118,7 @@ pub async fn run(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
             Action::Backups => list_backups().await.map(|_| ()),
             Action::Backup => make_backup().await,
             Action::Restore => restore_backup().await,
+            Action::SetOwner => set_owner(pool).await,
             Action::Exit => break,
         };
 
@@ -413,6 +417,29 @@ async fn enable_password_login(pool: &PgPool) -> anyhow::Result<()> {
     }
     log_cli(pool, id, &username, "password sign-in was turned on").await;
     success(&format!("'{username}' can sign in with their password again. Use reset-password if they forgot it"));
+    Ok(())
+}
+
+/// Hands the owner role to another account. Only possible with server access,
+/// since the owner is the one account nobody else in the panel can change.
+async fn set_owner(pool: &PgPool) -> anyhow::Result<()> {
+    let (id, username) = find_user(pool, &ask("Username or email of the new owner")?).await?;
+    let is_super: bool = sqlx::query_scalar("SELECT user_is_super($1)").bind(id).fetch_one(pool).await?;
+    if !is_super {
+        anyhow::bail!("'{username}' is not a super user. Make them one in the panel first");
+    }
+    if !confirm(&format!("Make '{username}' the owner? Every other owner becomes a normal super user"))? {
+        success("Nothing changed");
+        return Ok(());
+    }
+    let mut tx = pool.begin().await?;
+    sqlx::query("UPDATE users SET owner = (id = $1) WHERE owner OR id = $1")
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    log_cli(pool, id, &username, "was made the owner").await;
+    success(&format!("'{username}' is the owner now"));
     Ok(())
 }
 

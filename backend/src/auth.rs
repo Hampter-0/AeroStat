@@ -225,6 +225,9 @@ pub struct CurrentUser {
     /// An admin requires two-factor and the user hasn't set any up yet. Until
     /// then only the profile works.
     pub two_factor_setup_required: bool,
+    /// Made with create-admin on the server. Only the owner can change other
+    /// super users, and nobody but the owner can change the owner's account.
+    pub owner: bool,
     /// The address this request came from, for the activity log. Empty when
     /// the user was loaded outside a request.
     #[sqlx(skip)]
@@ -233,7 +236,7 @@ pub struct CurrentUser {
 }
 
 /// Columns for loading a CurrentUser from the users table aliased as `u`.
-pub const CURRENT_USER_COLUMNS: &str = "u.id, u.username, u.email, \
+pub const CURRENT_USER_COLUMNS: &str = "u.id, u.username, u.email, u.owner, \
      user_is_super(u.id) AS is_admin, user_permissions(u.id) AS permissions, \
      (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
      (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.super_user ORDER BY r.name)) AS super_roles, \

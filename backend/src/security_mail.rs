@@ -21,11 +21,16 @@ pub enum Change {
     PasswordLoginOn,
     PasswordLoginOff,
     TwoFactorResetBy { admin: String },
+    /// Someone else changed this account in the panel.
+    ChangedBy { admin: String, what: &'static str },
 }
 
 impl Change {
-    fn subject(&self) -> &'static str {
-        match self {
+    fn subject(&self) -> String {
+        if let Change::ChangedBy { what, .. } = self {
+            return format!("Your {what} was changed");
+        }
+        let text = match self {
             Change::AppOn => "Authenticator app turned on",
             Change::AppOff => "Authenticator app turned off",
             Change::EmailCodesOn => "Email codes turned on",
@@ -39,7 +44,9 @@ impl Change {
             Change::PasswordLoginOn => "Password sign-in turned on",
             Change::PasswordLoginOff => "Password sign-in turned off",
             Change::TwoFactorResetBy { .. } => "Your two-factor sign-in was reset",
-        }
+            Change::ChangedBy { .. } => "Your account was changed",
+        };
+        text.to_string()
     }
 
     fn sentence(&self, site: &str) -> String {
@@ -72,6 +79,9 @@ impl Change {
             Change::PasswordLoginOff => format!(
                 "Signing in with a password was turned off for your {site} account. Only passkeys work now."
             ),
+            Change::ChangedBy { admin, what } => {
+                format!("{admin} changed the {what} of your {site} account in the panel.")
+            }
             Change::TwoFactorResetBy { admin } => format!(
                 "{admin} reset the two-factor sign-in of your {site} account. You sign in with just your password until you set it up again."
             ),

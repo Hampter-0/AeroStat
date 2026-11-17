@@ -16,6 +16,7 @@ export interface ManageUser {
   extra_permissions: string[]
   avatar_version: number | null
   two_factor_setup_required: boolean
+  owner: boolean
 }
 
 export class ManageApiError extends Error {

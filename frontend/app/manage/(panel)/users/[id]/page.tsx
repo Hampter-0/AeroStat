@@ -36,6 +36,15 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   }
   const isSelf = user.id === currentUser.id
 
+  let lockReason = ''
+  if (!isSelf && user.owner) {
+    lockReason = 'This is the owner’s account. Only the owner can change it, on their own profile.'
+  } else if (!isSelf && user.is_admin && !currentUser.owner) {
+    lockReason = 'Only the owner can change or delete another super user.'
+  }
+  const canEdit = can(currentUser, 'users.edit') && lockReason === ''
+  const canDelete = can(currentUser, 'users.delete') && lockReason === ''
+
   let lastLogin = 'never signed in'
   if (user.last_login_at) {
     lastLogin = 'last signed in ' + formatDateTimeShort(user.last_login_at, timezone)
@@ -44,6 +53,8 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   let superText = 'No'
   if (user.super_user) {
     superText = 'Yes'
+  } else if (user.is_admin) {
+    superText = 'Yes, through a role'
   }
   const roleNames: string[] = []
   for (const role of data.roles) {
@@ -75,12 +86,13 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </div>
       </header>
 
-      {can(currentUser, 'users.edit') && (
+      {canEdit && (
         <UserForm user={user} roles={data.roles} groups={data.permission_groups} actor={currentUser} isSelf={isSelf} />
       )}
 
-      {!can(currentUser, 'users.edit') && (
+      {!canEdit && (
         <section className="manage-panel">
+          {lockReason && <p className="panel-intro">{lockReason}</p>}
           <dl className="config-list">
             <div className="config-row">
               <dt>Email</dt>
@@ -102,7 +114,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </section>
       )}
 
-      {!isSelf && user.two_factor && can(currentUser, 'users.edit') && (
+      {!isSelf && user.two_factor && canEdit && (
         <section className="manage-panel danger">
           <h2>Reset two-factor</h2>
           <DeleteForm
@@ -115,7 +127,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </section>
       )}
 
-      {!isSelf && can(currentUser, 'users.delete') && (
+      {!isSelf && canDelete && (
         <section className="manage-panel danger">
           <h2>Delete user</h2>
           <DeleteForm

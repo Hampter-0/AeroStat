@@ -191,6 +191,7 @@ pub async fn update(
     require_cover(&user, role.super_user, &role.permissions)?;
 
     let mut tx = state.db.begin().await?;
+    let supers_before = super::users::super_user_ids(&mut tx).await?;
     let result = sqlx::query("UPDATE roles SET name = $1, handle = $2, super_user = $3, permissions = $4 WHERE id = $5")
         .bind(&role.name)
         .bind(&role.handle)
@@ -205,6 +206,7 @@ pub async fn update(
         Err(e) => return Err(e.into()),
     }
     ensure_super_user_left(&mut tx, &user).await?;
+    super::users::ensure_supers_kept(&mut tx, &user, &supers_before).await?;
     tx.commit().await?;
 
     let mut details = json!({});
@@ -247,11 +249,13 @@ pub async fn delete(
     require_cover(&user, before.super_user, &before.permissions)?;
 
     let mut tx = state.db.begin().await?;
+    let supers_before = super::users::super_user_ids(&mut tx).await?;
     sqlx::query("DELETE FROM roles WHERE id = $1")
         .bind(id)
         .execute(&mut *tx)
         .await?;
     ensure_super_user_left(&mut tx, &user).await?;
+    super::users::ensure_supers_kept(&mut tx, &user, &supers_before).await?;
     tx.commit().await?;
 
     let details = json!({ "users": before.users, "super_user": before.super_user, "permissions": before.permissions });

@@ -155,6 +155,58 @@ async fn require_reach(db: &PgPool, actor: &CurrentUser, target_id: i64) -> Resu
     Ok(())
 }
 
+/// Owner, then super users, then everyone else. Nobody but the owner can
+/// change the owner's account, and only the owner can change or delete
+/// another super user, so one admin account can't take over the others.
+fn require_rank(actor: &CurrentUser, target: &UserRow) -> Result<(), ApiError> {
+    if target.id == actor.id {
+        return Ok(());
+    }
+    if target.owner {
+        return Err(ApiError::BadRequest(
+            "This is the owner's account. Only the owner can change it, on their own profile.".into(),
+        ));
+    }
+    if target.is_admin && !actor.owner {
+        return Err(ApiError::BadRequest("Only the owner can change or delete another super user".into()));
+    }
+    Ok(())
+}
+
+/// Everyone who is a super user right now.
+pub(super) async fn super_user_ids(tx: &mut Transaction<'_, Postgres>) -> Result<Vec<i64>, ApiError> {
+    let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM users WHERE user_is_super(id)")
+        .fetch_all(&mut **tx)
+        .await?;
+    Ok(ids)
+}
+
+/// After a role change: owners stay super users, and only the owner can take
+/// super user away from someone else, also by editing or deleting a role.
+pub(super) async fn ensure_supers_kept(
+    tx: &mut Transaction<'_, Postgres>,
+    actor: &CurrentUser,
+    before: &[i64],
+) -> Result<(), ApiError> {
+    let owner_lost: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM users WHERE owner AND NOT user_is_super(id))")
+        .fetch_one(&mut **tx)
+        .await?;
+    if owner_lost {
+        return Err(ApiError::BadRequest("The owner always stays a super user".into()));
+    }
+    if actor.owner {
+        return Ok(());
+    }
+    let after = super_user_ids(tx).await?;
+    let lost = before.iter().any(|id| *id != actor.id && !after.contains(id));
+    if lost {
+        return Err(ApiError::BadRequest(
+            "This would take super user away from someone else. Only the owner can do that.".into(),
+        ));
+    }
+    Ok(())
+}
+
 /// Checks the roles exist and that the actor may hand them out.
 async fn assignable_roles(db: &PgPool, actor: &CurrentUser, ids: &[i64]) -> Result<Vec<i64>, ApiError> {
     let mut unique: Vec<i64> = ids.to_vec();
@@ -290,6 +342,7 @@ pub async fn update(
 ) -> Result<Json<UserRow>, ApiError> {
     user.require("users.edit")?;
     let target = find_user(&state.db, id).await?;
+    require_rank(&user, &target)?;
     require_reach(&state.db, &user, id).await?;
 
     let roles_before = role_names(&state.db, id).await;
@@ -329,6 +382,7 @@ pub async fn update(
     };
 
     let mut tx = state.db.begin().await?;
+    let supers_before = super_user_ids(&mut tx).await?;
 
     if let Some(email) = &email {
         let result = sqlx::query("UPDATE users SET email = $1 WHERE id = $2")
@@ -372,6 +426,7 @@ pub async fn update(
     }
     if role_ids.is_some() || super_change.is_some() {
         ensure_super_user_left(&mut tx, &user).await?;
+        ensure_supers_kept(&mut tx, &user, &supers_before).await?;
     }
 
     if let Some(permissions) = &permissions {
@@ -411,7 +466,19 @@ pub async fn update(
     if roles_after != roles_before {
         details["roles"] = json!({ "from": roles_before, "to": roles_after });
     }
+    let password_changed = details.get("password_changed").is_some();
+    let email_changed = details.get("email").is_some();
     activity::record(&state.db, &user, "users", "edited user", None, &target.username, Some(details)).await;
+    if id != user.id {
+        if password_changed {
+            let change = Change::ChangedBy { admin: user.username.clone(), what: "password" };
+            security_mail::notify(&state.db, id, change, user.ip.clone(), None);
+        }
+        if email_changed {
+            let change = Change::ChangedBy { admin: user.username.clone(), what: "email address" };
+            security_mail::notify(&state.db, id, change, user.ip.clone(), target.email.clone());
+        }
+    }
     let after = find_user(&state.db, id).await?;
     if after.is_admin != target.is_admin {
         let what = if after.is_admin { "made {name} a super user" } else { "took super user away from {name}" };
@@ -432,6 +499,7 @@ pub async fn delete(
     if target.id == user.id {
         return Err(ApiError::BadRequest("You can't delete your own account".into()));
     }
+    require_rank(&user, &target)?;
     require_reach(&state.db, &user, id).await?;
     let roles_before = role_names(&state.db, id).await;
 
@@ -485,6 +553,7 @@ pub async fn reset_two_factor(
     if target.id == user.id {
         return Err(ApiError::BadRequest("Change your own two-factor sign-in on your profile".into()));
     }
+    require_rank(&user, &target)?;
     require_reach(&state.db, &user, id).await?;
     let mut tx = state.db.begin().await?;
     sqlx::query("UPDATE users SET totp_secret = NULL, totp_last_step = NULL, email_two_factor = false WHERE id = $1")

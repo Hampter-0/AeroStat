@@ -463,8 +463,13 @@ It can run migrations, create an admin, list accounts, reset a password (by user
 | `backups` | Lists the backups |
 | `backup` | Makes a backup now |
 | `restore` | Puts a backup back, after backing up the database as it is now |
+| `set-owner` | Makes a super user the owner, every other owner becomes a normal super user |
 
-Each change shows up under Activity. Accounts made with `create-admin` are the owners of the install and get a crown in the users list. Single commands also work:
+Each change shows up under Activity. Accounts made with `create-admin` are the owners of the install and get a crown in the users list.
+
+Accounts follow an order: owner, then super users, then everyone else. Nobody else can change or delete the owner's account, and only the owner can change or delete another super user, take super user away from someone, or reset their password, email or two-factor. Someone without super user can only manage users who have no more rights than they have. So one stolen admin account can't lock the owner out. When someone changes your password or email in the panel, you get an email about it.
+
+Single commands also work:
 
 ```bash
 docker compose exec -it backend aerostat create-admin --username admin
