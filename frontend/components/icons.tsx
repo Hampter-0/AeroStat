@@ -422,7 +422,14 @@ export function LockOpen({ size }: { size?: number }) {
   }
   return (
     <svg width={px} height={px} viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <path d="M7.6 8V6.5a2.4 2.4 0 0 1 4.6-1 .8.8 0 1 0 1.5-.6A4 4 0 0 0 6 6.5V8h-.5A1.5 1.5 0 0 0 4 9.5v7A1.5 1.5 0 0 0 5.5 18h9a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 14.5 8H7.6Z" />
+      <rect x="2" y="9" width="12" height="9" rx="1.5" />
+      <path
+        d="M10.2 9.5V6.5a3.4 3.4 0 0 1 6.8 0V8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
