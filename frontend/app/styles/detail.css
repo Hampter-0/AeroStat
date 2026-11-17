@@ -92,8 +92,9 @@
 
 .update-card>div {
     display: flex;
-    align-items: center;
-    gap: 10px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 10px;
 }
 
 .update-card strong {
@@ -149,4 +150,42 @@
 .update-marker.ongoing-maintenance {
     color: #fff;
     background: var(--info);
+}
+
+@media (max-width: 560px) {
+    .detail-page {
+        width: calc(100% - 28px);
+        padding: 28px 0 60px;
+    }
+
+    .detail-header {
+        padding: 22px 18px;
+    }
+
+    .detail-header h1 {
+        font-size: 22px;
+    }
+
+    .affected-row {
+        padding: 14px 18px;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+    }
+
+    .affected-row > div {
+        flex-wrap: wrap;
+    }
+
+    .detail-updates {
+        padding: 22px 18px 22px 22px;
+    }
+
+    .update-card {
+        padding: 14px;
+    }
+
+    .update-card > div {
+        flex-direction: column;
+        gap: 2px;
+    }
 }

@@ -513,8 +513,12 @@ a.bar {
         min-height: 0;
         padding: 14px 14px 14px 28px;
         grid-template-columns: auto 1fr;
-        align-items: start;
+        align-items: center;
         gap: 6px 12px;
+    }
+
+    .notice .notice-icon {
+        grid-row: span 2;
     }
 
     .notice .text-button {

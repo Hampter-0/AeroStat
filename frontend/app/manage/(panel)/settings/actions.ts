@@ -89,14 +89,35 @@ export async function removeAsset(_state: FormState, formData: FormData): Promis
   return { error: null, success: 'Removed' }
 }
 
+interface CheckResult {
+  current: string
+  latest: string | null
+  update_available: boolean
+  check_error: string | null
+  wait_seconds?: number | null
+}
+
 export async function checkForUpdates(): Promise<FormState> {
+  let result: CheckResult
   try {
-    await manageFetch('/version/check', { method: 'POST' })
+    result = await manageFetch<CheckResult>('/version/check', { method: 'POST' })
   } catch (error) {
     return { error: errorMessage(error), success: null }
   }
   revalidatePath('/manage', 'layout')
-  return { error: null, success: null }
+  if (typeof result.wait_seconds === 'number') {
+    return {
+      error: null,
+      success: 'Checked less than 30 seconds ago. Try again in ' + result.wait_seconds + ' seconds.',
+    }
+  }
+  if (result.check_error) {
+    return { error: result.check_error, success: null }
+  }
+  if (result.update_available && result.latest) {
+    return { error: null, success: 'Checked just now: v' + result.latest + ' is available' }
+  }
+  return { error: null, success: 'Checked just now: you are on the latest version' }
 }
 
 export async function saveNotifications(_state: FormState, formData: FormData): Promise<FormState> {

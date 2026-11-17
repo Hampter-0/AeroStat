@@ -158,8 +158,10 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
     migrationsNote = 'The database schema is up to date'
   }
   let versionCheckedText = ''
+  let versionCheckedAt = ''
   if (version && version.checked_at) {
     versionCheckedText = formatAgo(now - new Date(version.checked_at).getTime())
+    versionCheckedAt = formatDateTimeShort(version.checked_at, timezone)
   }
   let lastCheckValue = 'Never'
   let lastCheckOk = system.counts.services === 0
@@ -262,7 +264,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
           {version && (
             <section className="manage-panel">
               <h2>Version</h2>
-              <UpdateCheck version={version} checkedText={versionCheckedText} />
+              <UpdateCheck version={version} checkedText={versionCheckedText} checkedAt={versionCheckedAt} />
             </section>
           )}
 

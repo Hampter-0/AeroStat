@@ -59,16 +59,18 @@ pub fn spawn(cache: UpdateCache) {
 }
 
 /// Checks now, unless the last check was less than half a minute ago.
-pub async fn check_now(cache: &UpdateCache) {
-    let recent = cache
+/// Returns how many seconds to wait when it didn't check, or None when it did.
+pub async fn check_now(cache: &UpdateCache) -> Option<i64> {
+    let since = cache
         .read()
         .await
         .checked_at
-        .map(|at| (Utc::now() - at).num_seconds() < MIN_SECONDS_BETWEEN_CHECKS)
-        .unwrap_or(false);
-    if !recent {
-        check(cache).await;
+        .map(|at| (Utc::now() - at).num_seconds());
+    if let Some(seconds) = since.filter(|seconds| *seconds < MIN_SECONDS_BETWEEN_CHECKS) {
+        return Some((MIN_SECONDS_BETWEEN_CHECKS - seconds).max(1));
     }
+    check(cache).await;
+    None
 }
 
 async fn check(cache: &UpdateCache) {

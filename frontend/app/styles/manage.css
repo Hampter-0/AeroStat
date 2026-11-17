@@ -2257,6 +2257,12 @@ a.page-button:hover {
     font-size: 12px;
 }
 
+.update-check-info small {
+    color: var(--subtle);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
 .update-check-info a {
     color: var(--link);
     font-size: 12px;

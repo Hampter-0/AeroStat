@@ -19,6 +19,14 @@ pub struct VersionInfo {
     check_error: Option<String>,
 }
 
+#[derive(Serialize)]
+pub struct CheckResult {
+    #[serde(flatten)]
+    info: VersionInfo,
+    /// Seconds until the button asks GitHub again; None when it just did.
+    wait_seconds: Option<i64>,
+}
+
 async fn info(state: &AppState) -> VersionInfo {
     let update = state.update_state.read().await.clone();
     let update_available = update
@@ -44,8 +52,11 @@ pub async fn get(State(state): State<AppState>, _user: CurrentUser) -> Json<Vers
 
 /// The "Check for updates" button. Works even with UPDATE_CHECK=false, since
 /// an admin clicking it is asking for exactly this one request.
-pub async fn check(State(state): State<AppState>, user: CurrentUser) -> Result<Json<VersionInfo>, ApiError> {
+pub async fn check(State(state): State<AppState>, user: CurrentUser) -> Result<Json<CheckResult>, ApiError> {
     user.require("system.view")?;
-    update_checker::check_now(&state.update_state).await;
-    Ok(Json(info(&state).await))
+    let wait_seconds = update_checker::check_now(&state.update_state).await;
+    Ok(Json(CheckResult {
+        info: info(&state).await,
+        wait_seconds,
+    }))
 }

@@ -10,7 +10,15 @@ import { useResultToast } from '@/components/manage/toast/Toasts'
 
 const initialState: FormState = { error: null, success: null }
 
-export default function UpdateCheck({ version, checkedText }: { version: VersionInfo; checkedText: string }) {
+export default function UpdateCheck({
+  version,
+  checkedText,
+  checkedAt,
+}: {
+  version: VersionInfo
+  checkedText: string
+  checkedAt: string
+}) {
   const [state, formAction, pending] = useActionState(checkForUpdates, initialState)
   useResultToast(state)
 
@@ -32,10 +40,13 @@ export default function UpdateCheck({ version, checkedText }: { version: Version
     <form action={formAction} className="update-check">
       <div className="update-check-info">
         <strong>AeroStat v{version.current}</strong>
-        <span>
-          {statusText}
-          {checkedText && ' · checked ' + checkedText}
-        </span>
+        <span>{statusText}</span>
+        {checkedText && (
+          <small>
+            Last checked {checkedText}, {checkedAt}. New releases show up a few minutes after they are published, once the
+            Docker images are built.
+          </small>
+        )}
         {version.update_available && version.release_url && (
           <a href={version.release_url} target="_blank" rel="noreferrer">
             See what&apos;s new in v{version.latest}

@@ -118,8 +118,8 @@ main {
     display: block;
 }
 
-body {
-    min-height: 125vh;
+html {
+    scrollbar-gutter: stable;
 }
 
 body {
