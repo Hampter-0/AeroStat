@@ -225,6 +225,11 @@ pub struct CurrentUser {
     /// An admin requires two-factor and the user hasn't set any up yet. Until
     /// then only the profile works.
     pub two_factor_setup_required: bool,
+    /// The address this request came from, for the activity log. Empty when
+    /// the user was loaded outside a request.
+    #[sqlx(skip)]
+    #[serde(skip)]
+    pub ip: Option<String>,
 }
 
 /// Columns for loading a CurrentUser from the users table aliased as `u`.
@@ -287,13 +292,14 @@ impl FromRequestParts<AppState> for CurrentUser {
             .bind(&token_hash)
             .fetch_optional(&state.db)
             .await?;
-        let user = user.ok_or(ApiError::Unauthorized)?;
+        let mut user = user.ok_or(ApiError::Unauthorized)?;
         if user.two_factor_setup_required && !allowed_before_setup(parts.uri.path()) {
             return Err(ApiError::Forbidden);
         }
 
         // At most once a minute, so browsing the panel doesn't write on every request.
         let ip = crate::login_guard::client_ip(&parts.headers);
+        user.ip = known_ip(&ip);
         let touched = sqlx::query(
             r#"
             UPDATE sessions

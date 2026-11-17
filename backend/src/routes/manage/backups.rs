@@ -197,14 +197,15 @@ pub async fn restore(
     // The account may not exist in the restored data, so the link is kept only if it does.
     let logged = sqlx::query(
         r#"
-        INSERT INTO activity_log (user_id, username, category, action, target_id, target_label, details)
-        VALUES ((SELECT id FROM users WHERE id = $1), $2, 'system', 'restored a backup', $3, $3, $4::jsonb)
+        INSERT INTO activity_log (user_id, username, category, action, target_id, target_label, details, ip)
+        VALUES ((SELECT id FROM users WHERE id = $1), $2, 'system', 'restored a backup', $3, $3, $4::jsonb, $5)
         "#,
     )
     .bind(user.id)
     .bind(&user.username)
     .bind(&backup.id)
     .bind(json!({ "safety_backup": safety.id, "version": backup.version }).to_string())
+    .bind(&user.ip)
     .execute(&state.db)
     .await;
     if let Err(e) = logged {

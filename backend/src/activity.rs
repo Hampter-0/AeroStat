@@ -33,8 +33,8 @@ pub async fn record(
 ) {
     let result = sqlx::query(
         r#"
-        INSERT INTO activity_log (user_id, username, category, action, target_id, target_label, details)
-        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+        INSERT INTO activity_log (user_id, username, category, action, target_id, target_label, details, ip)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
         "#,
     )
     .bind(user.id)
@@ -44,6 +44,7 @@ pub async fn record(
     .bind(target_id)
     .bind(Some(target_label).filter(|label| !label.is_empty()))
     .bind(details.map(|value| value.to_string()))
+    .bind(&user.ip)
     .execute(db)
     .await;
     if let Err(e) = result {
