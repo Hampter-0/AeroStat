@@ -30,6 +30,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 ## Features
 
 - Public status page with daily uptime bars, incidents and maintenance
+- Incidents with their real start and end time: post one late, add one that is already over, or move an update to the right time. A critical incident turns its days red and counts as downtime
 - HTTP(S) checks with status codes and keywords, TCP port checks and DNS record checks, plus a warning before an HTTPS certificate runs out
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log
 - Sign in with a password or a passkey, see and sign out your sessions
@@ -286,7 +287,7 @@ In the panel under **Settings → Notifications**, paste a Discord webhook URL (
 
 - a service goes down (after two failed checks in a row) or comes back up, with how long it was down
 - the HTTPS certificate of a service runs out soon (off by default, since a Discord channel is often public)
-- an incident is posted, updated or resolved
+- an incident is posted, updated or resolved (not for a past incident you add afterwards)
 - maintenance is planned, starts, ends or is cancelled
 
 Set the status page address under **Settings → General**, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.

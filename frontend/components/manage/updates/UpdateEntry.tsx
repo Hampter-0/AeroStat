@@ -5,6 +5,7 @@ import type { FormState } from '@/app/manage/actions'
 import { useConfirm } from '@/components/manage/confirm/Confirm'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatDateTime, formatStatus } from '@/lib/format'
+import { toInputValue, zoneAbbreviation } from '@/lib/time'
 import type { StatusUpdate } from '@/lib/types'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
@@ -19,6 +20,7 @@ export default function UpdateEntry({
   statuses,
   canEdit,
   canDelete,
+  canMoveTime = false,
   editAction,
   deleteAction,
 }: {
@@ -28,6 +30,7 @@ export default function UpdateEntry({
   statuses: string[]
   canEdit: boolean
   canDelete: boolean
+  canMoveTime?: boolean
   editAction: UpdateAction
   deleteAction: UpdateAction
 }) {
@@ -109,6 +112,14 @@ export default function UpdateEntry({
               <span>Message</span>
               <textarea name="message" rows={3} required defaultValue={update.message} />
             </label>
+            {canMoveTime && (
+              <label>
+                <span>Time ({zoneAbbreviation(timezone, update.created_at)})</span>
+                <input type="hidden" name="created_at_before" value={toInputValue(update.created_at, timezone)} />
+                <input name="created_at" type="datetime-local" required defaultValue={toInputValue(update.created_at, timezone)} />
+                <small className="field-hint">When this update shows as posted on the status page.</small>
+              </label>
+            )}
             <div className="form-actions spread">
               {canDelete && (
                 <button

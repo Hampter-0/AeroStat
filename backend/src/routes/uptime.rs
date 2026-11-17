@@ -49,6 +49,22 @@ struct EventRow {
     title: String,
     starts_at: DateTime<Utc>,
     ends_at: DateTime<Utc>,
+    /// Incidents only; maintenance doesn't colour the bar.
+    severity: Option<String>,
+}
+
+/// A critical incident counts as an outage, also when the checks missed it
+/// or there were no checks yet. Other incidents only mark the day.
+fn is_outage(event: &EventRow) -> bool {
+    event.severity.as_deref() == Some("critical")
+}
+
+/// Minutes of the event that fall inside the day, up to now.
+fn minutes_on_day(event: &EventRow, date: NaiveDate, tz: Tz) -> i64 {
+    let (start, end) = site_settings::day_bounds(date, tz);
+    let from = event.starts_at.max(start);
+    let to = event.ends_at.min(end).min(Utc::now());
+    (to - from).num_minutes().max(0)
 }
 
 pub async fn get(
@@ -132,7 +148,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
 
     let incidents: Vec<EventRow> = sqlx::query_as(
         r#"
-        SELECT id, title, created_at AS starts_at, COALESCE(resolved_at, now()) AS ends_at
+        SELECT id, title, created_at AS starts_at, COALESCE(resolved_at, now()) AS ends_at, severity
         FROM incidents
         WHERE $1 = ANY(affected_services)
         AND COALESCE(resolved_at, now()) >= $2
@@ -146,7 +162,8 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
 
     let maintenance: Vec<EventRow> = sqlx::query_as(
         r#"
-        SELECT id, title, scheduled_start AS starts_at, LEAST(scheduled_end, now()) AS ends_at
+        SELECT id, title, scheduled_start AS starts_at, LEAST(scheduled_end, now()) AS ends_at,
+            NULL::text AS severity
         FROM maintenance
         WHERE $1 = ANY(affected_services)
         AND status <> 'cancelled'
@@ -162,9 +179,16 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
 
     let mut history = Vec::new();
     for (i, date) in dates.iter().enumerate() {
+        let (mut status, mut downtime_minutes) = parse_rollup(statuses[i].as_deref());
+        let checked = status != "no_data";
         let mut events = Vec::new();
         for incident in &incidents {
             if covers_day(incident, *date, tz) {
+                if is_outage(incident) {
+                    status = "offline".to_string();
+                    // The checks may have seen part of it; take whichever saw more.
+                    downtime_minutes = downtime_minutes.max(minutes_on_day(incident, *date, tz));
+                }
                 events.push(DayEvent {
                     kind: "incident",
                     id: incident.id,
@@ -182,8 +206,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
             }
         }
 
-        let (status, downtime_minutes) = parse_rollup(statuses[i].as_deref());
-        let uptime_percent = if status == "no_data" {
+        let uptime_percent = if !checked {
             None
         } else {
             let (start, end) = site_settings::day_bounds(*date, tz);

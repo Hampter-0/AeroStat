@@ -46,7 +46,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
         <div>
           <span className={'status-chip status-' + incident.status}>{formatStatus(incident.status)}</span>
           <h1>{incident.title}</h1>
-          <p>Reported {formatDateTime(incident.created_at, timezone)}</p>
+          <p>Started {formatDateTime(incident.created_at, timezone)}</p>
         </div>
         <a href={'/incidents/' + incident.id} target="_blank" className="button-secondary">
           <ExternalLink /> View public page
@@ -72,13 +72,14 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
           {incident.updates.map(function (update) {
             return (
               <UpdateEntry
-                key={update.id + '-' + update.status + '-' + update.message}
+                key={update.id + '-' + update.status + '-' + update.message + '-' + update.created_at}
                 parentId={incident.id}
                 update={update}
                 timezone={timezone}
                 statuses={INCIDENT_STATUSES}
                 canEdit={canEdit}
                 canDelete={canDeleteUpdates}
+                canMoveTime={true}
                 editAction={editUpdate}
                 deleteAction={deleteUpdate}
               />
@@ -90,7 +91,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
       {canEdit && (
         <section className="manage-panel">
           <h2>Details</h2>
-          <IncidentForm services={services} incident={incident} />
+          <IncidentForm key={incident.created_at} services={services} incident={incident} timezone={timezone} />
         </section>
       )}
 

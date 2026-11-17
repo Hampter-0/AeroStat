@@ -1,12 +1,13 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createIncident, updateIncident } from '@/app/manage/(panel)/incidents/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatStatus } from '@/lib/format'
 import { INCIDENT_SEVERITIES, INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
+import { toInputValue, zoneAbbreviation } from '@/lib/time'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
@@ -17,15 +18,18 @@ interface ExistingIncident {
   description: string | null
   severity: string
   affected_services: string[] | null
+  created_at: string
 }
 
 export default function IncidentForm({
   services,
   incident,
+  timezone,
   preselected = [],
 }: {
   services: PickerService[]
   incident: ExistingIncident | null
+  timezone: string
   preselected?: string[]
 }) {
   let action = createIncident
@@ -35,11 +39,17 @@ export default function IncidentForm({
   const [state, formAction, pending] = useActionState(action, initialState)
   useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
+  const [status, setStatus] = useState('investigating')
+
+  function changeStatus(event: React.ChangeEvent<HTMLSelectElement>) {
+    setStatus(event.target.value)
+  }
 
   let title = ''
   let description = ''
   let severity = 'minor'
   let selected: string[] = preselected
+  let startedAt = ''
   if (incident) {
     title = incident.title
     if (incident.description) {
@@ -49,19 +59,41 @@ export default function IncidentForm({
     if (incident.affected_services) {
       selected = incident.affected_services
     }
+    startedAt = toInputValue(incident.created_at, timezone)
+  }
+
+  const zone = zoneAbbreviation(timezone)
+  let resolved = false
+  if (status === 'resolved') {
+    resolved = true
   }
 
   let buttonText = 'Create incident'
   if (incident) {
     buttonText = 'Save details'
+  } else if (resolved) {
+    buttonText = 'Add past incident'
   }
   if (pending) {
     buttonText = 'Saving…'
   }
 
+  let messageLabel = 'First update'
+  let messagePlaceholder = 'What is happening? This is shown on the status page.'
+  if (resolved) {
+    messageLabel = 'What happened'
+    messagePlaceholder = 'What went wrong and how it was fixed. This is shown on the status page.'
+  }
+
+  let startHint = 'Leave empty if it started just now.'
+  if (incident) {
+    startHint = 'Can’t be later than the first update in the timeline.'
+  }
+
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {incident && <input type="hidden" name="id" value={incident.id} />}
+      {incident && <input type="hidden" name="started_at_before" value={startedAt} />}
       <label>
         <span>Title</span>
         <input name="title" defaultValue={title} required maxLength={200} placeholder="Short summary visitors will see" />
@@ -85,24 +117,44 @@ export default function IncidentForm({
       <ServicePicker services={services} selected={selected} />
 
       {!incident && (
-        <>
+        <label>
+          <span>Status</span>
+          <select name="status" value={status} onChange={changeStatus}>
+            {INCIDENT_STATUSES.map(function (value) {
+              return (
+                <option value={value} key={value}>
+                  {formatStatus(value)} — {STATUS_HINTS[value]}
+                </option>
+              )
+            })}
+          </select>
+        </label>
+      )}
+
+      <div className="form-row">
+        <label>
+          <span>Started at ({zone})</span>
+          <input name="started_at" type="datetime-local" defaultValue={startedAt} required={Boolean(incident)} />
+          <small className="field-hint">{startHint}</small>
+        </label>
+        {!incident && resolved && (
           <label>
-            <span>Status</span>
-            <select name="status" defaultValue="investigating">
-              {INCIDENT_STATUSES.map(function (value) {
-                return (
-                  <option value={value} key={value}>
-                    {formatStatus(value)} — {STATUS_HINTS[value]}
-                  </option>
-                )
-              })}
-            </select>
+            <span>Resolved at ({zone})</span>
+            <input name="resolved_at" type="datetime-local" />
+            <small className="field-hint">Leave empty if it was fixed just now.</small>
           </label>
-          <label>
-            <span>First update</span>
-            <textarea name="message" rows={3} required placeholder="What is happening? This is shown on the status page." />
-          </label>
-        </>
+        )}
+      </div>
+
+      {!incident && resolved && (
+        <p className="field-hint">A past incident goes straight into the history. Nobody gets a notification about it.</p>
+      )}
+
+      {!incident && (
+        <label>
+          <span>{messageLabel}</span>
+          <textarea name="message" rows={3} required placeholder={messagePlaceholder} />
+        </label>
       )}
 
       <div className="form-actions">

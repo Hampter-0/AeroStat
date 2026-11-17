@@ -1,6 +1,7 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
+use chrono::{DateTime, Duration, Utc};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sqlx::PgPool;
@@ -24,6 +25,10 @@ pub struct CreateIncident {
     affected_services: Vec<String>,
     status: String,
     message: String,
+    /// When it started, for an incident that is posted late. Defaults to now.
+    started_at: Option<DateTime<Utc>>,
+    /// Only with status "resolved": when it was fixed. Defaults to now.
+    resolved_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -32,12 +37,32 @@ pub struct UpdateIncident {
     description: Option<String>,
     severity: String,
     affected_services: Vec<String>,
+    started_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
 pub struct UpdateBody {
     status: String,
     message: String,
+    /// Moves an update to another time, like Statuspage's display time.
+    created_at: Option<DateTime<Utc>>,
+}
+
+/// A minute of slack so a browser clock that runs a little ahead still works.
+fn check_not_future(time: DateTime<Utc>, what: &str) -> Result<(), ApiError> {
+    if time > Utc::now() + Duration::minutes(1) {
+        return Err(ApiError::BadRequest(format!("{what} can't be in the future")));
+    }
+    Ok(())
+}
+
+async fn first_update_at(db: &PgPool, id: i64) -> Result<Option<DateTime<Utc>>, ApiError> {
+    let first: Option<DateTime<Utc>> =
+        sqlx::query_scalar("SELECT MIN(created_at) FROM incident_updates WHERE incident_id = $1")
+            .bind(id)
+            .fetch_one(db)
+            .await?;
+    Ok(first)
 }
 
 fn clean_title(title: &str) -> Result<String, ApiError> {
@@ -141,11 +166,28 @@ pub async fn create(
     check_severity(&body.severity)?;
     check_services(&state.db, &body.affected_services).await?;
 
+    let now = Utc::now();
+    let started_at = body.started_at.unwrap_or(now);
+    check_not_future(started_at, "The start time")?;
+    // A resolved incident is a backfill of something that already happened.
+    // Its one update is posted at the time it was fixed, so the incident runs
+    // from started_at to resolved_at. Like Statuspage, nobody is notified.
+    let backfill = body.status == "resolved";
+    let mut update_at = started_at;
+    if backfill {
+        let resolved_at = body.resolved_at.unwrap_or(now);
+        check_not_future(resolved_at, "The resolve time")?;
+        if resolved_at < started_at {
+            return Err(ApiError::BadRequest("It can't be resolved before it started".into()));
+        }
+        update_at = resolved_at;
+    }
+
     let mut tx = state.db.begin().await?;
     let (id,): (i64,) = sqlx::query_as(
         r#"
-        INSERT INTO incidents (title, description, status, severity, affected_services)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO incidents (title, description, status, severity, affected_services, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id
         "#,
     )
@@ -154,20 +196,29 @@ pub async fn create(
     .bind(&body.status)
     .bind(&body.severity)
     .bind(&body.affected_services)
+    .bind(started_at)
     .fetch_one(&mut *tx)
     .await?;
 
-    sqlx::query("INSERT INTO incident_updates (incident_id, status, message) VALUES ($1, $2, $3)")
+    sqlx::query("INSERT INTO incident_updates (incident_id, status, message, created_at) VALUES ($1, $2, $3, $4)")
         .bind(id)
         .bind(&body.status)
         .bind(&message)
+        .bind(update_at)
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
 
     sync_status(&state.db, id).await?;
     let details = activity::created(snapshot(&state, "incidents", id).await);
-    log(&state, &user, "created incident", Some(id), &title, details).await;
+    let mut action = "created incident";
+    if backfill {
+        action = "added a past incident";
+    }
+    log(&state, &user, action, Some(id), &title, details).await;
+    if backfill {
+        return Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)));
+    }
     notifications::notify(
         &state.db,
         Event::IncidentCreated {
@@ -189,19 +240,35 @@ pub async fn update(
     Json(body): Json<UpdateIncident>,
 ) -> Result<Json<Incident>, ApiError> {
     user.require("incidents.edit")?;
-    find_incident(&state.db, id).await?;
+    let incident = find_incident(&state.db, id).await?;
     let before = snapshot(&state, "incidents", id).await;
     let title = clean_title(&body.title)?;
     check_severity(&body.severity)?;
     check_services(&state.db, &body.affected_services).await?;
 
+    let started_at = body.started_at.unwrap_or(incident.created_at);
+    if started_at != incident.created_at {
+        check_not_future(started_at, "The start time")?;
+        if let Some(first) = first_update_at(&state.db, id).await? {
+            if started_at > first {
+                return Err(ApiError::BadRequest(
+                    "It can't start after its first update. Move that update first".into(),
+                ));
+            }
+        }
+    }
+
     sqlx::query(
-        "UPDATE incidents SET title = $1, description = $2, severity = $3, affected_services = $4 WHERE id = $5",
+        r#"
+        UPDATE incidents SET title = $1, description = $2, severity = $3, affected_services = $4, created_at = $5
+        WHERE id = $6
+        "#,
     )
     .bind(&title)
     .bind(clean_description(body.description))
     .bind(&body.severity)
     .bind(&body.affected_services)
+    .bind(started_at)
     .bind(id)
     .execute(&state.db)
     .await?;
@@ -281,17 +348,27 @@ pub async fn edit_update(
     user.require("incidents.edit")?;
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
+    let incident = find_incident(&state.db, id).await?;
+    if let Some(time) = body.created_at {
+        check_not_future(time, "An update")?;
+        if time < incident.created_at {
+            return Err(ApiError::BadRequest(
+                "An update can't be before the incident started. Change the start time first".into(),
+            ));
+        }
+    }
     let before = snapshot(&state, "incident_updates", update_id).await;
 
     let edited: Option<StatusUpdate> = sqlx::query_as(
         r#"
-        UPDATE incident_updates SET status = $1, message = $2
-        WHERE id = $3 AND incident_id = $4
+        UPDATE incident_updates SET status = $1, message = $2, created_at = COALESCE($3, created_at)
+        WHERE id = $4 AND incident_id = $5
         RETURNING id, status, message, created_at
         "#,
     )
     .bind(&body.status)
     .bind(&message)
+    .bind(body.created_at)
     .bind(update_id)
     .bind(id)
     .fetch_optional(&state.db)

@@ -3,7 +3,9 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
+import { getSiteConfig } from '@/lib/branding'
 import { errorMessage, manageFetch } from '@/lib/manage'
+import { inputValueToIso } from '@/lib/time'
 import { flash } from '@/lib/flash'
 
 interface CreatedIncident {
@@ -20,6 +22,22 @@ function selectedServices(formData: FormData): string[] {
     services.push(String(value))
   }
   return services
+}
+
+async function timeField(formData: FormData, key: string): Promise<string | null> {
+  const value = text(formData, key)
+  if (!value) {
+    return null
+  }
+  const { timezone } = await getSiteConfig()
+  return inputValueToIso(value, timezone)
+}
+
+async function changedTime(formData: FormData, key: string): Promise<string | null> {
+  if (text(formData, key) === text(formData, key + '_before')) {
+    return null
+  }
+  return timeField(formData, key)
 }
 
 function refresh(id: string) {
@@ -39,6 +57,8 @@ export async function createIncident(_state: FormState, formData: FormData): Pro
         affected_services: selectedServices(formData),
         status: text(formData, 'status'),
         message: text(formData, 'message'),
+        started_at: await timeField(formData, 'started_at'),
+        resolved_at: await timeField(formData, 'resolved_at'),
       }),
     })
   } catch (error) {
@@ -59,6 +79,7 @@ export async function updateIncident(_state: FormState, formData: FormData): Pro
         description: text(formData, 'description'),
         severity: text(formData, 'severity'),
         affected_services: selectedServices(formData),
+        started_at: await changedTime(formData, 'started_at'),
       }),
     })
   } catch (error) {
@@ -100,7 +121,11 @@ export async function editUpdate(_state: FormState, formData: FormData): Promise
   try {
     await manageFetch('/incidents/' + encodeURIComponent(id) + '/updates/' + encodeURIComponent(updateId), {
       method: 'PATCH',
-      body: JSON.stringify({ status: text(formData, 'status'), message: text(formData, 'message') }),
+      body: JSON.stringify({
+        status: text(formData, 'status'),
+        message: text(formData, 'message'),
+        created_at: await changedTime(formData, 'created_at'),
+      }),
     })
   } catch (error) {
     return { error: errorMessage(error), success: null }
