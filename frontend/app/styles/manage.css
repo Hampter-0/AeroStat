@@ -1230,6 +1230,13 @@ a.button-secondary {
     gap: 8px;
 }
 
+.interval-suffix {
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+}
+
 .danger-zone .button-danger,
 .danger-zone .button-secondary {
     flex: 0 0 auto;

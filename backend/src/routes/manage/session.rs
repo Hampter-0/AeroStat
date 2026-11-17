@@ -93,6 +93,22 @@ pub async fn login(
         _ => {
             if reached_limit {
                 activity::record_account(&state.db, found_id, &login, "was blocked after too many failed sign-ins", &ip, details).await;
+                if found_id.is_some() {
+                    crate::notifications::notify_admins(
+                        &state.db,
+                        crate::notifications::AdminNotice {
+                            kind: "admin_account_locked",
+                            title: format!("Sign-in for {login} was blocked"),
+                            description: format!(
+                                "Too many wrong passwords. New attempts are refused for {} minutes.",
+                                limits.lockout_minutes
+                            ),
+                            fields: vec![("Account", login.clone()), ("IP address", ip.clone())],
+                            path: "/manage/activity",
+                            actor: None,
+                        },
+                    );
+                }
             }
             return Err(ApiError::BadRequest("Invalid username, email or password".into()));
         }

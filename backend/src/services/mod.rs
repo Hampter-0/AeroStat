@@ -1,4 +1,4 @@
-mod checker;
+pub mod checker;
 mod cleanup_scheduler;
 mod rollup_scheduler;
 mod scheduler;

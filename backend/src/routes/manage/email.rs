@@ -8,7 +8,7 @@ use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::mailer;
-use crate::notifications::{self, EVENT_KINDS};
+use crate::notifications::{self, ADMIN_EVENT_KINDS, EVENT_KINDS};
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -101,11 +101,21 @@ pub struct MyNotificationsBody {
 }
 
 fn available(user: &CurrentUser) -> Vec<&'static str> {
-    EVENT_KINDS
+    let mut kinds: Vec<&'static str> = EVENT_KINDS
         .iter()
         .copied()
         .filter(|kind| user.require(notifications::permission_for(kind)).is_ok())
-        .collect()
+        .collect();
+    for kind in ADMIN_EVENT_KINDS {
+        let allowed = match notifications::admin_permission(kind) {
+            Some(permission) => user.has(permission),
+            None => user.is_admin,
+        };
+        if allowed {
+            kinds.push(kind);
+        }
+    }
+    kinds
 }
 
 pub async fn my_notifications(State(state): State<AppState>, user: CurrentUser) -> Result<Json<MyNotifications>, ApiError> {

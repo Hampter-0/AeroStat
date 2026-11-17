@@ -42,11 +42,30 @@ function serviceBody(formData: FormData) {
   if (groupId === '') {
     groupId = null
   }
+  let checkType = text(formData, 'check_type')
+  if (checkType === '') {
+    checkType = 'http'
+  }
+  let statuses: number[] | null = [200]
+  if (checkType === 'http') {
+    statuses = parseStatuses(text(formData, 'expected_status'))
+  }
+  let certDays: number | null = null
+  const certText = text(formData, 'cert_warn_days').trim()
+  if (certText !== '') {
+    certDays = Math.round(Number(certText))
+  }
   return {
     name: text(formData, 'name'),
+    check_type: checkType,
     url: text(formData, 'url'),
     group_id: groupId,
-    expected_status: parseStatuses(text(formData, 'expected_status')),
+    expected_status: statuses,
+    keyword: text(formData, 'keyword'),
+    keyword_absent: text(formData, 'keyword_mode') === 'absent',
+    dns_record_type: text(formData, 'dns_record_type'),
+    dns_expected: text(formData, 'dns_expected'),
+    cert_warn_days: certDays,
     check_interval_seconds: intervalSeconds(formData),
   }
 }

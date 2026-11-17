@@ -49,13 +49,53 @@ struct GithubRelease {
 
 /// Asks GitHub for the latest release every few hours. Only the release
 /// version is read; nothing about this installation is sent.
-pub fn spawn(cache: UpdateCache) {
+pub fn spawn(cache: UpdateCache, db: sqlx::PgPool) {
     tokio::spawn(async move {
         loop {
             check(&cache).await;
+            mail_new_version(&cache, &db).await;
             tokio::time::sleep(INTERVAL).await;
         }
     });
+}
+
+/// Mails admins once per new version. The last mailed version is kept in the
+/// settings, so a restart doesn't send it again.
+async fn mail_new_version(cache: &UpdateCache, db: &sqlx::PgPool) {
+    let Some(latest) = cache.read().await.latest.clone() else {
+        return;
+    };
+    if !is_newer(&latest.version, CURRENT_VERSION) {
+        return;
+    }
+    let claimed: Result<Option<(String,)>, sqlx::Error> = sqlx::query_as(
+        r#"
+        INSERT INTO settings (key, value) VALUES ('update_mailed_version', $1)
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()
+        WHERE settings.value IS DISTINCT FROM EXCLUDED.value
+        RETURNING key
+        "#,
+    )
+    .bind(&latest.version)
+    .fetch_optional(db)
+    .await;
+    if !matches!(claimed, Ok(Some(_))) {
+        return;
+    }
+    crate::notifications::notify_admins(
+        db,
+        crate::notifications::AdminNotice {
+            kind: "admin_update_available",
+            title: format!("AeroStat v{} is available", latest.version),
+            description: format!(
+                "You run v{CURRENT_VERSION}. Pull the new images with docker compose pull and docker compose up -d. Release notes: {}",
+                latest.url
+            ),
+            fields: Vec::new(),
+            path: "/manage/system",
+            actor: None,
+        },
+    );
 }
 
 /// Checks now, unless the last check was less than half a minute ago.

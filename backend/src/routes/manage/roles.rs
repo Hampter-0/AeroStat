@@ -226,6 +226,14 @@ pub async fn update(
         details["permissions_removed"] = json!(removed);
     }
     activity::record(&state.db, &user, "roles", "edited role", None, &role.name, Some(details)).await;
+    if before.super_user != role.super_user || (role.super_user && before.name != role.name) {
+        let title = if role.super_user {
+            format!("{} made the role {} a super user role", user.username, role.name)
+        } else {
+            format!("{} took super user away from the role {}", user.username, role.name)
+        };
+        super::users::admin_notice(&state.db, &user, "admin_security", title, "/manage/roles");
+    }
     Ok(Json(find_role(&state.db, id).await?))
 }
 

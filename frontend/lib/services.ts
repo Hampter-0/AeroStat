@@ -7,11 +7,36 @@ export interface ManageGroup {
 export interface ManageService {
   id: string
   name: string
+  check_type: string
   url: string
   group_id: string | null
   expected_status: number[]
+  keyword: string | null
+  keyword_absent: boolean
+  dns_record_type: string | null
+  dns_expected: string | null
+  cert_warn_days: number | null
+  cert_expires_at: string | null
   check_interval_seconds: number
   sort_order: number
+}
+
+export const CHECK_TYPES = [
+  { value: 'http', label: 'HTTP(S) website or API' },
+  { value: 'tcp', label: 'TCP port' },
+  { value: 'dns', label: 'DNS record' },
+]
+
+export const DNS_RECORD_TYPES = ['A', 'AAAA', 'CNAME', 'MX', 'TXT']
+
+export function checkTypeLabel(value: string): string {
+  let label = value
+  for (const type of CHECK_TYPES) {
+    if (type.value === value) {
+      label = type.label
+    }
+  }
+  return label
 }
 
 export interface ManageServicesResponse {

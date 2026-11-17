@@ -18,7 +18,7 @@ pub const CATEGORIES: [&str; 9] = [
 ];
 
 /// Columns that change on their own and would only add noise to a diff.
-const IGNORED_FIELDS: [&str; 2] = ["next_check_at", "updated_at"];
+const IGNORED_FIELDS: [&str; 5] = ["next_check_at", "updated_at", "cert_expires_at", "cert_checked_at", "cert_warned_for"];
 
 /// Writes one line to the activity log. A failed write is logged but never
 /// fails the action itself.

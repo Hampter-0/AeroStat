@@ -7,11 +7,13 @@ use sqlx::PgPool;
 use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
+use crate::services::checker::{CHECK_TYPES, DNS_RECORD_TYPES};
 use crate::state::AppState;
 
 const PERMISSION: &str = "services";
 const MIN_INTERVAL: i32 = 30;
 const MAX_INTERVAL: i32 = 86_400;
+const MAX_CERT_DAYS: i32 = 90;
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct GroupRow {
@@ -24,9 +26,16 @@ pub struct GroupRow {
 pub struct ServiceRow {
     id: String,
     name: String,
+    check_type: String,
     url: String,
     group_id: Option<String>,
     expected_status: Vec<i32>,
+    keyword: Option<String>,
+    keyword_absent: bool,
+    dns_record_type: Option<String>,
+    dns_expected: Option<String>,
+    cert_warn_days: Option<i32>,
+    cert_expires_at: Option<chrono::DateTime<chrono::Utc>>,
     check_interval_seconds: i32,
     sort_order: i32,
 }
@@ -40,10 +49,40 @@ pub struct ServicesResponse {
 #[derive(Deserialize)]
 pub struct ServiceBody {
     name: String,
+    #[serde(default = "default_check_type")]
+    check_type: String,
     url: String,
     group_id: Option<String>,
+    #[serde(default)]
     expected_status: Vec<i32>,
+    #[serde(default)]
+    keyword: Option<String>,
+    #[serde(default)]
+    keyword_absent: bool,
+    #[serde(default)]
+    dns_record_type: Option<String>,
+    #[serde(default)]
+    dns_expected: Option<String>,
+    #[serde(default)]
+    cert_warn_days: Option<i32>,
     check_interval_seconds: i32,
+}
+
+fn default_check_type() -> String {
+    "http".to_string()
+}
+
+/// A service body after checking, with only the fields its type uses.
+struct CleanService {
+    name: String,
+    check_type: String,
+    url: String,
+    expected_status: Vec<i32>,
+    keyword: Option<String>,
+    keyword_absent: bool,
+    dns_record_type: Option<String>,
+    dns_expected: Option<String>,
+    cert_warn_days: Option<i32>,
 }
 
 #[derive(Deserialize)]
@@ -77,6 +116,95 @@ fn clean_url(url: &str) -> Result<String, ApiError> {
         return Err(ApiError::BadRequest("The URL must start with http:// or https://".into()));
     }
     Ok(url.to_string())
+}
+
+/// "host:port" for a TCP check, like db.example.com:5432 or [2001:db8::1]:22.
+fn clean_tcp_target(target: &str) -> Result<String, ApiError> {
+    let target = target.trim();
+    let invalid = || ApiError::BadRequest("Enter a host and port, like db.example.com:5432".into());
+    let (host, port) = target.rsplit_once(':').ok_or_else(invalid)?;
+    let port: u16 = port.parse().map_err(|_| invalid())?;
+    let host_ok = !host.is_empty()
+        && host.len() <= 253
+        && !host.contains('/')
+        && !host.contains(char::is_whitespace)
+        && (!host.contains(':') || (host.starts_with('[') && host.ends_with(']')));
+    if port == 0 || !host_ok {
+        return Err(invalid());
+    }
+    Ok(target.to_string())
+}
+
+/// A domain name for a DNS check, without http:// or a path.
+fn clean_dns_name(name: &str) -> Result<String, ApiError> {
+    let name = name.trim().trim_end_matches('.').to_lowercase();
+    let valid = !name.is_empty()
+        && name.len() <= 253
+        && name.contains('.')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
+        && name.split('.').all(|label| !label.is_empty() && label.len() <= 63);
+    if !valid {
+        return Err(ApiError::BadRequest("Enter a domain name, like example.com".into()));
+    }
+    Ok(name)
+}
+
+fn clean_text(value: Option<String>, max: usize, what: &str) -> Result<Option<String>, ApiError> {
+    let Some(value) = value.map(|text| text.trim().to_string()).filter(|text| !text.is_empty()) else {
+        return Ok(None);
+    };
+    if value.chars().count() > max {
+        return Err(ApiError::BadRequest(format!("The {what} can be at most {max} characters")));
+    }
+    Ok(Some(value))
+}
+
+fn clean_service(body: ServiceBody) -> Result<CleanService, ApiError> {
+    let name = clean_name(&body.name)?;
+    let check_type = body.check_type.trim().to_lowercase();
+    if !CHECK_TYPES.contains(&check_type.as_str()) {
+        return Err(ApiError::BadRequest("Pick HTTP, TCP or DNS as the check type".into()));
+    }
+    check_interval(body.check_interval_seconds)?;
+
+    let mut clean = CleanService {
+        name,
+        check_type: check_type.clone(),
+        url: String::new(),
+        expected_status: vec![200],
+        keyword: None,
+        keyword_absent: false,
+        dns_record_type: None,
+        dns_expected: None,
+        cert_warn_days: None,
+    };
+    if check_type == "tcp" {
+        clean.url = clean_tcp_target(&body.url)?;
+    } else if check_type == "dns" {
+        clean.url = clean_dns_name(&body.url)?;
+        let record = body.dns_record_type.unwrap_or_else(|| "A".to_string()).trim().to_uppercase();
+        if !DNS_RECORD_TYPES.contains(&record.as_str()) {
+            return Err(ApiError::BadRequest("Pick A, AAAA, CNAME, MX or TXT as the record type".into()));
+        }
+        clean.dns_record_type = Some(record);
+        clean.dns_expected = clean_text(body.dns_expected, 255, "expected value")?;
+    } else {
+        clean.url = clean_url(&body.url)?;
+        clean.expected_status = clean_statuses(&body.expected_status)?;
+        clean.keyword = clean_text(body.keyword, 200, "keyword")?;
+        clean.keyword_absent = clean.keyword.is_some() && body.keyword_absent;
+        if clean.url.to_lowercase().starts_with("https://") {
+            if let Some(days) = body.cert_warn_days {
+                if !(1..=MAX_CERT_DAYS).contains(&days) {
+                    return Err(ApiError::BadRequest(format!(
+                        "Warn between 1 and {MAX_CERT_DAYS} days before the certificate runs out"
+                    )));
+                }
+                clean.cert_warn_days = Some(days);
+            }
+        }
+    }
+    Ok(clean)
 }
 
 fn clean_statuses(statuses: &[i32]) -> Result<Vec<i32>, ApiError> {
@@ -164,7 +292,8 @@ pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Js
         .await?;
     let services: Vec<ServiceRow> = sqlx::query_as(
         r#"
-        SELECT id, name, url, group_id, expected_status, check_interval_seconds, sort_order
+        SELECT id, name, check_type, url, group_id, expected_status, keyword, keyword_absent, dns_record_type,
+               dns_expected, cert_warn_days, cert_expires_at, check_interval_seconds, sort_order
         FROM services ORDER BY sort_order, name
         "#,
     )
@@ -179,26 +308,33 @@ pub async fn create(
     Json(body): Json<ServiceBody>,
 ) -> Result<(StatusCode, Json<Created>), ApiError> {
     user.require("services.create")?;
-    let name = clean_name(&body.name)?;
-    let url = clean_url(&body.url)?;
-    let statuses = clean_statuses(&body.expected_status)?;
-    check_interval(body.check_interval_seconds)?;
-    check_group(&state.db, &body.group_id).await?;
+    let group_id = body.group_id.clone();
+    let interval = body.check_interval_seconds;
+    let service = clean_service(body)?;
+    check_group(&state.db, &group_id).await?;
+    let name = service.name.clone();
 
     let id = unique_id(&state.db, "services", &name, "service").await?;
     sqlx::query(
         r#"
-        INSERT INTO services (id, name, url, group_id, expected_status, check_interval_seconds, sort_order)
-        VALUES ($1, $2, $3, $4, $5, $6,
-            (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM services WHERE group_id IS NOT DISTINCT FROM $4))
+        INSERT INTO services (id, name, check_type, url, group_id, expected_status, keyword, keyword_absent,
+            dns_record_type, dns_expected, cert_warn_days, check_interval_seconds, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+            (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM services WHERE group_id IS NOT DISTINCT FROM $5))
         "#,
     )
     .bind(&id)
-    .bind(&name)
-    .bind(&url)
-    .bind(&body.group_id)
-    .bind(&statuses)
-    .bind(body.check_interval_seconds)
+    .bind(&service.name)
+    .bind(&service.check_type)
+    .bind(&service.url)
+    .bind(&group_id)
+    .bind(&service.expected_status)
+    .bind(&service.keyword)
+    .bind(service.keyword_absent)
+    .bind(&service.dns_record_type)
+    .bind(&service.dns_expected)
+    .bind(service.cert_warn_days)
+    .bind(interval)
     .execute(&state.db)
     .await?;
 
@@ -214,26 +350,38 @@ pub async fn update(
     Json(body): Json<ServiceBody>,
 ) -> Result<StatusCode, ApiError> {
     user.require("services.edit")?;
-    let name = clean_name(&body.name)?;
-    let url = clean_url(&body.url)?;
-    let statuses = clean_statuses(&body.expected_status)?;
-    check_interval(body.check_interval_seconds)?;
-    check_group(&state.db, &body.group_id).await?;
+    let group_id = body.group_id.clone();
+    let interval = body.check_interval_seconds;
+    let service = clean_service(body)?;
+    check_group(&state.db, &group_id).await?;
+    let name = service.name.clone();
     let before = activity::snapshot(&state.db, "services", &id).await;
 
+    // A new address or type means the stored certificate date may be wrong,
+    // so it is read again on the next check.
     let updated = sqlx::query(
         r#"
         UPDATE services
-        SET name = $1, url = $2, group_id = $3, expected_status = $4, check_interval_seconds = $5,
-            next_check_at = now()
-        WHERE id = $6
+        SET name = $1, check_type = $2, url = $3, group_id = $4, expected_status = $5, keyword = $6,
+            keyword_absent = $7, dns_record_type = $8, dns_expected = $9, cert_warn_days = $10,
+            check_interval_seconds = $11, next_check_at = now(),
+            cert_checked_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_checked_at END,
+            cert_expires_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_expires_at END,
+            cert_warned_for = CASE WHEN url = $3 AND check_type = $2 THEN cert_warned_for END
+        WHERE id = $12
         "#,
     )
-    .bind(&name)
-    .bind(&url)
-    .bind(&body.group_id)
-    .bind(&statuses)
-    .bind(body.check_interval_seconds)
+    .bind(&service.name)
+    .bind(&service.check_type)
+    .bind(&service.url)
+    .bind(&group_id)
+    .bind(&service.expected_status)
+    .bind(&service.keyword)
+    .bind(service.keyword_absent)
+    .bind(&service.dns_record_type)
+    .bind(&service.dns_expected)
+    .bind(service.cert_warn_days)
+    .bind(interval)
     .bind(&id)
     .execute(&state.db)
     .await?

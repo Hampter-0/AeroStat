@@ -14,6 +14,20 @@ export const metadata = {
   title: 'Services',
 }
 
+function targetText(service: ManageService): string {
+  let text = service.url
+  if (service.check_type === 'tcp') {
+    text = 'TCP ' + service.url
+  } else if (service.check_type === 'dns') {
+    let record = 'A'
+    if (service.dns_record_type) {
+      record = service.dns_record_type
+    }
+    text = 'DNS ' + record + ' ' + service.url
+  }
+  return text
+}
+
 interface ServiceStats {
   uptime: number
   avgMs: number
@@ -60,7 +74,7 @@ function ServiceRows({
             <Link href={'/manage/services/' + encodeURIComponent(service.id)} className="service-row-main">
               <strong>{service.name}</strong>
               <span>
-                {service.url} · {intervalLabel(service.check_interval_seconds).toLowerCase()}
+                {targetText(service)} · {intervalLabel(service.check_interval_seconds).toLowerCase()}
               </span>
             </Link>
             <ServiceStatsCell stats={stats.get(service.id)} />

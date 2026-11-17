@@ -4,7 +4,7 @@ import ActivityList from '@/components/manage/ActivityList'
 import CopyButton from '@/components/manage/CopyButton'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
 import type { ActivityResponse } from '@/lib/activity'
-import type { ManageServicesResponse } from '@/lib/services'
+import type { ManageService, ManageServicesResponse } from '@/lib/services'
 import { UPDATE_COMMAND, getVersionInfo } from '@/lib/version'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
@@ -98,11 +98,21 @@ export default async function ManageOverviewPage() {
   }
 
   const serviceUrls = new Map<string, string>()
-  if (canServices && unexplained.length > 0) {
+  const expiring: ManageService[] = []
+  if (canServices) {
     const manageServices = await manageFetch<ManageServicesResponse>('/services')
     for (const service of manageServices.services) {
       serviceUrls.set(service.id, service.url)
+      if (service.cert_expires_at && service.cert_warn_days) {
+        const left = new Date(service.cert_expires_at).getTime() - now
+        if (left < service.cert_warn_days * 86400000) {
+          expiring.push(service)
+        }
+      }
     }
+    expiring.sort(function (a, b) {
+      return new Date(a.cert_expires_at || 0).getTime() - new Date(b.cert_expires_at || 0).getTime()
+    })
   }
 
   let statusClass = 'dashboard-status ok'
@@ -182,6 +192,39 @@ export default async function ManageOverviewPage() {
                     Create incident
                   </Link>
                 </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {expiring.length > 0 && (
+        <section className="manage-panel dashboard-warning">
+          <h2>
+            <AlertTriangle size={16} /> Certificates run out soon
+          </h2>
+          <p>Renew these HTTPS certificates before they expire, or visitors get a security warning and the check fails.</p>
+          <div className="manage-list">
+            {expiring.map(function (service) {
+              const left = new Date(service.cert_expires_at || 0).getTime() - now
+              let leftText = 'Expired'
+              if (left > 0) {
+                leftText = 'Runs out in ' + formatDuration(left)
+              }
+              return (
+                <Link
+                  href={'/manage/services/' + encodeURIComponent(service.id)}
+                  className="manage-list-row"
+                  key={service.id}
+                >
+                  <div>
+                    <strong>{service.name}</strong>
+                    <span>
+                      {leftText} · {formatDateTimeShort(service.cert_expires_at || '', timezone)}
+                    </span>
+                  </div>
+                  <Arrow />
+                </Link>
               )
             })}
           </div>

@@ -1,6 +1,6 @@
 [package]
 name = "statuspage-backend"
-version = "0.22.2"
+version = "0.23.0"
 edition = "2021"
 
 [dependencies]
@@ -33,3 +33,7 @@ webauthn-rs = { version = "0.6", features = ["danger-allow-state-serialisation",
 webauthn-rs-proto = "=0.6.2"
 totp-rs = { version = "5", features = ["qr", "gen_secret", "otpauth"] }
 aes-gcm = "0.10"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12", "logging"] }
+webpki-roots = "1"
+x509-parser = "0.18"
+hickory-resolver = "0.25"

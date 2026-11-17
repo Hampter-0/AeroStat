@@ -57,11 +57,17 @@ export default function NotificationsForm({ settings }: { settings: Notification
         <p className="field-hint notification-address">{addressText}</p>
 
         {EVENT_GROUPS.map(function (group) {
+          const events = group.events.filter(function (event) {
+            return settings.available_events.includes(event.id)
+          })
+          if (events.length === 0) {
+            return null
+          }
           return (
             <fieldset className="notification-group" key={group.title}>
               <legend>{group.title}</legend>
               <div className="permission-grid">
-                {group.events.map(function (event) {
+                {events.map(function (event) {
                   return (
                     <label className="check-row hint-row" key={event.id}>
                       <input type="checkbox" name="events" value={event.id} defaultChecked={settings.events.includes(event.id)} />

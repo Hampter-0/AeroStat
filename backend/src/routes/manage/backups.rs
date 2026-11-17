@@ -211,6 +211,8 @@ pub async fn restore(
     if let Err(e) = logged {
         tracing::warn!("Could not log the restore: {e}");
     }
+    let title = format!("{} restored the backup from {}", user.username, backup.created_at.format("%-d %b %Y, %H:%M UTC"));
+    super::users::admin_notice(&state.db, &user, "admin_security", title, "/manage/system?tab=backups");
 
     let restarting = std::path::Path::new("/.dockerenv").exists();
     if restarting {

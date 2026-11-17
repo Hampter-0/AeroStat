@@ -562,8 +562,26 @@ pub async fn before_update(db: &sqlx::PgPool, current: &str) {
                 tracing::warn!("Could not remove old update backups: {e:#}");
             }
         }
-        Err(e) => tracing::warn!("Could not make a backup before the update, going on without one: {e:#}"),
+        Err(e) => {
+            tracing::warn!("Could not make a backup before the update, going on without one: {e:#}");
+            backup_failed(db, format!("The backup before updating to v{current} failed, the update went on without one."), &e);
+        }
     }
+}
+
+fn backup_failed(db: &sqlx::PgPool, description: String, error: &anyhow::Error) {
+    let reason: String = format!("{error:#}").chars().take(500).collect();
+    crate::notifications::notify_admins(
+        db,
+        crate::notifications::AdminNotice {
+            kind: "admin_backup_failed",
+            title: "A backup failed".to_string(),
+            description,
+            fields: vec![("Error", reason)],
+            path: "/manage/system?tab=backups",
+            actor: None,
+        },
+    );
 }
 
 /// Makes scheduled backups. Checks every ten minutes; a backup is due after
@@ -572,6 +590,8 @@ pub async fn before_update(db: &sqlx::PgPool, current: &str) {
 pub fn spawn_schedule(db: sqlx::PgPool, version: &'static str) {
     tokio::spawn(async move {
         let mut wait_until: Option<DateTime<Utc>> = None;
+        // Only the first failure in a row is mailed, not every retry.
+        let mut failing = false;
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(600)).await;
             if wait_until.is_some_and(|until| Utc::now() < until) {
@@ -611,9 +631,14 @@ pub fn spawn_schedule(db: sqlx::PgPool, version: &'static str) {
                         tracing::warn!("Could not remove old scheduled backups: {e:#}");
                     }
                     wait_until = None;
+                    failing = false;
                 }
                 Err(e) => {
                     tracing::warn!("Scheduled backup failed, trying again in an hour: {e:#}");
+                    if !failing {
+                        backup_failed(&db, "The scheduled backup failed. AeroStat tries again every hour.".to_string(), &e);
+                    }
+                    failing = true;
                     wait_until = Some(Utc::now() + chrono::Duration::hours(1));
                 }
             }

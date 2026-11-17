@@ -14,7 +14,7 @@
 
 **A self-hosted status page with uptime monitoring, incidents and maintenance.**
 
-AeroStat checks your services over HTTP(S), shows their uptime per day for the last 60 days,
+AeroStat checks your services over HTTP(S), TCP and DNS, shows their uptime per day for the last 60 days,
 and lets you post incidents and planned maintenance from a small admin panel.
 
 Runs with Docker Compose next to Postgres and Redis, and is configured with a single `.env` file.
@@ -30,11 +30,13 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 ## Features
 
 - Public status page with daily uptime bars, incidents and maintenance
+- HTTP(S) checks with status codes and keywords, TCP port checks and DNS record checks, plus a warning before an HTTPS certificate runs out
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log
 - Sign in with a password or a passkey, see and sign out your sessions
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
 - Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
+- Security emails when someone changes their password, email address, passkeys or two-factor sign-in
 - Link previews for Discord, Slack and social media that show the live status, incident or maintenance
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
 
@@ -255,11 +257,35 @@ Check it under **Profile → Sessions**: your own IP should show there, not a Cl
 
 AeroStat reads the client IP from the last `X-Forwarded-For` entry. With the setups above that is the only entry, so leave `TRUSTED_PROXY_HOPS` at 1. Only when a proxy adds to the header instead of replacing it (nginx with `$proxy_add_x_forwarded_for`) behind another proxy that does the same, set it to the number of proxies in that chain. Prefer the setups above: with an adding chain, someone who reaches your server around the first proxy can still fake an IP.
 
+## Monitoring
+
+Add services under **Services → Add service** and pick a check type:
+
+| Type | Checks | Up when |
+| --- | --- | --- |
+| HTTP(S) | a URL, like `https://example.com/health` | it answers with one of the expected status codes (200 by default) |
+| TCP port | a host and port, like `db.example.com:5432` | a connection opens. For databases, mail servers, game servers and other services without a web page |
+| DNS record | a domain name and a record type: A, AAAA, CNAME, MX or TXT | the name has records of that type, and one of them has the expected value when you set one |
+
+Every check has a timeout of 10 seconds and runs every 30 seconds up to every 24 hours. A service is marked down after two failed checks in a row; change this under **Settings → Monitoring**.
+
+HTTP(S) checks can also:
+
+- **look for a keyword**: the page must contain a word (like `Welcome`), or must not contain one (like `Error`). Upper and lower case don't matter, and only the first 2 MB of a page is searched.
+- **warn before the certificate runs out**: for `https://` addresses AeroStat reads the certificate every few hours and sends one notification when it expires within the chosen number of days (14 by default, empty turns it off). A certificate that has already run out fails the check itself.
+
+Notifications say why a check failed, for example the status code, a missing keyword, a refused connection or a DNS record with another value.
+
+### Run AeroStat somewhere else
+
+A status page can't report an outage of the server it runs on. If AeroStat and your services share a server, a crash or network problem takes them all down at once and nobody gets a notification. Run AeroStat on another server, ideally with another provider or in another region than the services it watches. A small VPS is plenty.
+
 ## Discord notifications
 
 In the panel under **Settings → Notifications**, paste a Discord webhook URL (in Discord: Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL) and pick which events to post:
 
 - a service goes down (after two failed checks in a row) or comes back up, with how long it was down
+- the HTTPS certificate of a service runs out soon (off by default, since a Discord channel is often public)
 - an incident is posted, updated or resolved
 - maintenance is planned, starts, ends or is cancelled
 
@@ -298,7 +324,13 @@ openssl rand -hex 32
 
 Keep this key with your backups. If it changes or gets lost, everyone has to set up their app again. Email codes need email to be set up and work without the key.
 
+Turning a method off needs your password and a code: from the app, from an email sent for it, or a recovery code. A stolen password alone can't turn it off.
+
 Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method, or sign in with passkeys only (password sign-in off), before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
+
+### Security emails
+
+When email is set up, AeroStat emails a user when their sign-in changes: password changed or reset, email address changed (sent to the old address), passkey added or removed, password sign-in turned on or off, two-factor turned on or off, new recovery codes, or two-factor reset by an admin. Each email says when it happened and from which IP address, so someone whose account is taken over finds out. Users without an email address get nothing.
 
 ## Forgot password
 

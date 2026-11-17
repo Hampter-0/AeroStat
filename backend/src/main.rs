@@ -76,6 +76,12 @@ async fn main() -> anyhow::Result<()> {
         None => {}
     }
 
+    // Before the update backup, so a failed one can be mailed.
+    match &settings.smtp {
+        Some(smtp) => tracing::info!("Email is sent through {}:{}", smtp.host, smtp.port),
+        None => tracing::info!("Email is off, set SMTP_HOST to turn it on"),
+    }
+    mailer::init(settings.smtp.clone());
     backups::before_update(&pool, services::update_checker::CURRENT_VERSION).await;
     db::migrate(&pool).await?;
     tracing::info!("Connected to Postgres and ran migrations");
@@ -98,11 +104,6 @@ async fn main() -> anyhow::Result<()> {
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
 
-    match &settings.smtp {
-        Some(smtp) => tracing::info!("Email is sent through {}:{}", smtp.host, smtp.port),
-        None => tracing::info!("Email is off, set SMTP_HOST to turn it on"),
-    }
-    mailer::init(settings.smtp.clone());
     if settings.secret_key.is_none() {
         tracing::info!("SECRET_KEY is not set, so the authenticator app option for two-factor sign-in is off");
     }
@@ -111,7 +112,7 @@ async fn main() -> anyhow::Result<()> {
 
     let update_state = services::update_checker::UpdateCache::default();
     if settings.update_check {
-        services::update_checker::spawn(update_state.clone());
+        services::update_checker::spawn(update_state.clone(), pool.clone());
         tracing::info!("Update check scheduled");
     }
 

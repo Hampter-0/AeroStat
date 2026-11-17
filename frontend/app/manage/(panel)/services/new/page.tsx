@@ -35,7 +35,7 @@ export default async function NewServicePage({ searchParams }: { searchParams: P
         <p>AeroStat starts checking it within a few seconds.</p>
       </header>
       <section className="manage-panel">
-        <ServiceForm groups={data.groups} service={null} defaultGroupId={defaultGroupId} />
+        <ServiceForm groups={data.groups} service={null} defaultGroupId={defaultGroupId} certificateText={null} />
       </section>
     </div>
   )

@@ -278,6 +278,7 @@ pub async fn create(
         "two_factor_required": body.two_factor_required,
     });
     activity::record(&state.db, &user, "users", "created user", None, &username, Some(details)).await;
+    admin_notice(&state.db, &user, "admin_users", format!("{} added the user {username}", user.username), "/manage/users");
     Ok((StatusCode::CREATED, Json(find_user(&state.db, id).await?)))
 }
 
@@ -411,7 +412,13 @@ pub async fn update(
         details["roles"] = json!({ "from": roles_before, "to": roles_after });
     }
     activity::record(&state.db, &user, "users", "edited user", None, &target.username, Some(details)).await;
-    Ok(Json(find_user(&state.db, id).await?))
+    let after = find_user(&state.db, id).await?;
+    if after.is_admin != target.is_admin {
+        let what = if after.is_admin { "made {name} a super user" } else { "took super user away from {name}" };
+        let title = format!("{} {}", user.username, what.replace("{name}", &target.username));
+        admin_notice(&state.db, &user, "admin_security", title, "/manage/users");
+    }
+    Ok(Json(after))
 }
 
 pub async fn delete(
@@ -438,7 +445,32 @@ pub async fn delete(
 
     let details = json!({ "email": target.email, "roles": roles_before });
     activity::record(&state.db, &user, "users", "deleted user", None, &target.username, Some(details)).await;
+    let title = format!("{} deleted the user {}", user.username, target.username);
+    if target.is_admin {
+        admin_notice(&state.db, &user, "admin_security", title, "/manage/users");
+    } else {
+        admin_notice(&state.db, &user, "admin_users", title, "/manage/users");
+    }
     Ok(StatusCode::NO_CONTENT)
+}
+
+/// Mails an admin notice about a change someone made in the panel.
+pub(super) fn admin_notice(db: &sqlx::PgPool, actor: &CurrentUser, kind: &'static str, title: String, path: &'static str) {
+    let mut fields = vec![("By", actor.username.clone())];
+    if let Some(ip) = &actor.ip {
+        fields.push(("IP address", ip.clone()));
+    }
+    crate::notifications::notify_admins(
+        db,
+        crate::notifications::AdminNotice {
+            kind,
+            title,
+            description: "This was done in the panel. If you didn't expect it, check the activity log.".to_string(),
+            fields,
+            path,
+            actor: Some(actor.id),
+        },
+    );
 }
 
 /// Turns off someone's authenticator app and email codes, for when they lost
@@ -465,6 +497,8 @@ pub async fn reset_two_factor(
         .await?;
     tx.commit().await?;
     activity::record(&state.db, &user, "users", "reset two-factor sign-in of", None, &target.username, None).await;
+    let title = format!("{} reset the two-factor sign-in of {}", user.username, target.username);
+    admin_notice(&state.db, &user, "admin_security", title, "/manage/users");
     security_mail::notify(&state.db, id, Change::TwoFactorResetBy { admin: user.username.clone() }, None, None);
     Ok(StatusCode::NO_CONTENT)
 }

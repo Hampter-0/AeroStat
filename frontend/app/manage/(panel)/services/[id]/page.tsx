@@ -5,8 +5,10 @@ import { ChevronLeft } from '@/components/icons'
 import DeleteForm from '@/components/manage/DeleteForm'
 import BadgeCard from '@/components/manage/services/BadgeCard'
 import ServiceForm from '@/components/manage/services/ServiceForm'
+import { getSiteConfig } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
-import { intervalLabel, type ManageServicesResponse } from '@/lib/services'
+import { checkTypeLabel, intervalLabel, type ManageServicesResponse } from '@/lib/services'
+import { formatDateTimeShort } from '@/lib/time'
 import { deleteService } from '../actions'
 
 export const metadata = {
@@ -31,6 +33,27 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   }
   if (!service) {
     notFound()
+  }
+
+  const { timezone } = await getSiteConfig()
+  let certificateText: string | null = null
+  if (service.cert_expires_at) {
+    certificateText = formatDateTimeShort(service.cert_expires_at, timezone)
+  }
+
+  let targetLabel = 'URL to check'
+  if (service.check_type === 'tcp') {
+    targetLabel = 'Host and port'
+  } else if (service.check_type === 'dns') {
+    targetLabel = 'Domain name'
+  }
+
+  let keywordText = ''
+  if (service.keyword) {
+    keywordText = '“' + service.keyword + '” must be on the page'
+    if (service.keyword_absent) {
+      keywordText = '“' + service.keyword + '” must not be on the page'
+    }
   }
 
   const requestHeaders = await headers()
@@ -60,20 +83,47 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
       </header>
       {can(user, 'services.edit') && (
         <section className="manage-panel">
-          <ServiceForm groups={data.groups} service={service} defaultGroupId="" />
+          <ServiceForm groups={data.groups} service={service} defaultGroupId="" certificateText={certificateText} />
         </section>
       )}
       {!can(user, 'services.edit') && (
         <section className="manage-panel">
           <dl className="config-list">
             <div className="config-row">
-              <dt>URL to check</dt>
-              <dd>{service.url}</dd>
+              <dt>Check type</dt>
+              <dd>{checkTypeLabel(service.check_type)}</dd>
             </div>
             <div className="config-row">
-              <dt>Expected status codes</dt>
-              <dd>{service.expected_status.join(', ')}</dd>
+              <dt>{targetLabel}</dt>
+              <dd>{service.url}</dd>
             </div>
+            {service.check_type === 'http' && (
+              <div className="config-row">
+                <dt>Expected status codes</dt>
+                <dd>{service.expected_status.join(', ')}</dd>
+              </div>
+            )}
+            {keywordText && (
+              <div className="config-row">
+                <dt>Keyword</dt>
+                <dd>{keywordText}</dd>
+              </div>
+            )}
+            {service.check_type === 'dns' && (
+              <div className="config-row">
+                <dt>Record</dt>
+                <dd>
+                  {service.dns_record_type}
+                  {service.dns_expected && ' = ' + service.dns_expected}
+                </dd>
+              </div>
+            )}
+            {certificateText && (
+              <div className="config-row">
+                <dt>Certificate valid until</dt>
+                <dd>{certificateText}</dd>
+              </div>
+            )}
             <div className="config-row">
               <dt>Check every</dt>
               <dd>{intervalLabel(service.check_interval_seconds).toLowerCase()}</dd>

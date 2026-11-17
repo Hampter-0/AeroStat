@@ -14,9 +14,10 @@ use crate::site_settings;
 
 const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
 
-pub const EVENT_KINDS: [&str; 9] = [
+pub const EVENT_KINDS: [&str; 10] = [
     "service_down",
     "service_up",
+    "service_certificate",
     "incident_created",
     "incident_updated",
     "incident_resolved",
@@ -36,7 +37,13 @@ pub enum Event {
     ServiceDown {
         service_id: String,
         status_code: Option<i32>,
+        /// Why the last check failed, in words.
+        error: Option<String>,
         since: DateTime<Utc>,
+    },
+    CertificateExpiring {
+        service_id: String,
+        expires_at: DateTime<Utc>,
     },
     ServiceUp {
         service_id: String,
@@ -88,6 +95,7 @@ impl Event {
         match self {
             Event::ServiceDown { .. } => "service_down",
             Event::ServiceUp { .. } => "service_up",
+            Event::CertificateExpiring { .. } => "service_certificate",
             Event::IncidentCreated { .. } => "incident_created",
             Event::IncidentUpdated { status, .. } if status == "resolved" => "incident_resolved",
             Event::IncidentUpdated { .. } => "incident_updated",
@@ -330,6 +338,15 @@ async fn event_card(db: &PgPool, event: &Event) -> Card {
                 subline: format!("It was down for {}", duration_text(seconds)),
             }
         }
+        Event::CertificateExpiring { service_id, expires_at } => {
+            let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
+            Card {
+                icon: "alert",
+                color: "amber",
+                headline: format!("Certificate of {name} runs out soon"),
+                subline: format!("Valid until {}", times.format(*expires_at)),
+            }
+        }
         Event::IncidentCreated { title, status, .. } => Card {
             icon: "alert",
             color: "amber",
@@ -470,12 +487,16 @@ async fn content(
     let mut fields: Vec<Field> = Vec::new();
 
     let (title, description, color, url, services) = match event {
-        Event::ServiceDown { service_id, status_code, since } => {
+        Event::ServiceDown { service_id, status_code, error, since } => {
             let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
-            let reason = match (status_code, expected_codes(db, service_id).await) {
-                (Some(code), Some(expected)) => format!("It answered with status {code} instead of {expected}."),
-                (Some(code), None) => format!("It answered with status {code}."),
-                (None, _) => "It did not answer.".to_string(),
+            let wrong_status = error.as_deref().map(|text| text.starts_with("It answered with status")).unwrap_or(true);
+            let reason = match (status_code, expected_codes(db, service_id).await, error) {
+                (Some(code), Some(expected), _) if wrong_status => {
+                    format!("It answered with status {code} instead of {expected}.")
+                }
+                (_, _, Some(text)) => text.clone(),
+                (Some(code), _, None) => format!("It answered with status {code}."),
+                (None, _, None) => "It did not answer.".to_string(),
             };
             (
                 format!("{name} is down"),
@@ -492,6 +513,25 @@ async fn content(
                 format!("{name} is back up"),
                 format!("It was down for {}.", duration_text(seconds)),
                 GREEN,
+                link(settings, "/"),
+                Vec::new(),
+            )
+        }
+        Event::CertificateExpiring { service_id, expires_at } => {
+            let name = service_names(db, std::slice::from_ref(service_id)).await.remove(0);
+            let days = (*expires_at - Utc::now()).num_days().max(0);
+            let left = match days {
+                0 => "less than a day".to_string(),
+                1 => "1 day".to_string(),
+                _ => format!("{days} days"),
+            };
+            (
+                format!("Certificate of {name} runs out soon"),
+                format!(
+                    "The HTTPS certificate is valid until {}, {left} from now. Renew it before then, or visitors get a security warning and the check fails.",
+                    times.format(*expires_at)
+                ),
+                YELLOW,
                 link(settings, "/"),
                 Vec::new(),
             )
@@ -732,8 +772,8 @@ fn email_body(site: &str, content: &Content, settings: &NotificationSettings) ->
 /// first good check after such an outage.
 pub async fn after_check(db: &PgPool, service_id: &str) {
     let needed = crate::site_settings::down_after_checks(db).await.max(1) as usize;
-    let rows: Vec<(String, DateTime<Utc>, Option<i32>)> = match sqlx::query_as(
-        "SELECT status, checked_at, status_code FROM metrics WHERE service_id = $1 ORDER BY checked_at DESC LIMIT $2",
+    let rows: Vec<(String, DateTime<Utc>, Option<i32>, Option<String>)> = match sqlx::query_as(
+        "SELECT status, checked_at, status_code, error FROM metrics WHERE service_id = $1 ORDER BY checked_at DESC LIMIT $2",
     )
     .bind(service_id)
     .bind(needed as i64 + 1)
@@ -757,6 +797,7 @@ pub async fn after_check(db: &PgPool, service_id: &str) {
             Event::ServiceDown {
                 service_id: service_id.to_string(),
                 status_code: rows[0].2,
+                error: rows[0].3.clone(),
                 since: rows[needed - 1].1,
             },
         );
@@ -854,6 +895,102 @@ async fn check_maintenance(db: &PgPool) -> anyhow::Result<()> {
                     services: row.affected_services.unwrap_or_default(),
                 },
             );
+        }
+    }
+    Ok(())
+}
+
+/// Email-only notices for people who run the panel. They never go to Discord,
+/// since a channel is often public.
+pub const ADMIN_EVENT_KINDS: [&str; 5] = [
+    "admin_backup_failed",
+    "admin_update_available",
+    "admin_account_locked",
+    "admin_users",
+    "admin_security",
+];
+
+/// The permission someone needs to get an admin notice. None means super
+/// users only, for changes to who can do everything.
+pub fn admin_permission(kind: &str) -> Option<&'static str> {
+    match kind {
+        "admin_backup_failed" => Some("system.backups"),
+        "admin_update_available" => Some("system.view"),
+        "admin_account_locked" | "admin_users" => Some("users.view"),
+        _ => None,
+    }
+}
+
+pub struct AdminNotice {
+    pub kind: &'static str,
+    pub title: String,
+    pub description: String,
+    pub fields: Vec<(&'static str, String)>,
+    /// A page in the panel, like "/manage/users".
+    pub path: &'static str,
+    /// Whoever caused it doesn't get an email about their own action.
+    pub actor: Option<i64>,
+}
+
+/// Mails the notice in the background to everyone who turned it on and may
+/// see it.
+pub fn notify_admins(db: &PgPool, notice: AdminNotice) {
+    if mailer::config().is_none() {
+        return;
+    }
+    let db = db.clone();
+    tokio::spawn(async move {
+        if let Err(e) = deliver_admin(&db, notice).await {
+            tracing::warn!("Could not send an admin email: {e}");
+        }
+    });
+}
+
+async fn deliver_admin(db: &PgPool, notice: AdminNotice) -> anyhow::Result<()> {
+    let recipients: Vec<(String,)> = sqlx::query_as(
+        r#"
+        SELECT email FROM users
+        WHERE email IS NOT NULL AND $1 = ANY(email_events) AND id IS DISTINCT FROM $3
+          AND (user_is_super(id) OR ($2::text IS NOT NULL AND $2 = ANY(user_permissions(id))))
+        "#,
+    )
+    .bind(notice.kind)
+    .bind(admin_permission(notice.kind))
+    .bind(notice.actor)
+    .fetch_all(db)
+    .await?;
+    if recipients.is_empty() {
+        return Ok(());
+    }
+
+    let settings = load(db).await?;
+    let site = site_name(db).await;
+    let color = match notice.kind {
+        "admin_update_available" => BLUE,
+        "admin_users" => GREY,
+        _ => RED,
+    };
+    let content = Content {
+        title: notice.title.chars().take(256).collect(),
+        description: notice.description.chars().take(2000).collect(),
+        color,
+        url: link(&settings, notice.path),
+        image: None,
+        fields: notice.fields.into_iter().map(|(name, value)| field(name, value, true)).collect(),
+    };
+    let (html, text) = email_body(&site, &content, &settings);
+    let html = html.replace("View on the status page", "Open the panel");
+    let text = text.replace("View on the status page", "Open the panel");
+    for (to,) in recipients {
+        let email = mailer::Email {
+            to: to.clone(),
+            subject: format!("[{site}] {}", content.title),
+            html: html.clone(),
+            text: text.clone(),
+            site_name: site.clone(),
+        };
+        if let Err(e) = mailer::send(email).await {
+            tracing::warn!("Could not email {to}: {e}");
         }
     }
     Ok(())
