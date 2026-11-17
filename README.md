@@ -515,7 +515,16 @@ A backup from a newer AeroStat can't go back into an older one; update first. Th
 
 ## Development
 
-Requirements: Rust, Node.js 20.9 or newer, Postgres and Redis.
+Requirements: Rust, Node.js 20.9 or newer, Docker for Redis (and Postgres if you don't have one), and the PostgreSQL client tools (`pg_dump`, `pg_restore`, `psql`) if you want to try backups.
+
+`docker-compose.dev.yml` runs Redis on `127.0.0.1:6379`. Add `--profile postgres` to also get a Postgres on `127.0.0.1:5432` with user, password and database `aerostat`. Set `DEV_REDIS_PORT` or `DEV_POSTGRES_PORT` when those ports are taken.
+
+```bash
+docker compose -f docker-compose.dev.yml up -d                       # Redis only
+docker compose -f docker-compose.dev.yml --profile postgres up -d    # Redis and Postgres
+```
+
+With the dev Postgres, use `DATABASE_URL=postgres://aerostat:aerostat@localhost:5432/aerostat` and `REDIS_URL=redis://localhost:6379` in `.env`.
 
 ```bash
 cp .env.example .env                              # backend settings
