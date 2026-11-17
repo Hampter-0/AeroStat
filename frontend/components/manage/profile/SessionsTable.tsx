@@ -70,7 +70,7 @@ export default function SessionsTable({ sessions }: { sessions: SessionRow[] }) 
           </form>
         )}
       </div>
-      <div className="activity-table-wrap">
+      <div className="activity-table-wrap history-scroll">
         <table className="activity-table sessions-table">
           <thead>
             <tr>
