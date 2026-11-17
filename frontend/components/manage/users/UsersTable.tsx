@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { Crown, Lock, LockOpen, Search } from '@/components/icons'
 import Avatar from '@/components/manage/Avatar'
+import ClientPager from '@/components/manage/ClientPager'
+import { DEFAULT_PER_PAGE } from '@/lib/activity'
 import type { RoleSummary } from '@/lib/permissions'
 import { formatDateTimeShort } from '@/lib/time'
 import type { UserRecord } from '@/lib/users'
@@ -22,6 +24,8 @@ export default function UsersTable({
   canEdit: boolean
 }) {
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE)
 
   const roleById = new Map<number, RoleSummary>()
   for (const role of roles) {
@@ -61,7 +65,16 @@ export default function UsersTable({
 
   function changeQuery(event: React.ChangeEvent<HTMLInputElement>) {
     setQuery(event.target.value)
+    setPage(1)
   }
+
+  const lastPage = Math.max(1, Math.ceil(shown.length / perPage))
+  let currentPage = page
+  if (currentPage > lastPage) {
+    currentPage = lastPage
+  }
+  const first = (currentPage - 1) * perPage
+  const pageUsers = shown.slice(first, first + perPage)
 
   let countText = shown.length + ' of ' + users.length + ' users'
   if (needle === '') {
@@ -70,6 +83,18 @@ export default function UsersTable({
       countText = '1 user'
     }
   }
+  if (shown.length > 0) {
+    countText = 'Showing ' + (first + 1) + ' to ' + (first + pageUsers.length) + ' of ' + shown.length + ' users'
+  }
+
+  function changePerPage(value: number) {
+    setPerPage(value)
+    setPage(1)
+  }
+
+  const pager = (
+    <ClientPager page={currentPage} lastPage={lastPage} perPage={perPage} itemLabel="Users" onPage={setPage} onPerPage={changePerPage} />
+  )
 
   return (
     <>
@@ -79,6 +104,7 @@ export default function UsersTable({
           <input value={query} onChange={changeQuery} placeholder="Search…" aria-label="Search users" />
         </label>
         <span className="table-count">{countText}</span>
+        {pager}
       </div>
       <div className="activity-table-wrap">
         <table className="activity-table users-table">
@@ -100,7 +126,7 @@ export default function UsersTable({
                 </td>
               </tr>
             )}
-            {shown.map(function (user) {
+            {pageUsers.map(function (user) {
               let lastLogin = 'Never'
               if (user.last_login_at) {
                 lastLogin = formatDateTimeShort(user.last_login_at, timezone)
@@ -175,6 +201,12 @@ export default function UsersTable({
           </tbody>
         </table>
       </div>
+      {shown.length > 0 && (
+        <div className="activity-bar">
+          <p>{countText}</p>
+          {pager}
+        </div>
+      )}
     </>
   )
 }

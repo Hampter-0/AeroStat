@@ -154,7 +154,7 @@ export default function BackupsPanel({ data, timezone, isAdmin }: { data: Backup
         </div>
         {data.backups.length === 0 && <p className="manage-empty activity-empty">No backups yet.</p>}
         {data.backups.length > 0 && (
-          <div className="activity-table-wrap">
+          <div className="activity-table-wrap history-scroll">
             <table className="activity-table backups-table">
               <thead>
                 <tr>

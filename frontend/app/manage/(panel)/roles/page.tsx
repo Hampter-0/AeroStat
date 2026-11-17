@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import RolesTable from '@/components/manage/roles/RolesTable'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { PermissionGroup, Role } from '@/lib/permissions'
 
@@ -19,10 +20,6 @@ export default async function RolesPage() {
   }
 
   const data = await manageFetch<RolesResponse>('/roles')
-  let rolesText = data.roles.length + ' roles'
-  if (data.roles.length === 1) {
-    rolesText = '1 role'
-  }
   let openText = 'View'
   if (can(user, 'roles.edit')) {
     openText = 'Edit'
@@ -43,55 +40,8 @@ export default async function RolesPage() {
       </header>
 
       <section className="manage-panel activity-panel">
-        <div className="activity-bar">
-          <p>{rolesText}</p>
-        </div>
         {data.roles.length === 0 && <p className="manage-empty activity-empty">No roles yet.</p>}
-        {data.roles.length > 0 && (
-          <div className="activity-table-wrap">
-            <table className="activity-table roles-table">
-              <thead>
-                <tr>
-                  <th>Role</th>
-                  <th>Handle</th>
-                  <th>Access</th>
-                  <th>Users</th>
-                  <th>
-                    <span className="sr-only">Edit</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.roles.map(function (role) {
-                  let access = <span className="table-muted">{role.permissions.length} permissions</span>
-                  if (role.permissions.length === 1) {
-                    access = <span className="table-muted">1 permission</span>
-                  }
-                  if (role.super_user) {
-                    access = <span className="chip admin">Super user</span>
-                  }
-                  return (
-                    <tr key={role.id}>
-                      <td>
-                        <strong>{role.name}</strong>
-                      </td>
-                      <td>
-                        <code>{role.handle}</code>
-                      </td>
-                      <td>{access}</td>
-                      <td className="table-muted">{role.users}</td>
-                      <td className="table-action">
-                        <Link href={'/manage/roles/' + role.id} className="button-secondary">
-                          {openText}
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {data.roles.length > 0 && <RolesTable roles={data.roles} openText={openText} />}
       </section>
     </div>
   )

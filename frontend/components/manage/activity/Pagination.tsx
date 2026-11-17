@@ -1,22 +1,7 @@
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from '@/components/icons'
 import { activityHref, type ActivityQuery } from '@/lib/activity'
-
-function pageNumbers(current: number, last: number): (number | null)[] {
-  const wanted = new Set<number>([1, last, current - 1, current, current + 1])
-  const pages: (number | null)[] = []
-  let previous = 0
-  for (let page = 1; page <= last; page++) {
-    if (wanted.has(page)) {
-      if (page - previous > 1) {
-        pages.push(null)
-      }
-      pages.push(page)
-      previous = page
-    }
-  }
-  return pages
-}
+import { pageNumbers } from '@/lib/pagination'
 
 export default function Pagination({ query, lastPage }: { query: ActivityQuery; lastPage: number }) {
   let previous = <span className="page-button disabled" aria-hidden="true"><ChevronLeft /></span>

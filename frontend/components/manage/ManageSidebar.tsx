@@ -71,8 +71,13 @@ export default function ManageSidebar({
   }
 
   let roleLabel = 'No role'
+  let roleTitle = ''
   if (user.roles.length > 0) {
-    roleLabel = user.roles.join(', ')
+    roleLabel = user.roles[0]
+    roleTitle = user.roles.join(', ')
+  }
+  if (user.roles.length > 1) {
+    roleLabel = user.roles[0] + ' +' + (user.roles.length - 1)
   }
 
   return (
@@ -113,7 +118,7 @@ export default function ManageSidebar({
           <Avatar userId={user.id} username={user.username} version={user.avatar_version} size={30} />
           <span className="manage-account-text">
             <strong>{user.username}</strong>
-            <span>{roleLabel}</span>
+            <span title={roleTitle}>{roleLabel}</span>
           </span>
         </Link>
         <div className="manage-account-actions">

@@ -99,8 +99,11 @@
 }
 
 .manage-account-text span {
+    overflow: hidden;
     color: var(--subtle);
     font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .manage-account-actions {
@@ -1956,7 +1959,8 @@ a.button-secondary {
     text-decoration: none;
 }
 
-a.page-button:hover {
+a.page-button:hover,
+button.page-button:hover {
     border-color: var(--link);
     color: var(--text);
 }
@@ -3652,7 +3656,6 @@ a.page-button:hover {
     border-radius: 10px;
     background: var(--panel);
     box-shadow: var(--shadow);
-    overflow: hidden;
     animation: bell-in 140ms ease-out;
 }
 
@@ -4017,4 +4020,13 @@ a.page-button:hover {
 
 .manage-form .check-row.bell-toggle {
     margin-bottom: 18px;
+}
+
+button.page-button {
+    background: none;
+    cursor: pointer;
+}
+
+.table-toolbar .activity-bar-controls {
+    margin-left: auto;
 }
