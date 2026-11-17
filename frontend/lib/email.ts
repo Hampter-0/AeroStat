@@ -14,6 +14,8 @@ export interface MyNotifications {
   email: string | null
   email_configured: boolean
   events: string[]
+  panel_events: string[]
+  panel_enabled: boolean
   available_events: string[]
 }
 

@@ -148,7 +148,7 @@ pub async fn create(
 
     let details = activity::created(snapshot(&state, "maintenance", id).await);
     log(&state, &user, "scheduled maintenance", Some(id), &title, details).await;
-    notifications::notify(
+    notifications::notify_by(
         &state.db,
         Event::MaintenanceScheduled {
             id,
@@ -157,6 +157,7 @@ pub async fn create(
             end: body.scheduled_end,
             services: body.affected_services.clone(),
         },
+        Some(user.id),
     );
     Ok((StatusCode::CREATED, Json(Created { id })))
 }
@@ -227,7 +228,7 @@ pub async fn cancel(
         .bind(id)
         .fetch_optional(&state.db)
         .await?;
-    notifications::notify(
+    notifications::notify_by(
         &state.db,
         Event::MaintenanceCancelled {
             id,
@@ -235,6 +236,7 @@ pub async fn cancel(
             message: message.clone(),
             services: services.and_then(|(list,)| list).unwrap_or_default(),
         },
+        Some(user.id),
     );
     Ok(StatusCode::NO_CONTENT)
 }

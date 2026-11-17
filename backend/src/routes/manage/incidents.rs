@@ -219,7 +219,7 @@ pub async fn create(
     if backfill {
         return Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)));
     }
-    notifications::notify(
+    notifications::notify_by(
         &state.db,
         Event::IncidentCreated {
             id,
@@ -229,6 +229,7 @@ pub async fn create(
             message: message.clone(),
             services: body.affected_services.clone(),
         },
+        Some(user.id),
     );
     Ok((StatusCode::CREATED, Json(find_incident(&state.db, id).await?)))
 }
@@ -326,7 +327,7 @@ pub async fn add_update(
     };
     let details = Some(json!({ "update": created }));
     log(&state, &user, action, Some(id), &incident.title, details).await;
-    notifications::notify(
+    notifications::notify_by(
         &state.db,
         Event::IncidentUpdated {
             id,
@@ -335,6 +336,7 @@ pub async fn add_update(
             message: message.clone(),
             services: incident.affected_services.clone().unwrap_or_default(),
         },
+        Some(user.id),
     );
     Ok((StatusCode::CREATED, Json(created)))
 }

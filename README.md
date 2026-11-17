@@ -37,6 +37,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
 - Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
+- A notification bell in the panel with unread and important tabs and a mute
 - Security emails when someone changes their password, email address, passkeys or two-factor sign-in
 - Link previews for Discord, Slack and social media that show the live status, incident or maintenance
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend
@@ -306,6 +307,18 @@ SMTP_FROM_ADDRESS=noreply@example.com
 ```
 
 Restart with `docker compose up -d`. People with the Email settings permission see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones their roles let them see: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
+
+## Notifications in the panel
+
+The bell at the bottom right of the panel collects everything that happened while you were away: services going down or coming back, incidents, maintenance, certificates that run out and admin notices. It needs no setup.
+
+- **All**, **Unread** and **Important** tabs. Outages, critical incidents and security notices count as important and turn the badge red.
+- Click a notification to open the page it is about. Mark them all as read, remove one, or clear the list.
+- **Mute the count** for 1, 8 or 24 hours. Notifications are still saved, the badge just stays quiet.
+- Pick what shows up under **Profile → Notifications**, in the Panel column next to Email. You only get what your roles let you see, and never a notification about something you did yourself.
+- Don't want it at all? Turn off **Show the notification bell** on your profile. The bell disappears and nothing is saved for you; email keeps working.
+
+Notifications are removed automatically after 30 days, read or not.
 
 ## Passkeys
 

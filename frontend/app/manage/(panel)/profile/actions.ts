@@ -38,12 +38,23 @@ export async function saveEmailNotifications(_state: FormState, formData: FormDa
   for (const value of formData.getAll('events')) {
     events.push(String(value))
   }
+  const panelEvents: string[] = []
+  for (const value of formData.getAll('panel_events')) {
+    panelEvents.push(String(value))
+  }
   try {
-    await manageFetch('/profile/notifications', { method: 'PUT', body: JSON.stringify({ events: events }) })
+    await manageFetch('/profile/notifications', {
+      method: 'PUT',
+      body: JSON.stringify({
+        events: events,
+        panel_events: panelEvents,
+        panel_enabled: formData.get('panel_enabled') === 'on',
+      }),
+    })
   } catch (error) {
     return { error: errorMessage(error), success: null }
   }
-  revalidatePath('/manage/profile')
+  revalidatePath('/manage', 'layout')
   return { error: null, success: 'Saved' }
 }
 

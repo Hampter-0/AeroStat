@@ -91,6 +91,10 @@ pub struct MyNotifications {
     email: Option<String>,
     email_configured: bool,
     events: Vec<String>,
+    /// What shows up in the bell in the panel.
+    panel_events: Vec<String>,
+    /// False when this user turned the bell off.
+    panel_enabled: bool,
     /// Only the events this user is allowed to see.
     available_events: Vec<&'static str>,
 }
@@ -98,6 +102,22 @@ pub struct MyNotifications {
 #[derive(Deserialize)]
 pub struct MyNotificationsBody {
     events: Vec<String>,
+    panel_events: Option<Vec<String>>,
+    panel_enabled: Option<bool>,
+}
+
+/// Keeps known kinds the user may see, once each.
+fn clean_kinds(kinds: Vec<String>, allowed: &[&'static str]) -> Result<Vec<String>, ApiError> {
+    let mut cleaned: Vec<String> = Vec::new();
+    for kind in kinds {
+        if !allowed.contains(&kind.as_str()) {
+            return Err(ApiError::BadRequest(format!("Unknown notification: {kind}")));
+        }
+        if !cleaned.contains(&kind) {
+            cleaned.push(kind);
+        }
+    }
+    Ok(cleaned)
 }
 
 fn available(user: &CurrentUser) -> Vec<&'static str> {
@@ -119,15 +139,18 @@ fn available(user: &CurrentUser) -> Vec<&'static str> {
 }
 
 pub async fn my_notifications(State(state): State<AppState>, user: CurrentUser) -> Result<Json<MyNotifications>, ApiError> {
-    let (events,): (Vec<String>,) = sqlx::query_as("SELECT email_events FROM users WHERE id = $1")
-        .bind(user.id)
-        .fetch_one(&state.db)
-        .await?;
+    let (events, panel_events): (Vec<String>, Vec<String>) =
+        sqlx::query_as("SELECT email_events, panel_events FROM users WHERE id = $1")
+            .bind(user.id)
+            .fetch_one(&state.db)
+            .await?;
     let allowed = available(&user);
     Ok(Json(MyNotifications {
         email: user.email.clone(),
         email_configured: mailer::config().is_some(),
         events: events.into_iter().filter(|kind| allowed.contains(&kind.as_str())).collect(),
+        panel_events: panel_events.into_iter().filter(|kind| allowed.contains(&kind.as_str())).collect(),
+        panel_enabled: user.panel_enabled,
         available_events: allowed,
     }))
 }
@@ -138,28 +161,47 @@ pub async fn update_my_notifications(
     Json(body): Json<MyNotificationsBody>,
 ) -> Result<StatusCode, ApiError> {
     let allowed = available(&user);
-    let mut events: Vec<String> = Vec::new();
-    for kind in body.events {
-        if !allowed.contains(&kind.as_str()) {
-            return Err(ApiError::BadRequest(format!("Unknown notification: {kind}")));
-        }
-        if !events.contains(&kind) {
-            events.push(kind);
-        }
-    }
+    let events = clean_kinds(body.events, &allowed)?;
     sqlx::query("UPDATE users SET email_events = $1 WHERE id = $2")
         .bind(&events)
         .bind(user.id)
         .execute(&state.db)
         .await?;
+    let mut panel_events: Option<Vec<String>> = None;
+    if let Some(kinds) = body.panel_events {
+        let kinds = clean_kinds(kinds, &allowed)?;
+        // Kinds this user can't see stay as they were, so they come back on
+        // when they get the permission again.
+        sqlx::query(
+            r#"
+            UPDATE users SET panel_events = ARRAY(
+                SELECT kind FROM unnest(panel_events) AS kind WHERE NOT (kind = ANY($2))
+            ) || $1::text[]
+            WHERE id = $3
+            "#,
+        )
+        .bind(&kinds)
+        .bind(&allowed)
+        .bind(user.id)
+        .execute(&state.db)
+        .await?;
+        panel_events = Some(kinds);
+    }
+    if let Some(enabled) = body.panel_enabled {
+        sqlx::query("UPDATE users SET panel_enabled = $1 WHERE id = $2")
+            .bind(enabled)
+            .bind(user.id)
+            .execute(&state.db)
+            .await?;
+    }
     activity::record(
         &state.db,
         &user,
         "account",
-        "changed their email notifications",
+        "changed their notifications",
         None,
         "",
-        Some(json!({ "events": events })),
+        Some(json!({ "events": events, "panel_events": panel_events, "panel_enabled": body.panel_enabled })),
     )
     .await;
     Ok(StatusCode::NO_CONTENT)

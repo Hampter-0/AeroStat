@@ -127,7 +127,7 @@ async fn send_link(db: &PgPool, to: &str, username: &str, link: &str) -> anyhow:
         "Hi {username},\n\nSomeone asked to reset the password of your {site} account. Choose a new one here:\n\n{link}\n\nThe link works once, for {LINK_MINUTES} minutes. If you didn't ask for this, you can ignore this email; your password stays the same."
     );
     let html = format!(
-        r#"<!doctype html><html><body style="margin:0;padding:32px 16px;background:#f4f6f8;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
+        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:32px 16px;background:#f4f6f8;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:480px;margin:0 auto;padding:28px 32px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px">
 <p style="margin:0 0 12px;font-size:15px;color:#334155">Hi {name},</p>
 <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#334155">Someone asked to reset the password of your {site_html} account.</p>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Menu, X } from '@/components/icons'
+import { Menu } from '@/components/icons'
 import Logo from './Logo'
 import ThemeSwitcher from './ThemeSwitcher'
 
@@ -93,8 +93,7 @@ export default function SiteHeader({ siteName, contactUrl }: { siteName: string;
               aria-label={menuLabel}
               onClick={toggleMenu}
             >
-              {menuOpen && <X size={14} />}
-              {!menuOpen && <Menu />}
+              <Menu />
             </button>
             {menuOpen && (
               <nav className="dropdown-menu" aria-label="Status navigation">

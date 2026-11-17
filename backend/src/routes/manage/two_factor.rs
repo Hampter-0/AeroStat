@@ -179,7 +179,7 @@ async fn send_code(db: &PgPool, to: &str, code: &str, purpose: &str) -> Result<(
         "Your {site} code is {code}.\n\nUse it to {purpose}. It works for 5 minutes. If you didn't ask for it, change your password."
     );
     let html = format!(
-        r#"<!doctype html><html><body style="margin:0;padding:32px 16px;background:#f4f6f8;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
+        r#"<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;padding:32px 16px;background:#f4f6f8;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <div style="max-width:480px;margin:0 auto;padding:28px 32px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px">
 <p style="margin:0 0 12px;font-size:15px;color:#334155">Your code to {purpose}:</p>
 <p style="margin:0 0 16px;font-size:32px;font-weight:700;letter-spacing:6px">{code}</p>

@@ -20,13 +20,25 @@ export const metadata = {
   title: 'Profile',
 }
 
-function Card({ icon, title, wide, children }: { icon: ReactNode; title: string; wide?: boolean; children: ReactNode }) {
+function Card({
+  icon,
+  title,
+  wide,
+  id,
+  children,
+}: {
+  icon: ReactNode
+  title: string
+  wide?: boolean
+  id?: string
+  children: ReactNode
+}) {
   let className = 'manage-panel profile-card'
   if (wide) {
     className = 'manage-panel profile-card wide'
   }
   return (
-    <section className={className}>
+    <section className={className} id={id}>
       <h2 className="profile-card-head">
         <span className="profile-card-icon">{icon}</span>
         {title}
@@ -126,7 +138,7 @@ export default async function ProfilePage() {
           {user.is_admin && <p className="manage-empty">You are a super user and can do everything in the panel.</p>}
         </Card>
 
-        <Card icon={<Bell />} title="Email notifications" wide={true}>
+        <Card icon={<Bell />} title="Notifications" wide={true} id="notifications">
           <EmailNotificationsForm settings={notifications} />
         </Card>
       </div>

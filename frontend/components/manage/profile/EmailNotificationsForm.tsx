@@ -34,37 +34,65 @@ export default function EmailNotificationsForm({ settings }: { settings: MyNotif
   }
 
   if (groups.length === 0) {
-    return <p className="manage-empty">There is nothing you can get emails about yet. You need access to services, incidents or maintenance.</p>
+    return <p className="manage-empty">There is nothing you can get notifications about yet. You need access to services, incidents or maintenance.</p>
   }
 
-  let note = 'Emails go to ' + settings.email + '.'
+  let emailNote = 'Email goes to ' + settings.email + '.'
   if (!settings.email) {
-    note = 'Add an email address under Account first.'
+    emailNote = 'For email, add an address under Email first.'
   }
   if (!settings.email_configured) {
-    note = 'Email is not set up on this server yet. Ask an admin to add the mail settings. You can already choose what you want.'
+    emailNote = 'Email is not set up on this server yet, but you can already choose what you want.'
   }
+  const note = 'Panel is the bell at the bottom right of the panel. ' + emailNote
 
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       <p className="panel-intro">{note}</p>
+      <label className="check-row hint-row bell-toggle">
+        <input type="checkbox" name="panel_enabled" defaultChecked={settings.panel_enabled} />
+        <span>
+          <strong>Show the notification bell</strong>
+          <small>When it is off, the bell is hidden and nothing is saved for you. Email keeps working.</small>
+        </span>
+      </label>
       {groups.map(function (group) {
         return (
-          <fieldset className="notification-group" key={group.title}>
+          <fieldset className="notification-group notify-table" key={group.title}>
             <legend>{group.title}</legend>
-            <div className="permission-grid">
-              {group.events.map(function (event) {
-                return (
-                  <label className="check-row hint-row" key={event.id}>
-                    <input type="checkbox" name="events" value={event.id} defaultChecked={settings.events.includes(event.id)} />
-                    <span>
-                      <strong>{event.label}</strong>
-                      <small>{event.hint}</small>
-                    </span>
-                  </label>
-                )
-              })}
+            <div className="notify-row notify-head" aria-hidden="true">
+              <span />
+              <span>Panel</span>
+              <span>Email</span>
             </div>
+            {group.events.map(function (event) {
+              return (
+                <div className="notify-row" key={event.id}>
+                  <span className="notify-text">
+                    <strong>{event.label}</strong>
+                    <small>{event.hint}</small>
+                  </span>
+                  <label className="check-row notify-check">
+                    <input
+                      type="checkbox"
+                      name="panel_events"
+                      value={event.id}
+                      defaultChecked={settings.panel_events.includes(event.id)}
+                      aria-label={event.label + ' in the panel'}
+                    />
+                  </label>
+                  <label className="check-row notify-check">
+                    <input
+                      type="checkbox"
+                      name="events"
+                      value={event.id}
+                      defaultChecked={settings.events.includes(event.id)}
+                      aria-label={event.label + ' by email'}
+                    />
+                  </label>
+                </div>
+              )
+            })}
           </fieldset>
         )
       })}

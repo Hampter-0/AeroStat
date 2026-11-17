@@ -1,5 +1,6 @@
 //! Notifications about services, incidents and maintenance. Each event goes
-//! to the Discord webhook and by email to panel users who asked for it.
+//! to the Discord webhook, by email to panel users who asked for it, and to
+//! the bell in the panel.
 
 use std::time::Duration;
 
@@ -157,6 +158,12 @@ pub fn is_discord_webhook(url: &str) -> bool {
 /// Sends the event in the background, so the action that caused it never waits
 /// for Discord or the mail server.
 pub fn notify(db: &PgPool, event: Event) {
+    notify_by(db, event, None);
+}
+
+/// Like `notify`, for something a panel user did. They don't get it in their
+/// own bell.
+pub fn notify_by(db: &PgPool, event: Event, actor: Option<i64>) {
     let db = db.clone();
     tokio::spawn(async move {
         let settings = match load(&db).await {
@@ -166,6 +173,9 @@ pub fn notify(db: &PgPool, event: Event) {
                 return;
             }
         };
+        if let Err(e) = deliver_panel_event(&db, &settings, &event, actor).await {
+            tracing::warn!("Could not save panel notifications: {e}");
+        }
         let image = card_image(&db, &settings, event_card(&db, &event).await).await;
         if let Err(e) = deliver_discord(&db, &settings, &event, image.clone()).await {
             tracing::warn!("Could not send a Discord notification: {e}");
@@ -234,6 +244,95 @@ async fn deliver_email(
             tracing::warn!("Could not email {to}: {e}");
         }
     }
+    Ok(())
+}
+
+/// What a notification in the bell says and where it leads.
+struct PanelItem {
+    kind: &'static str,
+    title: String,
+    body: String,
+    tone: &'static str,
+    path: Option<String>,
+    important: bool,
+}
+
+fn tone_name(color: u32) -> &'static str {
+    match color {
+        RED => "red",
+        GREEN => "green",
+        YELLOW => "amber",
+        BLUE => "blue",
+        _ => "grey",
+    }
+}
+
+fn panel_path(event: &Event) -> String {
+    match event {
+        Event::ServiceDown { service_id, .. }
+        | Event::ServiceUp { service_id, .. }
+        | Event::CertificateExpiring { service_id, .. } => format!("/manage/services/{service_id}"),
+        Event::IncidentCreated { id, .. } | Event::IncidentUpdated { id, .. } => format!("/manage/incidents/{id}"),
+        Event::MaintenanceScheduled { id, .. }
+        | Event::MaintenanceStarted { id, .. }
+        | Event::MaintenanceCompleted { id, .. }
+        | Event::MaintenanceCancelled { id, .. } => format!("/manage/maintenance/{id}"),
+    }
+}
+
+/// Outages, critical incidents and security problems are marked important.
+fn is_important(event: &Event) -> bool {
+    match event {
+        Event::ServiceDown { .. } => true,
+        Event::IncidentCreated { severity, .. } => severity == "critical",
+        _ => false,
+    }
+}
+
+async fn deliver_panel_event(
+    db: &PgPool,
+    settings: &NotificationSettings,
+    event: &Event,
+    actor: Option<i64>,
+) -> anyhow::Result<()> {
+    let times = Times::Email(site_settings::timezone(db).await);
+    let content = content(db, settings, event, &times, None).await;
+    let item = PanelItem {
+        kind: event.kind(),
+        title: content.title,
+        body: content.description,
+        tone: tone_name(content.color),
+        path: Some(panel_path(event)),
+        important: is_important(event),
+    };
+    save_panel(db, item, Some(event.permission()), actor).await
+}
+
+/// Saves the notification for everyone who may see it and kept this kind on.
+/// `permission` None means super users only. Old ones are removed after 30
+/// days so the table stays small.
+async fn save_panel(db: &PgPool, item: PanelItem, permission: Option<&str>, actor: Option<i64>) -> anyhow::Result<()> {
+    sqlx::query(
+        r#"
+        INSERT INTO panel_notifications (user_id, kind, title, body, tone, path, important)
+        SELECT id, $1, $2, $3, $4, $5, $6 FROM users
+        WHERE panel_enabled AND $1 = ANY(panel_events) AND id IS DISTINCT FROM $7
+          AND (user_is_super(id) OR ($8::text IS NOT NULL AND $8 = ANY(user_permissions(id))))
+        "#,
+    )
+    .bind(item.kind)
+    .bind(item.title.chars().take(256).collect::<String>())
+    .bind(item.body.chars().take(500).collect::<String>())
+    .bind(item.tone)
+    .bind(item.path)
+    .bind(item.important)
+    .bind(actor)
+    .bind(permission)
+    .execute(db)
+    .await?;
+    sqlx::query("DELETE FROM panel_notifications WHERE created_at < now() - interval '30 days'")
+        .execute(db)
+        .await?;
     Ok(())
 }
 
@@ -703,7 +802,7 @@ fn email_body(site: &str, content: &Content, settings: &NotificationSettings) ->
             .iter()
             .map(|f| {
                 format!(
-                    r#"<tr><td style="padding:8px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;width:140px;vertical-align:top">{}</td><td style="padding:8px 0;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a">{}</td></tr>"#,
+                    r#"<tr><td style="padding:8px 16px 8px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;width:1%;white-space:nowrap;vertical-align:top">{}</td><td style="padding:8px 0;border-top:1px solid #e2e8f0;font-size:14px;color:#0f172a;word-break:break-word;overflow-wrap:anywhere">{}</td></tr>"#,
                     escape(&f.name),
                     escape(&f.value)
                 )
@@ -730,6 +829,7 @@ fn email_body(site: &str, content: &Content, settings: &NotificationSettings) ->
     let html = format!(
         r#"<!doctype html>
 <html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f6f8;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:32px 16px">
 <tr><td align="center">
@@ -932,18 +1032,37 @@ pub struct AdminNotice {
     pub actor: Option<i64>,
 }
 
-/// Mails the notice in the background to everyone who turned it on and may
-/// see it.
+/// Puts the notice in the bell and mails it, in the background, to everyone
+/// who turned it on and may see it.
 pub fn notify_admins(db: &PgPool, notice: AdminNotice) {
-    if mailer::config().is_none() {
-        return;
-    }
     let db = db.clone();
     tokio::spawn(async move {
+        let item = PanelItem {
+            kind: notice.kind,
+            title: notice.title.clone(),
+            body: notice.description.clone(),
+            tone: tone_name(admin_color(notice.kind)),
+            path: Some(notice.path.to_string()),
+            important: matches!(notice.kind, "admin_backup_failed" | "admin_account_locked" | "admin_security"),
+        };
+        if let Err(e) = save_panel(&db, item, admin_permission(notice.kind), notice.actor).await {
+            tracing::warn!("Could not save panel notifications: {e}");
+        }
+        if mailer::config().is_none() {
+            return;
+        }
         if let Err(e) = deliver_admin(&db, notice).await {
             tracing::warn!("Could not send an admin email: {e}");
         }
     });
+}
+
+fn admin_color(kind: &str) -> u32 {
+    match kind {
+        "admin_update_available" => BLUE,
+        "admin_users" => GREY,
+        _ => RED,
+    }
 }
 
 async fn deliver_admin(db: &PgPool, notice: AdminNotice) -> anyhow::Result<()> {
@@ -965,11 +1084,7 @@ async fn deliver_admin(db: &PgPool, notice: AdminNotice) -> anyhow::Result<()> {
 
     let settings = load(db).await?;
     let site = site_name(db).await;
-    let color = match notice.kind {
-        "admin_update_available" => BLUE,
-        "admin_users" => GREY,
-        _ => RED,
-    };
+    let color = admin_color(notice.kind);
     let content = Content {
         title: notice.title.chars().take(256).collect(),
         description: notice.description.chars().take(2000).collect(),
