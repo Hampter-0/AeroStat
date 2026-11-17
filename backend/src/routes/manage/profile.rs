@@ -9,6 +9,7 @@ use crate::activity;
 use crate::auth::{self, CurrentUser};
 use crate::error::ApiError;
 use crate::login_guard;
+use crate::security_mail::{self, Change};
 use crate::state::AppState;
 
 use super::users::{validate_password, validate_username};
@@ -86,6 +87,10 @@ pub async fn update(
                     .bind(user.id)
                     .execute(&state.db)
                     .await?;
+                if let Some(old) = user.email.clone() {
+                    let change = Change::EmailChanged { new_address: updated.email.clone() };
+                    security_mail::notify(&state.db, user.id, change, user.ip.clone(), Some(old));
+                }
             }
             if updated.username != user.username || updated.email != user.email {
                 let details = activity::changes(before, activity::snapshot(&state.db, "users", &user.id.to_string()).await);
@@ -136,6 +141,7 @@ pub async fn change_password(
     tx.commit().await?;
 
     activity::record(&state.db, &user, "account", "changed their password", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::PasswordChanged, user.ip.clone(), None);
     Ok(StatusCode::NO_CONTENT)
 }
 

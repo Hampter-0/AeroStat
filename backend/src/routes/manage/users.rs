@@ -7,6 +7,7 @@ use serde_json::json;
 use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::activity;
+use crate::security_mail::{self, Change};
 use crate::auth::{self, CurrentUser, PermissionGroup, PERMISSION_GROUPS};
 use crate::error::ApiError;
 use crate::state::AppState;
@@ -464,6 +465,7 @@ pub async fn reset_two_factor(
         .await?;
     tx.commit().await?;
     activity::record(&state.db, &user, "users", "reset two-factor sign-in of", None, &target.username, None).await;
+    security_mail::notify(&state.db, id, Change::TwoFactorResetBy { admin: user.username.clone() }, None, None);
     Ok(StatusCode::NO_CONTENT)
 }
 

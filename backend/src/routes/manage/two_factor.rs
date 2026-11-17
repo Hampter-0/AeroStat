@@ -12,6 +12,7 @@ use crate::error::ApiError;
 use crate::login_guard;
 use crate::mailer;
 use crate::passkeys;
+use crate::security_mail::{self, Change};
 use crate::site_settings;
 use crate::state::AppState;
 use crate::two_factor;
@@ -51,6 +52,12 @@ pub struct PasswordBody {
 
 #[derive(Deserialize)]
 pub struct CodeBody {
+    code: String,
+}
+
+#[derive(Deserialize)]
+pub struct DisableAppBody {
+    password: String,
     code: String,
 }
 
@@ -254,6 +261,47 @@ fn setup_key(kind: &str, user_id: i64) -> String {
     format!("twofactor:setup:{kind}:{user_id}")
 }
 
+fn account_fail_key(user_id: i64) -> String {
+    format!("twofactor:fail:user:{user_id}")
+}
+
+/// Uses up a recovery code when it is one of the user's unused codes.
+async fn use_recovery_code(db: &PgPool, user_id: i64, code: &str) -> Result<bool, ApiError> {
+    if !two_factor::looks_like_recovery_code(code) {
+        return Ok(false);
+    }
+    let used: Option<i64> = sqlx::query_scalar(
+        "UPDATE recovery_codes SET used_at = now() WHERE user_id = $1 AND code_hash = $2 AND used_at IS NULL RETURNING id",
+    )
+    .bind(user_id)
+    .bind(two_factor::hash_code(code))
+    .fetch_optional(db)
+    .await?;
+    Ok(used.is_some())
+}
+
+/// A current code from the authenticator app. Each code works once.
+async fn use_app_code(state: &AppState, user_id: i64, f: &Factors, code: &str) -> Result<bool, ApiError> {
+    let Some(stored) = &f.totp_secret else {
+        return Ok(false);
+    };
+    let Ok(secret) = two_factor::decrypt(stored) else {
+        return Ok(false);
+    };
+    let totp = two_factor::totp(secret, &site_name(&state.db).await, &f.username)?;
+    let Some(step) = two_factor::check_app_code(&totp, code, f.totp_last_step) else {
+        return Ok(false);
+    };
+    let moved = sqlx::query(
+        "UPDATE users SET totp_last_step = $1 WHERE id = $2 AND (totp_last_step IS NULL OR totp_last_step < $1)",
+    )
+    .bind(step)
+    .bind(user_id)
+    .execute(&state.db)
+    .await?;
+    Ok(moved.rows_affected() == 1)
+}
+
 fn login_key(challenge_id: &str) -> String {
     format!("twofactor:login:{challenge_id}")
 }
@@ -356,27 +404,49 @@ pub async fn confirm_app(
         .await?;
     let codes = recovery_codes_if_first(&state.db, user.id).await?;
     activity::record(&state.db, &user, "account", "turned on the authenticator app", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::AppOn, user.ip.clone(), None);
     Ok(Json(Enabled { recovery_codes: codes }))
 }
 
+/// Turning the app off needs the password and a code from the app, or a
+/// recovery code when the phone is gone. A password alone isn't enough.
 pub async fn disable_app(
     State(state): State<AppState>,
     user: CurrentUser,
-    Json(body): Json<PasswordBody>,
+    Json(body): Json<DisableAppBody>,
 ) -> Result<StatusCode, ApiError> {
     let f = factors(&state.db, user.id).await?;
+    if f.totp_secret.is_none() {
+        return Err(ApiError::BadRequest("The authenticator app is not on".into()));
+    }
     require_password(&state, user.id, body.password, &f).await?;
     if would_leave_nothing(&state.db, user.id, &f, true).await? {
         return Err(ApiError::BadRequest(
             "Your account needs two-factor sign-in. Turn on email codes or add a passkey first.".into(),
         ));
     }
+    let fail_key = account_fail_key(user.id);
+    login_guard::hit_user_limit(
+        &state.redis,
+        &fail_key,
+        MAX_CODES_PER_ACCOUNT,
+        state.login_limits.lockout_minutes * 60,
+        "wrong codes",
+    )
+    .await?;
+    let code = body.code.trim();
+    let accepted = use_app_code(&state, user.id, &f, code).await? || use_recovery_code(&state.db, user.id, code).await?;
+    if !accepted {
+        return Err(ApiError::BadRequest("That code is not right. Use a code from your app or a recovery code.".into()));
+    }
+    login_guard::release_user_limit(&state.redis, &fail_key).await;
     sqlx::query("UPDATE users SET totp_secret = NULL, totp_last_step = NULL WHERE id = $1")
         .bind(user.id)
         .execute(&state.db)
         .await?;
     after_disable(&state.db, user.id).await?;
     activity::record(&state.db, &user, "account", "turned off the authenticator app", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::AppOff, user.ip.clone(), None);
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -425,27 +495,94 @@ pub async fn confirm_email(
         .await?;
     let codes = recovery_codes_if_first(&state.db, user.id).await?;
     activity::record(&state.db, &user, "account", "turned on email codes", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::EmailCodesOn, user.ip.clone(), None);
     Ok(Json(Enabled { recovery_codes: codes }))
 }
 
-pub async fn disable_email(
+/// Step one of turning email codes off: checks the password and mails a code,
+/// so a password alone can't turn it off.
+pub async fn start_disable_email(
     State(state): State<AppState>,
     user: CurrentUser,
     Json(body): Json<PasswordBody>,
 ) -> Result<StatusCode, ApiError> {
     let f = factors(&state.db, user.id).await?;
+    if !f.email_two_factor {
+        return Err(ApiError::BadRequest("Email codes are not on".into()));
+    }
     require_password(&state, user.id, body.password, &f).await?;
     if would_leave_nothing(&state.db, user.id, &f, false).await? {
         return Err(ApiError::BadRequest(
             "Your account needs two-factor sign-in. Turn on the authenticator app or add a passkey first.".into(),
         ));
     }
+    let key = setup_key("email-off", user.id);
+    let now = chrono::Utc::now().timestamp();
+    if let Ok(previous) = passkeys::take_state::<EmailCode>(&state.redis, &key).await {
+        if now - previous.sent_at < RESEND_SECONDS {
+            passkeys::save_state(&state.redis, &key, &previous).await?;
+            return Err(ApiError::BadRequest("A code was just sent. Wait a minute before asking for another.".into()));
+        }
+    }
+    let Some(email) = f.email.clone() else {
+        return Err(ApiError::BadRequest("Your account has no email address".into()));
+    };
+    let code = two_factor::new_email_code();
+    send_code(&state.db, &email, &code, "turn off email codes").await?;
+    let pending = EmailCode {
+        hash: two_factor::hash_code(&code),
+        attempts: 0,
+        sent_at: now,
+    };
+    passkeys::save_state(&state.redis, &key, &pending).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Step two: the mailed code, or a recovery code, turns email codes off.
+pub async fn disable_email(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Json(body): Json<CodeBody>,
+) -> Result<StatusCode, ApiError> {
+    let key = setup_key("email-off", user.id);
+    let mut pending: EmailCode = passkeys::take_state(&state.redis, &key)
+        .await
+        .map_err(|_| ApiError::BadRequest("This expired. Start again.".into()))?;
+    let f = factors(&state.db, user.id).await?;
+    if would_leave_nothing(&state.db, user.id, &f, false).await? {
+        return Err(ApiError::BadRequest(
+            "Your account needs two-factor sign-in. Turn on the authenticator app or add a passkey first.".into(),
+        ));
+    }
+    let fail_key = account_fail_key(user.id);
+    login_guard::hit_user_limit(
+        &state.redis,
+        &fail_key,
+        MAX_CODES_PER_ACCOUNT,
+        state.login_limits.lockout_minutes * 60,
+        "wrong codes",
+    )
+    .await?;
+    let code = body.code.trim();
+    let fresh = chrono::Utc::now().timestamp() - pending.sent_at < CODE_SECONDS;
+    let accepted =
+        (fresh && two_factor::codes_match(code, &pending.hash)) || use_recovery_code(&state.db, user.id, code).await?;
+    if !accepted {
+        pending.attempts += 1;
+        if pending.attempts < MAX_ATTEMPTS {
+            passkeys::save_state(&state.redis, &key, &pending).await?;
+            return Err(ApiError::BadRequest("That code is not right".into()));
+        }
+        return Err(ApiError::BadRequest("Too many wrong codes. Start again.".into()));
+    }
+    login_guard::release_user_limit(&state.redis, &fail_key).await;
     sqlx::query("UPDATE users SET email_two_factor = false WHERE id = $1")
         .bind(user.id)
         .execute(&state.db)
         .await?;
     after_disable(&state.db, user.id).await?;
     activity::record(&state.db, &user, "account", "turned off email codes", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::EmailCodesOff, user.ip.clone(), None);
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -461,6 +598,7 @@ pub async fn new_recovery_codes(
     }
     let codes = replace_recovery_codes(&state.db, user.id).await?;
     activity::record(&state.db, &user, "account", "made new recovery codes", None, "", None).await;
+    security_mail::notify(&state.db, user.id, Change::RecoveryCodes, user.ip.clone(), None);
     Ok(Json(RecoveryCodes { recovery_codes: codes }))
 }
 

@@ -12,6 +12,7 @@ use webauthn_rs::prelude::{
 use webauthn_rs_proto::ResidentKeyRequirement;
 
 use crate::activity;
+use crate::security_mail::{self, Change};
 use crate::auth::{self, CurrentUser};
 use crate::error::ApiError;
 use crate::login_guard;
@@ -197,6 +198,7 @@ pub async fn finish_registration(
 
     let details = json!({ "name": saved.name, "without_username": saved.discoverable });
     activity::record(&state.db, &user, "account", "added a passkey", None, "", Some(details)).await;
+    security_mail::notify(&state.db, user.id, Change::PasskeyAdded { name: saved.name.clone() }, user.ip.clone(), None);
     Ok(Json(row))
 }
 
@@ -229,6 +231,7 @@ pub async fn delete(
         .execute(&state.db)
         .await?;
     activity::record(&state.db, &user, "account", "removed a passkey", None, "", Some(json!({ "name": name }))).await;
+    security_mail::notify(&state.db, user.id, Change::PasskeyRemoved { name }, user.ip.clone(), None);
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -256,6 +259,8 @@ pub async fn set_password_login(
         .await?;
     let action = if body.enabled { "turned password sign-in on" } else { "turned password sign-in off" };
     activity::record(&state.db, &user, "account", action, None, "", None).await;
+    let change = if body.enabled { Change::PasswordLoginOn } else { Change::PasswordLoginOff };
+    security_mail::notify(&state.db, user.id, change, user.ip.clone(), None);
     Ok(StatusCode::NO_CONTENT)
 }
 

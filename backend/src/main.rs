@@ -12,6 +12,7 @@ mod notifications;
 mod passkeys;
 mod models;
 mod routes;
+mod security_mail;
 mod services;
 mod site_settings;
 mod state;

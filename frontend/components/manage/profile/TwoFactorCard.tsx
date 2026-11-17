@@ -9,6 +9,7 @@ import {
   disableEmail,
   newRecoveryCodes,
   startApp,
+  startDisableEmail,
   startEmail,
 } from '@/app/manage/(panel)/profile/two-factor-actions'
 import { setPreferredMethod } from '@/app/manage/(panel)/profile/two-factor-preferred-action'
@@ -23,6 +24,7 @@ type Step =
   | 'email-password'
   | 'email-code'
   | 'email-off'
+  | 'email-off-code'
   | 'codes-password'
   | 'codes'
 
@@ -94,7 +96,7 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
         finish('Authenticator app turned on', result.data.recovery_codes)
       }
     } else if (step === 'app-off') {
-      const result = await disableApp(password)
+      const result = await disableApp(password, code)
       if (result.error) {
         setError(result.error)
       } else {
@@ -115,7 +117,14 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
         finish('Email codes turned on', result.data.recovery_codes)
       }
     } else if (step === 'email-off') {
-      const result = await disableEmail(password)
+      const result = await startDisableEmail(password)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        go('email-off-code')
+      }
+    } else if (step === 'email-off-code') {
+      const result = await disableEmail(code)
       if (result.error) {
         setError(result.error)
       } else {
@@ -188,6 +197,8 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
     let askPassword = true
     let askCode = false
     let danger = false
+    let codePlaceholder = '123456'
+    let codeLength = 6
     if (step === 'app-password') {
       intro = 'Confirm your password to link an authenticator app, like 1Password, Bitwarden, Google Authenticator or Aegis.'
     } else if (step === 'app-scan') {
@@ -195,7 +206,11 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
       askPassword = false
       askCode = true
     } else if (step === 'app-off') {
-      intro = 'Confirm your password to stop asking for app codes.'
+      intro =
+        'Confirm your password and enter a code from your app to stop asking for app codes. Lost your phone? Use a recovery code.'
+      askCode = true
+      codePlaceholder = '123456 or a recovery code'
+      codeLength = 17
       danger = true
     } else if (step === 'email-password') {
       intro = 'Confirm your password. We then send a code to ' + status.email_address + ' to check it arrives.'
@@ -204,7 +219,16 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
       askPassword = false
       askCode = true
     } else if (step === 'email-off') {
-      intro = 'Confirm your password to stop sending sign-in codes by email.'
+      intro = 'Confirm your password. We then send a code to ' + status.email_address + ' to check it is you.'
+    } else if (step === 'email-off-code') {
+      intro =
+        'Enter the 6-digit code we sent to ' +
+        status.email_address +
+        ' to stop sending sign-in codes by email. You can also use a recovery code.'
+      askPassword = false
+      askCode = true
+      codePlaceholder = '123456 or a recovery code'
+      codeLength = 17
       danger = true
     } else if (step === 'codes-password') {
       intro = 'Confirm your password to make 10 new recovery codes. Your old codes stop working.'
@@ -244,11 +268,10 @@ export default function TwoFactorCard({ status }: { status: TwoFactorStatus }) {
               value={code}
               onChange={changeCode}
               required
-              autoFocus
+              autoFocus={!askPassword}
               autoComplete="one-time-code"
-              inputMode="numeric"
-              placeholder="123456"
-              maxLength={6}
+              placeholder={codePlaceholder}
+              maxLength={codeLength}
             />
           </label>
         )}

@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 use sqlx::PgPool;
 
 use crate::activity;
+use crate::security_mail::{self, Change};
 use crate::auth;
 use crate::error::ApiError;
 use crate::login_guard;
@@ -293,6 +294,7 @@ pub async fn confirm(
         Some(json!({ "via": "email link" })),
     )
     .await;
+    security_mail::notify(&state.db, user_id, Change::PasswordReset, auth::known_ip(&ip), None);
 
     Ok(StatusCode::NO_CONTENT)
 }

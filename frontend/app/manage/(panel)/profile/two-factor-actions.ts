@@ -22,8 +22,8 @@ export async function confirmApp(code: string) {
   return step<{ recovery_codes: string[] | null }>('/profile/two-factor/app/confirm', { code: code })
 }
 
-export async function disableApp(password: string) {
-  return step<null>('/profile/two-factor/app/disable', { password: password })
+export async function disableApp(password: string, code: string) {
+  return step<null>('/profile/two-factor/app/disable', { password: password, code: code })
 }
 
 export async function startEmail(password: string) {
@@ -34,8 +34,12 @@ export async function confirmEmail(code: string) {
   return step<{ recovery_codes: string[] | null }>('/profile/two-factor/email/confirm', { code: code })
 }
 
-export async function disableEmail(password: string) {
-  return step<null>('/profile/two-factor/email/disable', { password: password })
+export async function startDisableEmail(password: string) {
+  return step<null>('/profile/two-factor/email/disable/code', { password: password })
+}
+
+export async function disableEmail(code: string) {
+  return step<null>('/profile/two-factor/email/disable', { code: code })
 }
 
 export async function newRecoveryCodes(password: string) {
