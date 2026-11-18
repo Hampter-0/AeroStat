@@ -7,11 +7,12 @@ export const metadata = {
 }
 
 const GITHUB = 'https://github.com/Hampter-0/AeroStat'
-const README = GITHUB + '#readme'
+const DOCS = 'https://docs.aerostatus.nl'
 
 const LINKS = [
+  { href: DOCS, label: 'Docs', note: 'Install, configure and use AeroStat' },
   { href: 'https://discord.gg/45gRX62b77', label: 'Discord', note: 'Ask questions and share ideas with other users' },
-  { href: GITHUB, label: 'GitHub', note: 'Code, releases and the full README' },
+  { href: GITHUB, label: 'GitHub', note: 'Code and releases' },
   { href: GITHUB + '/issues', label: 'Report a problem', note: 'Open an issue on GitHub' },
   { href: 'https://hub.docker.com/r/hampternom/aerostat-backend', label: 'Docker Hub: backend', note: 'hampternom/aerostat-backend' },
   { href: 'https://hub.docker.com/r/hampternom/aerostat-frontend', label: 'Docker Hub: frontend', note: 'hampternom/aerostat-frontend' },
@@ -311,8 +312,8 @@ export default async function HelpPage() {
         </Guide>
         <p className="field-hint help-more">
           More in the{' '}
-          <a href={README} target="_blank" rel="noreferrer">
-            README
+          <a href={DOCS} target="_blank" rel="noreferrer">
+            docs
           </a>
           , or ask on Discord.
         </p>

@@ -11,6 +11,7 @@
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![Docker pulls](https://img.shields.io/docker/pulls/hampternom/aerostat-backend?logo=docker&logoColor=white)](https://hub.docker.com/r/hampternom/aerostat-backend)
 [![License](https://img.shields.io/github/license/Hampter-0/AeroStat?color=blue)](https://github.com/Hampter-0/AeroStat/blob/main/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-docs.aerostatus.nl-1678C2?logo=readthedocs&logoColor=white)](https://docs.aerostatus.nl)
 
 **A self-hosted status page with uptime monitoring, incidents and maintenance.**
 
@@ -18,6 +19,8 @@ AeroStat checks your services over HTTP(S), TCP and DNS, shows their uptime per 
 and lets you post incidents and planned maintenance from a small admin panel.
 
 Runs with Docker Compose next to Postgres and Redis, and is configured with a single `.env` file.
+
+**[Documentation](https://docs.aerostatus.nl)** · **[Website](https://aerostatus.nl)** · **[Releases](https://github.com/Hampter-0/AeroStat/releases)**
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/status-page.png" />
@@ -89,7 +92,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 
 ## Install with Docker
 
-You need Docker with the Compose plugin. Everything runs from two files.
+You need a Linux server with Docker and the Compose plugin. Postgres and Redis come with AeroStat.
 
 ```bash
 mkdir aerostat && cd aerostat
@@ -97,503 +100,29 @@ curl -O https://raw.githubusercontent.com/Hampter-0/AeroStat/main/deploy/docker-
 curl -o .env https://raw.githubusercontent.com/Hampter-0/AeroStat/main/deploy/.env.example
 ```
 
-Open `.env` and set at least:
-
-- `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`: generate one with `openssl rand -base64 32`
-- `DB_PASSWORD`, and the same password in `DATABASE_URL`
-- `SECRET_KEY`: generate one with `openssl rand -hex 32`. Optional, but needed for two-factor sign-in with an authenticator app
-
-Keep a copy of `.env` somewhere safe, next to your backups (see [Backups](#backups)).
-
-Start it with the bundled Postgres:
+Fill in `.env` (the keys and the database password, see the [installation guide](https://docs.aerostatus.nl/guide/installation)), then start it and create your admin account:
 
 ```bash
 docker compose --profile postgres up -d
-```
-
-Create the first admin account:
-
-```bash
 docker compose exec -it backend aerostat create-admin --username admin
 ```
 
-The status page is now on `http://your-server:3000` and the panel on `http://your-server:3000/manage`. Add your services under **Services**. Port 3000 taken already? Set `AEROSTAT_PORT` in `.env` to a free port; the backend, Redis and Postgres don't use any ports on the server.
+The status page is on `http://your-server:3000` and the panel on `http://your-server:3000/manage`.
 
-### Using your own Postgres
+## Documentation
 
-Leave out `--profile postgres` and point `DATABASE_URL` at your own database. AeroStat creates its tables on first start, but the database and user must exist. With `psql` as a superuser:
+Everything else is on **[docs.aerostatus.nl](https://docs.aerostatus.nl)**:
 
-```sql
-CREATE USER aerostat WITH PASSWORD 'a-long-random-password';
-CREATE DATABASE aerostat OWNER aerostat;
-```
+- [Installation](https://docs.aerostatus.nl/guide/installation), with your own Postgres
+- [Reverse proxy and HTTPS](https://docs.aerostatus.nl/guide/reverse-proxy), with nginx, Caddy and Cloudflare
+- [Updating](https://docs.aerostatus.nl/guide/updating) and [configuration](https://docs.aerostatus.nl/guide/configuration)
+- [Monitoring](https://docs.aerostatus.nl/features/monitoring), [incidents and maintenance](https://docs.aerostatus.nl/features/incidents) and [notifications](https://docs.aerostatus.nl/features/notifications)
+- [Users, roles and admins](https://docs.aerostatus.nl/features/users) and [sign-in security](https://docs.aerostatus.nl/features/sign-in)
+- [Backups](https://docs.aerostatus.nl/features/backups) and the [status API and badges](https://docs.aerostatus.nl/features/api)
+- [Command line](https://docs.aerostatus.nl/reference/cli) and [troubleshooting](https://docs.aerostatus.nl/reference/troubleshooting)
+- [Development](https://docs.aerostatus.nl/reference/development): running it from source and releasing images
 
-How AeroStat reaches the database depends on where Postgres runs.
-
-**Postgres in another Docker Compose project** (for example next to pgAdmin). Join AeroStat's backend to that project's network with a `docker-compose.override.yml` next to `docker-compose.yml`; Compose reads it automatically:
-
-```yaml
-services:
-  backend:
-    networks:
-      - default
-      - postgresql
-
-networks:
-  postgresql:
-    external: true
-    name: postgresql_default
-```
-
-Find the network name with `docker network ls`, and use the Postgres container name as the host:
-
-```env
-DATABASE_URL=postgres://aerostat:a-long-random-password@postgresql-db-1:5432/aerostat
-```
-
-**Postgres installed directly on the server.** Use `host.docker.internal` as the host:
-
-```env
-DATABASE_URL=postgres://aerostat:a-long-random-password@host.docker.internal:5432/aerostat
-```
-
-Postgres must then accept connections from the Docker network. In `postgresql.conf` set `listen_addresses` to include the Docker bridge address (for example `listen_addresses = 'localhost,172.17.0.1'`), and in `pg_hba.conf` allow the Docker subnet:
-
-```
-host  aerostat  aerostat  172.16.0.0/12  scram-sha-256
-```
-
-### Redis
-
-Redis runs as part of the compose file and needs no setup. It only holds data that AeroStat rebuilds from Postgres on every start (the daily uptime bars) and short-lived sign-in counters, so it keeps nothing on disk.
-
-## Behind a reverse proxy
-
-Put AeroStat behind a reverse proxy for HTTPS. Set `AEROSTAT_BIND=127.0.0.1` in `.env` so port 3000 is only reachable through the proxy. Only the frontend is published; the backend stays on the internal Docker network.
-
-The proxy has to pass the original host, protocol and client IP. The sign-in cookie is marked `Secure` when `X-Forwarded-Proto` is `https`, and the client IP is used to block repeated failed sign-ins.
-
-**Caddy** does all of this by default:
-
-```
-status.example.com {
-    reverse_proxy 127.0.0.1:3000
-}
-```
-
-**nginx**:
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name status.example.com;
-    # ssl_certificate ... / ssl_certificate_key ...
-
-    client_max_body_size 2g;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-For $remote_addr;
-    }
-}
-```
-
-`client_max_body_size` allows uploads of logos, avatars and backups; nginx stops anything over 1 MB by default. Use `$remote_addr` as shown, so the proxy replaces any `X-Forwarded-For` a visitor sends and AeroStat sees the real IP.
-
-AeroStat only trusts `X-Forwarded-For` when the connection comes from a private address, like a proxy on the same server or Docker network. A visitor who connects straight to port 3000 from the internet is seen by their real address, whatever header they send. A visitor on your own local network could still send a made-up header, so for anything beyond a home lab run AeroStat behind a proxy and set `AEROSTAT_BIND=127.0.0.1`.
-
-### Cloudflare in front of your proxy
-
-Behind Cloudflare, your proxy sees Cloudflare's address instead of the visitor's, so every visitor would share a few IPs. Let the proxy take the visitor's IP from Cloudflare, and only from Cloudflare's own addresses, so nobody can fake it by going around Cloudflare.
-
-**nginx**: add this to the `http` block, for example in `/etc/nginx/conf.d/cloudflare.conf`, and keep `X-Forwarded-For $remote_addr` in the AeroStat site. Take the current ranges from [cloudflare.com/ips](https://www.cloudflare.com/ips/):
-
-```nginx
-real_ip_header CF-Connecting-IP;
-set_real_ip_from 173.245.48.0/20;
-set_real_ip_from 103.21.244.0/22;
-set_real_ip_from 103.22.200.0/22;
-set_real_ip_from 103.31.4.0/22;
-set_real_ip_from 141.101.64.0/18;
-set_real_ip_from 108.162.192.0/18;
-set_real_ip_from 190.93.240.0/20;
-set_real_ip_from 188.114.96.0/20;
-set_real_ip_from 197.234.240.0/22;
-set_real_ip_from 198.41.128.0/17;
-set_real_ip_from 162.158.0.0/15;
-set_real_ip_from 104.16.0.0/13;
-set_real_ip_from 104.24.0.0/14;
-set_real_ip_from 172.64.0.0/13;
-set_real_ip_from 131.0.72.0/22;
-set_real_ip_from 2400:cb00::/32;
-set_real_ip_from 2606:4700::/32;
-set_real_ip_from 2803:f800::/32;
-set_real_ip_from 2405:b500::/32;
-set_real_ip_from 2405:8100::/32;
-set_real_ip_from 2a06:98c0::/29;
-set_real_ip_from 2c0f:f248::/32;
-```
-
-**Caddy**: tell it to trust Cloudflare and read its header. In the global options at the top of the Caddyfile:
-
-```
-{
-    servers {
-        trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
-        client_ip_headers CF-Connecting-IP
-    }
-}
-
-status.example.com {
-    reverse_proxy 127.0.0.1:3000 {
-        header_up X-Forwarded-For {client_ip}
-    }
-}
-```
-
-Check it under **Profile → Sessions**: your own IP should show there, not a Cloudflare address like `172.68.x.x` or `162.158.x.x`. Cloudflare's free plan accepts uploads up to 100 MB, so upload bigger backups straight to the server instead.
-
-### TRUSTED_PROXY_HOPS
-
-AeroStat reads the client IP from the last `X-Forwarded-For` entry. With the setups above that is the only entry, so leave `TRUSTED_PROXY_HOPS` at 1. Only when a proxy adds to the header instead of replacing it (nginx with `$proxy_add_x_forwarded_for`) behind another proxy that does the same, set it to the number of proxies in that chain. Prefer the setups above: with an adding chain, someone who reaches your server around the first proxy can still fake an IP.
-
-## Monitoring
-
-Add services under **Services → Add service** and pick a check type:
-
-| Type | Checks | Up when |
-| --- | --- | --- |
-| HTTP(S) | a URL, like `https://example.com/health` | it answers with one of the expected status codes (200 by default) |
-| TCP port | a host and port, like `db.example.com:5432` | a connection opens. For databases, mail servers, game servers and other services without a web page |
-| DNS record | a domain name and a record type: A, AAAA, CNAME, MX or TXT | the name has records of that type, and one of them has the expected value when you set one |
-
-Every check has a timeout of 10 seconds and runs every 30 seconds up to every 24 hours. A service is marked down after two failed checks in a row; change this under **Settings → Monitoring**.
-
-HTTP(S) checks can also:
-
-- **look for a keyword**: the page must contain a word (like `Welcome`), or must not contain one (like `Error`). Upper and lower case don't matter, and only the first 2 MB of a page is searched.
-- **warn before the certificate runs out**: for `https://` addresses AeroStat reads the certificate every few hours and sends one notification when it expires within the chosen number of days (14 by default, empty turns it off). A certificate that has already run out fails the check itself.
-
-Notifications say why a check failed, for example the status code, a missing keyword, a refused connection or a DNS record with another value.
-
-### Run AeroStat somewhere else
-
-A status page can't report an outage of the server it runs on. If AeroStat and your services share a server, a crash or network problem takes them all down at once and nobody gets a notification. Run AeroStat on another server, ideally with another provider or in another region than the services it watches. A small VPS is plenty.
-
-## Discord notifications
-
-In the panel under **Settings → Notifications**, paste a Discord webhook URL (in Discord: Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL) and pick which events to post:
-
-- a service goes down (after two failed checks in a row) or comes back up, with how long it was down
-- the HTTPS certificate of a service runs out soon (off by default, since a Discord channel is often public)
-- an incident is posted, updated or resolved (not for a past incident you add afterwards)
-- maintenance is planned, starts, ends or is cancelled
-
-Set the status page address under **Settings → General**, so messages link to the incident or maintenance. **Send test message** checks that everything arrives. Only real Discord webhook URLs are accepted, and the saved URL is never shown in full again.
-
-## Email notifications
-
-Panel users can get the same notifications by email. Add your mail server to `.env`:
-
-```env
-SMTP_HOST=mail.example.com
-SMTP_PORT=465
-SMTP_ENCRYPTION=tls
-SMTP_USERNAME=noreply@example.com
-SMTP_PASSWORD=your-password
-SMTP_FROM_ADDRESS=noreply@example.com
-```
-
-Restart with `docker compose up -d`. People with the Email settings permission see the settings under **System → Email** and can send a test email there; the password is never shown. Each user then picks their notifications on their **Profile**, and only gets the ones their roles let them see: services, incidents or maintenance. Everyone gets their own email, so addresses are never shared.
-
-## Notifications in the panel
-
-The bell at the bottom right of the panel collects everything that happened while you were away: services going down or coming back, incidents, maintenance, certificates that run out and admin notices. It needs no setup.
-
-- **All**, **Unread** and **Important** tabs. Outages, critical incidents and security notices count as important and turn the badge red.
-- Click a notification to open the page it is about. Mark them all as read, remove one, or clear the list.
-- **Mute the count** for 1, 8 or 24 hours. Notifications are still saved, the badge just stays quiet.
-- Pick what shows up under **Profile → Notifications**, in the Panel column next to Email. You only get what your roles let you see, and never a notification about something you did yourself.
-- Don't want it at all? Turn off **Show the notification bell** on your profile. The bell disappears and nothing is saved for you; email keeps working.
-
-Notifications are removed automatically after 30 days, read or not.
-
-## Passkeys
-
-Panel users can sign in with a passkey instead of a password: Windows Hello, Face ID, Touch ID, a phone or a security key. Add one under **Profile → Security keys**. A passkey only works on the domain it was made for, so set the status page address under **Settings → General** first (for example `https://status.example.com`). If that address ever changes, everyone has to add their passkeys again.
-
-Someone with a passkey can turn password sign-in off on their profile. Signing in with a passkey never counts towards the sign-in block.
-
-## Two-factor sign-in
-
-Panel users can ask for a code after their password under **Profile → Two-factor sign-in**: from an authenticator app (1Password, Bitwarden, Google Authenticator, Aegis and so on) or by email. Turning on the first method gives 10 recovery codes, each one works once when the app or email is out of reach.
-
-The authenticator app needs `SECRET_KEY` in `.env`, which encrypts the app secrets in the database:
-
-```bash
-openssl rand -hex 32
-```
-
-Keep this key with your backups. If it changes or gets lost, everyone has to set up their app again. Email codes need email to be set up and work without the key.
-
-Turning a method off needs your password and a code: from the app, from an email sent for it, or a recovery code. A stolen password alone can't turn it off.
-
-Someone who can edit users can require two-factor sign-in for a user. That user then has to turn on a method, or sign in with passkeys only (password sign-in off), before they can use the panel. If someone loses their phone, open them under **Users** and use **Reset two-factor**.
-
-### Security emails
-
-When email is set up, AeroStat emails a user when their sign-in changes: password changed or reset, email address changed (sent to the old address), passkey added or removed, password sign-in turned on or off, two-factor turned on or off, new recovery codes, or two-factor reset by an admin. Each email says when it happened and from which IP address, so someone whose account is taken over finds out. Users without an email address get nothing.
-
-## Forgot password
-
-The sign-in page shows **Forgot password?** when email is set up and the status page address is filled in under **Settings → General**. People get a link that works once, for 30 minutes, and are signed out everywhere after they choose a new password. Two-factor sign-in still applies. The answer is the same for addresses that have no account, so the page can't be used to find out who has one.
-
-Without email, an admin can set a new password on the user's page, or from the server:
-
-```bash
-docker compose exec -it backend aerostat cli
-```
-
-and pick `reset-password`.
-
-## Status API and badges
-
-Every AeroStat site has a small public API, so other sites and tools can show your status. Both endpoints allow cross-origin requests and are cached for a short time.
-
-**`GET /api/status`** returns the overall status, every service and anything ongoing:
-
-```json
-{
-  "status": "operational",
-  "last_checked": "2026-11-15T16:40:12Z",
-  "services": [
-    { "id": "website", "name": "Website", "group": "Websites", "status": "online", "last_checked": "2026-11-15T16:40:12Z" }
-  ],
-  "ongoing_incidents": [],
-  "maintenance_in_progress": []
-}
-```
-
-`status` is one of `operational`, `degraded` (an incident is ongoing), `outage` (a service is down), `maintenance` or `no_services`. A service is `online`, `offline` or `pending` (not checked yet). Each incident and maintenance lists the ids of the `services` it affects. Check URLs are never included.
-
-**`GET /api/status?service=<id>`** returns one service, with only the incidents and maintenance that affect it:
-
-```json
-{
-  "id": "contact-api",
-  "name": "Contact API",
-  "group": "APIs",
-  "status": "online",
-  "last_checked": "2026-11-15T16:40:12Z",
-  "ongoing_incidents": [],
-  "maintenance_in_progress": []
-}
-```
-
-An unknown id returns `404` with `{"error": "Unknown service"}`. The id is the last part of the service's URL in the panel (`/manage/services/contact-api`) and is also listed in `/api/status`.
-
-For example, to show a notice on your own site when a service is down:
-
-```js
-const res = await fetch('https://status.example.com/api/status?service=contact-api')
-const service = await res.json()
-if (service.status === 'offline') {
-  // show "the contact form is temporarily unavailable"
-}
-```
-
-**`GET /api/badge`** returns an SVG badge for a README or website:
-
-```markdown
-![Status](https://status.example.com/api/badge)
-![Website](https://status.example.com/api/badge?service=website)
-![Status](https://status.example.com/api/badge?label=my%20app)
-```
-
-`service` picks one service by its id (shown in the panel's service URL and in `/api/status`), and `label` replaces the text on the left.
-
-## Troubleshooting
-
-**Logs in the panel.** Under **System → Logs** you see the backend's newest 2000 log lines, live, with a level filter, search and a download as a text file. It needs the **View logs** permission (admins always have it), since logs can hold IP addresses, usernames and email addresses. The lines live in memory, so they start over when the backend restarts; older ones are still in `docker compose logs backend`.
-
-**A service shows as down with status 403, but it works in your browser.** The site is probably behind Cloudflare or another firewall that blocks automated requests. AeroStat identifies itself as `AeroStat/<version> (+https://github.com/Hampter-0/AeroStat)`, which most setups allow. If it is still blocked, add a rule in the firewall that lets your AeroStat server's IP address through.
-
-**A service is down only from AeroStat.** Checks run from inside the backend container. Test from the same network with:
-
-```bash
-docker compose exec frontend wget -S -O /dev/null https://example.com
-```
-
-## Configuration
-
-All settings go in `.env` next to `docker-compose.yml`. Site name, contact link, colour, logo, favicon, timezone and data retention can also be changed in the panel under **Settings**; the panel value wins.
-
-| Variable | Default | |
-| --- | --- | --- |
-| `AEROSTAT_VERSION` | `latest` | Image tag to run |
-| `AEROSTAT_BIND` | `0.0.0.0` | Address the status page listens on |
-| `AEROSTAT_PORT` | `3000` | Port the status page listens on |
-| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | | Required. `openssl rand -base64 32` |
-| `DATABASE_URL` | | Required. Postgres connection string |
-| `DB_USER`, `DB_PASSWORD`, `DB_NAME` | `aerostat`, `change_me`, `aerostat` | Bundled Postgres only |
-| `SITE_NAME` | `AeroStat` | Default site name |
-| `CONTACT_URL` | | Default contact link |
-| `PRIMARY_COLOR` | `#1678c2` | Default accent colour |
-| `METRICS_RETENTION_DAYS` | `60` | Days of check results to keep |
-| `SESSION_DAYS` | `30` | How long a panel sign-in lasts (max 365) |
-| `LOGIN_MAX_FAILURES_PER_IP` | `10` | Failed sign-ins from one IP before a block. IPv6 addresses count per /64 block, since one connection gets a whole block |
-| `LOGIN_MAX_FAILURES_PER_ACCOUNT` | `30` | Failed sign-ins on one account before new IPs are blocked; IPs that signed in to it in the last 90 days still get in |
-| `LOGIN_LOCKOUT_MINUTES` | `15` | How long a block lasts |
-| `UPDATE_CHECK` | `true` | Show people who can view System when a newer release is out |
-| `SECRET_KEY` | | Encrypts authenticator app secrets. `openssl rand -hex 32`. Without it only email codes work |
-| `SMTP_HOST` | | Mail server for email notifications. Empty turns email off |
-| `SMTP_PORT` | `465` or `587` | Mail server port, follows `SMTP_ENCRYPTION` |
-| `SMTP_ENCRYPTION` | `starttls`, or `tls` on port 465 | `tls`, `starttls` or `none` |
-| `SMTP_USERNAME` | | Mail server login |
-| `SMTP_PASSWORD` | | Mail server password. Never shown in the panel |
-| `SMTP_FROM_ADDRESS` | `SMTP_USERNAME` | Address emails are sent from |
-| `SMTP_FROM_NAME` | Site name | Name emails are sent from |
-| `BACKUP_DIR` | `/data/backups` | Where backups are stored |
-| `PG_DUMP_PATH`, `PG_RESTORE_PATH`, `PSQL_PATH` | `pg_dump`, `pg_restore`, `psql` | The PostgreSQL tools, only needed outside Docker |
-| `TRUSTED_PROXY_HOPS` | `1` | Only for proxies that add to `X-Forwarded-For` instead of replacing it, see [TRUSTED_PROXY_HOPS](#trusted_proxy_hops) |
-| `RUST_LOG` | `info` | Backend log level |
-
-## Command line
-
-The backend image includes an interactive CLI for tasks that need server access:
-
-```bash
-docker compose exec -it backend aerostat cli
-```
-
-It can run migrations, create an admin, list accounts, reset a password (by username or email) and lift a sign-in block. For someone who is locked out it can also:
-
-| Command | What it does |
-|---|---|
-| `reset-2fa` | Turns off the authenticator app and email codes and removes the recovery codes |
-| `remove-passkeys` | Removes every passkey of an account and turns password sign-in back on |
-| `enable-password-login` | Turns password sign-in back on |
-| `set-email` | Changes or removes an email address |
-| `backups` | Lists the backups |
-| `backup` | Makes a backup now |
-| `restore` | Puts a backup back, after backing up the database as it is now |
-| `set-owner` | Makes an admin the owner, every other owner becomes a normal admin |
-| `unsuspend` | Lets a suspended account sign in again |
-
-Each change shows up under Activity. Accounts made with `create-admin` are admins and the owners of the install. Running it again for an existing account sets a new password and lifts a suspension.
-
-An admin has full access to everything and gets a crown in the users list. Admin is a switch on the user, not a role: roles only hold permissions. Accounts follow an order: owner, then admins, then everyone else. Nobody else can change or delete the owner's account, and only the owner can change, suspend or delete another admin, take admin away from someone, or reset their password, email or two-factor. Someone who isn't an admin can only manage users who have no more rights than they have.
-
-A user can be **suspended** on their user page. They are signed out right away, can't sign in and get no notifications until someone turns it off again, or until `unsuspend` in the CLI. Nobody can suspend themselves or the owner. So one stolen admin account can't lock the owner out. When someone changes your password or email in the panel, you get an email about it.
-
-Single commands also work:
-
-```bash
-docker compose exec -it backend aerostat create-admin --username admin
-```
-
-## Updating
-
-```bash
-docker compose pull
-docker compose --profile postgres up -d
-```
-
-Leave out `--profile postgres` if you use your own database. Database migrations run automatically on start.
-
-New releases sometimes add a setting to `.env.example`, like `SECRET_KEY` in 0.12.0. Docker only passes a setting to AeroStat when `docker-compose.yml` lists it, so get the newest compose file too. Your `.env` and `docker-compose.override.yml` stay as they are:
-
-```bash
-cp docker-compose.yml docker-compose.yml.bak
-curl -O https://raw.githubusercontent.com/Hampter-0/AeroStat/main/deploy/docker-compose.yml
-docker compose up -d
-```
-
-If you changed `docker-compose.yml` yourself, compare it with the `.bak` copy and move your changes to `docker-compose.override.yml`.
-
-The panel shows the running version at the bottom of the sidebar. When a newer release is out, people with the View system permission see a notice on the dashboard with a link to the release notes and a button that copies the update command. AeroStat checks GitHub for this every six hours and sends nothing about your installation; set `UPDATE_CHECK=false` to turn it off.
-
-AeroStat can't update itself: that would need access to the Docker socket, which is the same as root on your server. If you want automatic updates, run [Watchtower](https://containrrr.dev/watchtower/) next to it, limited to the AeroStat containers:
-
-```yaml
-  watchtower:
-    image: containrrr/watchtower
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --cleanup --interval 21600 aerostat-frontend-1 aerostat-backend-1
-```
-
-## Backups
-
-Everything worth keeping is in Postgres. AeroStat backs it up with `pg_dump` into the `backups` volume:
-
-- **Every day** after 03:00 in the site's timezone, keeping the last 7. Change this, or turn it off, under **System → Backups**.
-- **Before an update.** When a new version starts for the first time, it backs up the database before changing it. The last 3 are kept.
-- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included. Uploading a backup from elsewhere is for admins only, because a backup runs as SQL when it is restored; the CLI warns before restoring an uploaded one.
-
-A backup on the same server is gone when the server is. Download one now and then, or copy the volume elsewhere, and keep a copy of your `.env` with it: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
-
-The volume is called `aerostat_backups`. Find its folder on the server with `docker volume inspect aerostat_backups --format '{{ .Mountpoint }}'` (usually `/var/lib/docker/volumes/aerostat_backups/_data`), or copy every backup next to your compose file:
-
-```bash
-docker compose cp backend:/data/backups ./aerostat-backups
-```
-
-To keep the backups in a folder of your own instead of a volume, add this to `docker-compose.override.yml`. The folder must be writable for user id 10001:
-
-```yaml
-services:
-  backend:
-    volumes:
-      - /srv/aerostat-backups:/data/backups
-```
-
-### Restoring
-
-Admins can restore a backup under **System → Backups** with **Restore**, after entering their password. AeroStat first backs up the database as it is now, puts the chosen backup back, and then restarts the backend so newer migrations run; you sign in again afterwards. If anything fails, nothing is changed.
-
-The same works from the server with the CLI, also when you can't sign in:
-
-```bash
-docker compose exec -it backend aerostat cli
-```
-
-Pick `restore`, then restart the backend so it runs any newer migrations:
-
-```bash
-docker compose restart backend
-```
-
-A backup from a newer AeroStat can't go back into an older one; update first. The Docker image has the PostgreSQL 17 tools, which work with PostgreSQL 17 and older.
-
-## Development
-
-Requirements: Rust, Node.js 20.9 or newer, Docker for Redis (and Postgres if you don't have one), and the PostgreSQL client tools (`pg_dump`, `pg_restore`, `psql`) if you want to try backups.
-
-`docker-compose.dev.yml` runs Redis on `127.0.0.1:6379`. Add `--profile postgres` to also get a Postgres on `127.0.0.1:5432` with user, password and database `aerostat`. Set `DEV_REDIS_PORT` or `DEV_POSTGRES_PORT` when those ports are taken.
-
-```bash
-docker compose -f docker-compose.dev.yml up -d                       # Redis only
-docker compose -f docker-compose.dev.yml --profile postgres up -d    # Redis and Postgres
-```
-
-The root `.env.example` is for development and already points at the dev Postgres and Redis. `deploy/.env.example` is the one for installing with Docker.
-
-```bash
-cp .env.example .env                              # backend settings
-cp frontend/.env.local.example frontend/.env.local
-cd backend && cargo run                           # API on :3004
-cd frontend && npm install && npm run dev         # site on :3000
-```
-
-Create an admin with `cargo run -- create-admin --username admin`, or open the CLI with `cargo run -- cli`.
-
-### Releasing images
-
-Pushing a tag like `v1.0.0` builds `hampternom/aerostat-backend` and `hampternom/aerostat-frontend` for amd64 and arm64 on native runners and pushes them to Docker Hub with the tags `1.0.0`, `1.0` and `latest`. The workflow needs a repository secret `DOCKERHUB_TOKEN` (a Docker Hub access token with read and write access).
+The docs live in [aerostat-docs](https://github.com/Hampter-0/aerostat-docs). Found a mistake? Every page has an edit link.
 
 ## License
 
