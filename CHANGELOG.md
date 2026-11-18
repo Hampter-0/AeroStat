@@ -4,6 +4,13 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.27.1
+
+### Changes
+
+- The documentation moved to [docs.aerostatus.nl](https://docs.aerostatus.nl). The README is shorter and links to it, and the Help page in the panel has a Docs link.
+- The `.env.example` in the root of the repository is for development; installing with Docker uses `deploy/.env.example` as before.
+
 ## 0.27.0
 
 ### Changes
