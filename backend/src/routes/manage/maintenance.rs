@@ -104,6 +104,26 @@ async fn find_title(db: &PgPool, id: i64) -> Result<String, ApiError> {
     found.map(|(title,)| title).ok_or(ApiError::NotFound)
 }
 
+/// Where the maintenance is right now: "cancelled", or else what the schedule
+/// says ("scheduled", "in_progress" or "completed").
+async fn current_status(db: &PgPool, id: i64) -> Result<String, ApiError> {
+    let status: Option<String> = sqlx::query_scalar(
+        r#"
+        SELECT CASE
+            WHEN status = 'cancelled' THEN 'cancelled'
+            WHEN now() < scheduled_start THEN 'scheduled'
+            WHEN now() < scheduled_end THEN 'in_progress'
+            ELSE 'completed'
+        END
+        FROM maintenance WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(db)
+    .await?;
+    status.ok_or(ApiError::NotFound)
+}
+
 async fn log(state: &AppState, user: &CurrentUser, action: &str, id: Option<i64>, title: &str, details: Option<Value>) {
     activity::record(&state.db, user, PERMISSION, action, id.map(|id| id.to_string()), title, details).await;
 }
@@ -206,6 +226,11 @@ pub async fn cancel(
 ) -> Result<StatusCode, ApiError> {
     user.require("maintenance.cancel")?;
     let title = find_title(&state.db, id).await?;
+    match current_status(&state.db, id).await?.as_str() {
+        "cancelled" => return Err(ApiError::BadRequest("This maintenance is already cancelled".into())),
+        "completed" => return Err(ApiError::BadRequest("This maintenance is already over".into())),
+        _ => {}
+    }
     let message = clean_optional(body.message).unwrap_or_else(|| DEFAULT_CANCELLED_MESSAGE.to_string());
     let before = snapshot(&state, "maintenance", id).await;
 
@@ -250,6 +275,9 @@ pub async fn reactivate(
 ) -> Result<StatusCode, ApiError> {
     user.require("maintenance.cancel")?;
     let title = find_title(&state.db, id).await?;
+    if current_status(&state.db, id).await? != "cancelled" {
+        return Err(ApiError::BadRequest("This maintenance isn't cancelled".into()));
+    }
     let before = snapshot(&state, "maintenance", id).await;
 
     let mut tx = state.db.begin().await?;
@@ -308,6 +336,26 @@ pub async fn add_update(
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
 
+    // The timeline must agree with the status the page shows.
+    let current = current_status(&state.db, id).await?;
+    if body.status == "cancelled" {
+        return Err(ApiError::BadRequest("Use Cancel maintenance to cancel it".into()));
+    }
+    if current == "cancelled" {
+        return Err(ApiError::BadRequest("This maintenance is cancelled. Reactivate it first".into()));
+    }
+    if body.status == "scheduled" && current != "scheduled" {
+        return Err(ApiError::BadRequest(
+            "It has already started. Move the start time under Details to plan it later".into(),
+        ));
+    }
+    if body.status == "in_progress" && current == "completed" {
+        return Err(ApiError::BadRequest(
+            "It is already over. Move the end time under Details to continue it".into(),
+        ));
+    }
+
+    let mut tx = state.db.begin().await?;
     let created: StatusUpdate = sqlx::query_as(
         r#"
         INSERT INTO maintenance_updates (maintenance_id, status, message)
@@ -318,10 +366,47 @@ pub async fn add_update(
     .bind(id)
     .bind(&body.status)
     .bind(&message)
-    .fetch_one(&state.db)
+    .fetch_one(&mut *tx)
     .await?;
 
-    let details = Some(json!({ "update": created }));
+    // The status follows the schedule, so like Statuspage an update moves the
+    // schedule: "completed" ends it now and "in progress" starts it now. The
+    // maintenance watcher then sends the usual started or completed message.
+    let moved: Option<(DateTime<Utc>, DateTime<Utc>)> = match body.status.as_str() {
+        "completed" => {
+            sqlx::query_as(
+                r#"
+                UPDATE maintenance
+                SET scheduled_end = now(), scheduled_start = LEAST(scheduled_start, now())
+                WHERE id = $1 AND status <> 'cancelled' AND scheduled_end > now()
+                RETURNING scheduled_start, scheduled_end
+                "#,
+            )
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        "in_progress" => {
+            sqlx::query_as(
+                r#"
+                UPDATE maintenance SET scheduled_start = now()
+                WHERE id = $1 AND status <> 'cancelled' AND scheduled_start > now()
+                RETURNING scheduled_start, scheduled_end
+                "#,
+            )
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?
+        }
+        _ => None,
+    };
+    tx.commit().await?;
+
+    let mut details = json!({ "update": created });
+    if let Some((start, end)) = moved {
+        details["schedule"] = json!({ "scheduled_start": start, "scheduled_end": end });
+    }
+    let details = Some(details);
     log(&state, &user, "posted an update on maintenance", Some(id), &title, details).await;
     Ok((StatusCode::CREATED, Json(created)))
 }

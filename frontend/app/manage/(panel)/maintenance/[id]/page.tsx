@@ -43,9 +43,9 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
 
   const canEdit = can(user, 'maintenance.edit')
 
-  let updateStatus = maintenance.status
-  if (isCancelled) {
-    updateStatus = 'scheduled'
+  let isOver = false
+  if (maintenance.status === 'completed') {
+    isOver = true
   }
 
   return (
@@ -67,12 +67,12 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
         </a>
       </header>
 
-      {can(user, 'maintenance.update') && (
+      {can(user, 'maintenance.update') && !isCancelled && (
         <section className="manage-panel">
           <h2>Post an update</h2>
           <PostUpdateForm
             parentId={maintenance.id}
-            currentStatus={updateStatus}
+            currentStatus={maintenance.status}
             statuses={MAINTENANCE_UPDATE_STATUSES}
             hints={MAINTENANCE_HINTS}
             action={postMaintenanceUpdate}
@@ -109,7 +109,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
         </section>
       )}
 
-      {can(user, 'maintenance.cancel') && (
+      {can(user, 'maintenance.cancel') && !isOver && (
         <section className="manage-panel danger">
           <h2>Cancel maintenance</h2>
           <CancelMaintenanceForm id={maintenance.id} cancelled={isCancelled} />
