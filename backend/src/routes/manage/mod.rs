@@ -4,6 +4,7 @@ mod dashboard;
 mod bell;
 mod email;
 mod help;
+mod logs;
 mod incidents;
 mod maintenance;
 mod notifications;
@@ -52,6 +53,8 @@ pub fn router() -> Router<AppState> {
         .route("/backups/:id/restore", post(backups::restore))
         .route("/version/check", post(version::check))
         .route("/system", get(system::get))
+        .route("/system/logs", get(logs::list))
+        .route("/system/logs/download", get(logs::download))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))
         .route("/profile/sessions", get(sessions::list))

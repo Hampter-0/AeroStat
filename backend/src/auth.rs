@@ -109,6 +109,12 @@ pub static PERMISSION_GROUPS: &[PermissionGroup] = &[
                 "Make, download and delete backups and set the schedule. A backup holds everything, password hashes included.",
                 Some("system.view"),
             ),
+            perm(
+                "system.logs",
+                "View logs",
+                "Read the backend's recent log lines. They can hold IP addresses, usernames and email addresses.",
+                Some("system.view"),
+            ),
         ],
     },
     PermissionGroup {

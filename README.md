@@ -32,7 +32,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Public status page with daily uptime bars, incidents and maintenance
 - Incidents with their real start and end time: post one late, add one that is already over, or move an update to the right time. A critical incident turns its days red and counts as downtime
 - HTTP(S) checks with status codes and keywords, TCP port checks and DNS record checks, plus a warning before an HTTPS certificate runs out
-- Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log
+- Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log, live backend logs
 - Sign in with a password or a passkey, see and sign out your sessions
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
@@ -415,6 +415,8 @@ if (service.status === 'offline') {
 `service` picks one service by its id (shown in the panel's service URL and in `/api/status`), and `label` replaces the text on the left.
 
 ## Troubleshooting
+
+**Logs in the panel.** Under **System → Logs** you see the backend's newest 2000 log lines, live, with a level filter, search and a download as a text file. It needs the **View logs** permission (super users always have it), since logs can hold IP addresses, usernames and email addresses. The lines live in memory, so they start over when the backend restarts; older ones are still in `docker compose logs backend`.
 
 **A service shows as down with status 403, but it works in your browser.** The site is probably behind Cloudflare or another firewall that blocks automated requests. AeroStat identifies itself as `AeroStat/<version> (+https://github.com/Hampter-0/AeroStat)`, which most setups allow. If it is still blocked, add a rule in the firewall that lets your AeroStat server's IP address through.
 

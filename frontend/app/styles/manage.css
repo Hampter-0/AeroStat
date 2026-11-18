@@ -4030,3 +4030,115 @@ button.page-button {
 .table-toolbar .activity-bar-controls {
     margin-left: auto;
 }
+
+.logs-toolbar .activity-search {
+    flex: 1;
+    min-width: 200px;
+}
+
+.logs-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.logs-live::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--faint);
+}
+
+.logs-live.on::before {
+    background: var(--green);
+    box-shadow: 0 0 0 3px var(--success-bg);
+}
+
+.logs-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.logs-count {
+    margin: 0;
+    padding: 0 16px 12px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.logs-view {
+    max-height: 560px;
+    overflow: auto;
+    border-top: 1px solid var(--border-soft);
+    background: var(--panel-soft);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.logs-line {
+    padding: 5px 16px;
+    display: grid;
+    grid-template-columns: 118px 52px minmax(0, 180px) minmax(0, 1fr);
+    gap: 12px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.logs-line time {
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.logs-level {
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.logs-line.level-warn .logs-level {
+    color: var(--amber);
+}
+
+.logs-line.level-error {
+    background: var(--danger-bg);
+}
+
+.logs-line.level-error .logs-level {
+    color: var(--red);
+}
+
+.logs-target {
+    overflow: hidden;
+    color: var(--faint);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.logs-message {
+    color: var(--text);
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.logs-empty {
+    padding: 24px 16px;
+}
+
+@media (max-width: 760px) {
+    .logs-line {
+        grid-template-columns: auto auto minmax(0, 1fr);
+        row-gap: 2px;
+    }
+
+    .logs-target {
+        display: none;
+    }
+
+    .logs-message {
+        grid-column: 1 / -1;
+    }
+}

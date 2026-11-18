@@ -6,6 +6,7 @@ mod config;
 mod console;
 mod db;
 mod error;
+mod log_buffer;
 mod login_guard;
 mod mailer;
 mod notifications;
@@ -23,6 +24,7 @@ use clap::Parser;
 use cli::Commands;
 use state::AppState;
 use tower_http::trace::TraceLayer;
+use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -38,7 +40,11 @@ async fn main() -> anyhow::Result<()> {
     } else {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into())
     };
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(tracing_subscriber::fmt::layer())
+        .with(log_buffer::BufferLayer)
+        .init();
 
     let settings = config::Settings::load()?;
     let pool = db::connect(&settings.database_url).await?;

@@ -4,10 +4,12 @@ import type { ReactNode } from 'react'
 import { AlertTriangle, Check, Clock, Cpu, Database, ExternalLink, Layers, MemoryChip, Package, Terminal } from '@/components/icons'
 import BackupsPanel from '@/components/manage/system/BackupsPanel'
 import EmailTest from '@/components/manage/system/EmailTest'
+import LogsPanel from '@/components/manage/system/LogsPanel'
 import UpdateCheck from '@/components/manage/system/UpdateCheck'
 import type { BackupsView } from '@/lib/backups'
 import { getSiteConfig } from '@/lib/branding'
 import { ENCRYPTION_LABELS, type EmailInfo } from '@/lib/email'
+import type { LogsResponse } from '@/lib/logs'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatBytes, formatCount, formatMs, type SystemInfo } from '@/lib/system'
 import { currentTimeMs, formatAgo, formatDateTimeShort, formatDuration } from '@/lib/time'
@@ -23,6 +25,7 @@ const TABS = [
   { id: 'health', label: 'Health' },
   { id: 'email', label: 'Email' },
   { id: 'backups', label: 'Backups' },
+  { id: 'logs', label: 'Logs' },
 ]
 
 const SMTP_EXAMPLE = [
@@ -97,6 +100,9 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
     if (option.id === 'backups' && !can(user, 'system.backups')) {
       continue
     }
+    if (option.id === 'logs' && !can(user, 'system.logs')) {
+      continue
+    }
     tabs.push(option)
   }
   let activeTab = 'overview'
@@ -114,6 +120,10 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
   let backups: BackupsView | null = null
   if (activeTab === 'backups') {
     backups = await manageFetch<BackupsView>('/backups')
+  }
+  let logs: LogsResponse | null = null
+  if (activeTab === 'logs') {
+    logs = await manageFetch<LogsResponse>('/system/logs?level=all')
   }
   const system = await manageFetch<SystemInfo>('/system')
   const version = await getVersionInfo()
@@ -353,6 +363,8 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
         </section>
       )}
       {activeTab === 'backups' && backups && <BackupsPanel data={backups} timezone={timezone} isAdmin={user.is_admin} />}
+
+      {activeTab === 'logs' && logs && <LogsPanel initial={logs} timezone={timezone} />}
     </div>
   )
 }
