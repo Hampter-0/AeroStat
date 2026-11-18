@@ -108,6 +108,67 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # GitHub's own notes only list pull requests. Changes land on main
+      # directly, so the notes are built from the commits since the last tag,
+      # grouped by their feat: / fix: prefix.
+      - name: Write the release notes
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          NAMESPACE: ${{ env.DOCKERHUB_NAMESPACE }}
+        run: |
+          previous=$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)
+          range="$TAG"
+          if [ -n "$previous" ]; then
+            range="$previous..$TAG"
+          fi
+          git log --no-merges --reverse --format='%s' "$range" > "$RUNNER_TEMP/subjects.txt"
+
+          section() {
+            local title="$1" pattern="$2"
+            local lines
+            lines=$(grep -E "$pattern" "$RUNNER_TEMP/subjects.txt" | sed -E 's/^[a-z]+(\([^)]*\))?!?: *//' | sed -E 's/^(.)/\U\1/' | sed 's/^/- /' || true)
+            if [ -n "$lines" ]; then
+              printf '## %s\n\n%s\n\n' "$title" "$lines"
+            fi
+          }
+
+          version="${TAG#v}"
+          # A "## 1.2.3" section in CHANGELOG.md, when there is one, says it
+          # in more detail than the commit subjects.
+          written=""
+          if [ -f CHANGELOG.md ]; then
+            written=$(awk -v v="$version" '
+              /^## / { if (found) exit; if ($2 == v || $2 == "v" v) { found = 1; next } }
+              found { print }
+            ' CHANGELOG.md | sed -e '/./,$!d')
+          fi
+          {
+            if [ -n "$written" ]; then
+              printf '%s\n\n' "$written"
+            else
+              section "New" '^feat(\(|!|:)'
+              section "Fixes" '^fix(\(|!|:)'
+              section "Other changes" '^(chore|docs|refactor|perf|style|test|build|ci)(\(|!|:)'
+              others=$(grep -Ev '^(feat|fix|chore|docs|refactor|perf|style|test|build|ci)(\(|!|:)' "$RUNNER_TEMP/subjects.txt" | sed 's/^/- /' || true)
+              if [ -n "$others" ]; then
+                printf '## More\n\n%s\n\n' "$others"
+              fi
+            fi
+            printf '## Update\n\n'
+            printf 'Back up first if you want to, then pull the new images and restart:\n\n'
+            printf '```bash\ndocker compose pull && docker compose up -d\n```\n\n'
+            printf 'Images: `%s/aerostat-backend:%s` and `%s/aerostat-frontend:%s`. Database migrations run on their own when the backend starts.\n\n' "$NAMESPACE" "$version" "$NAMESPACE" "$version"
+            if [ -n "$previous" ]; then
+              printf '**Full changelog**: https://github.com/%s/compare/%s...%s\n' "$REPO" "$previous" "$TAG"
+            fi
+          } > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
       - uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/notes.md
