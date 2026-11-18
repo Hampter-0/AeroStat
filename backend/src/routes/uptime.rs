@@ -26,6 +26,8 @@ pub struct DayHistory {
     /// Share of the day the service was up, for the bar's tooltip. Today
     /// counts only the part that has passed. None without checks.
     uptime_percent: Option<f64>,
+    /// Average response time of that day's checks that were up.
+    avg_response_time_ms: Option<i64>,
     events: Vec<DayEvent>,
 }
 
@@ -179,7 +181,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
 
     let mut history = Vec::new();
     for (i, date) in dates.iter().enumerate() {
-        let (mut status, mut downtime_minutes) = parse_rollup(statuses[i].as_deref());
+        let (mut status, mut downtime_minutes, avg_response_time_ms) = parse_rollup(statuses[i].as_deref());
         let checked = status != "no_data";
         let mut events = Vec::new();
         for incident in &incidents {
@@ -220,6 +222,7 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
             status,
             downtime_minutes,
             uptime_percent,
+            avg_response_time_ms,
             events,
         });
     }
@@ -227,14 +230,17 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
     Ok(history)
 }
 
-fn parse_rollup(value: Option<&str>) -> (String, i64) {
-    match value {
-        None => ("no_data".into(), 0),
-        Some(text) => match text.split_once(':') {
-            Some((status, minutes)) => (status.into(), minutes.parse().unwrap_or(0)),
-            None => (text.into(), 0),
-        },
-    }
+/// Reads "status:minutes:avg_ms". Older values have only "status:minutes",
+/// or just the status.
+fn parse_rollup(value: Option<&str>) -> (String, i64, Option<i64>) {
+    let Some(text) = value else {
+        return ("no_data".into(), 0, None);
+    };
+    let mut parts = text.split(':');
+    let status = parts.next().unwrap_or("no_data").to_string();
+    let minutes = parts.next().and_then(|part| part.parse().ok()).unwrap_or(0);
+    let avg = parts.next().and_then(|part| part.parse().ok());
+    (status, minutes, avg)
 }
 
 fn covers_day(event: &EventRow, date: NaiveDate, tz: Tz) -> bool {

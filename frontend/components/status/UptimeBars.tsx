@@ -100,6 +100,11 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
             uptimeText = formatPercent(day.uptime_percent)
           }
 
+          let responseText = ''
+          if (typeof day.avg_response_time_ms === 'number') {
+            responseText = 'Avg response ' + day.avg_response_time_ms + ' ms'
+          }
+
           let dateText = ''
           if (day.date) {
             dateText = formatDay(day.date) + dayNote
@@ -122,6 +127,7 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
               {showDowntime && <span className="downtime-duration">Down for {formatMinutes(day.downtime_minutes)}</span>}
               {!showDowntime && !hasEvents && uptimeText && <span className="tooltip-calm">No problems</span>}
               {uptimeText && <span className="tooltip-uptime">{uptimeText}</span>}
+              {responseText && <span className="tooltip-uptime tooltip-response">{responseText}</span>}
               {dateText && <time dateTime={day.date}>{dateText}</time>}
             </span>
           )

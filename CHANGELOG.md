@@ -4,6 +4,13 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.27.3
+
+### New
+
+- Every service on the status page shows the response time of its last check next to its status, like "Operational · 102 ms".
+- Hovering a day in the uptime bars shows that day's average response time. Days from before the update get it too, since the backend rebuilds the history when it starts.
+
 ## 0.27.2
 
 ### Changes

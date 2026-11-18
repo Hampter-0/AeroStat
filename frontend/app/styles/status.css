@@ -292,6 +292,11 @@ main {
     color: var(--red);
 }
 
+.live-response {
+    color: var(--muted);
+    font-size: inherit;
+}
+
 .live-uptime {
     text-align: right;
 }
@@ -448,6 +453,10 @@ a.bar {
     margin-bottom: 8px;
     color: var(--text-soft);
     font-size: 9px;
+}
+
+.tooltip-uptime:has(+ .tooltip-response) {
+    margin-bottom: 2px;
 }
 
 .bar-tooltip time {

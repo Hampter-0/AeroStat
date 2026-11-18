@@ -16,8 +16,9 @@ fn daily_status_key(service_id: &str, date: &str) -> String {
 }
 
 /// Stores one day's rollup status for a service. Key format:
-/// uptime:<service_id>:<date>  →  "<status>:<downtime_minutes>", where
-/// status is "online" | "degraded" | "offline"
+/// uptime:<service_id>:<date>  →  "<status>:<downtime_minutes>:<avg_response_ms>",
+/// where status is "online" | "degraded" | "offline" and the average is empty
+/// when no check was up. Values from before 0.27.3 have no average.
 pub async fn set_daily_status(
     pool: &Pool,
     service_id: &str,

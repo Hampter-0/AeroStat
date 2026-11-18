@@ -14,17 +14,24 @@ struct DayCounts {
     total_checks: i64,
     offline_checks: Option<i64>,
     downtime_seconds: Option<i64>,
+    avg_response_ms: Option<f64>,
 }
 
 pub struct DayRollup {
     pub status: &'static str,
     /// Estimated: every offline check counts as one check interval down.
     pub downtime_minutes: i64,
+    /// Average response time of the checks that were up. None when none were.
+    pub avg_response_ms: Option<i64>,
 }
 
 impl DayRollup {
     pub fn to_redis_value(&self) -> String {
-        format!("{}:{}", self.status, self.downtime_minutes)
+        let avg = match self.avg_response_ms {
+            Some(ms) => ms.to_string(),
+            None => String::new(),
+        };
+        format!("{}:{}:{}", self.status, self.downtime_minutes, avg)
     }
 }
 
@@ -43,6 +50,7 @@ pub async fn day_status(
         WITH checks AS (
             SELECT
                 m.status,
+                m.response_time,
                 m.checked_at,
                 LEAD(m.checked_at) OVER (ORDER BY m.checked_at) AS next_at,
                 s.check_interval_seconds
@@ -60,7 +68,8 @@ pub async fn day_status(
             SUM(CASE WHEN status = 'offline' THEN LEAST(
                 EXTRACT(EPOCH FROM (COALESCE(next_at, LEAST(now(), $3)) - checked_at)),
                 check_interval_seconds
-            ) ELSE 0 END)::bigint AS downtime_seconds
+            ) ELSE 0 END)::bigint AS downtime_seconds,
+            AVG(response_time) FILTER (WHERE status = 'online')::float8 AS avg_response_ms
         FROM checks
         "#,
     )
@@ -89,6 +98,7 @@ pub async fn day_status(
     Ok(Some(DayRollup {
         status,
         downtime_minutes,
+        avg_response_ms: counts.avg_response_ms.map(|ms| ms.round() as i64),
     }))
 }
 

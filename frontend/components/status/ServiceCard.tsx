@@ -29,6 +29,11 @@ export default function ServiceCard({
     icon = <PendingRing />
   }
 
+  let responseText = ''
+  if (service.status === 'online' && typeof service.response_time_ms === 'number') {
+    responseText = service.response_time_ms + ' ms'
+  }
+
   let uptimeText = '-'
   if (uptimePercent !== null) {
     uptimeText = uptimePercent + '%'
@@ -41,7 +46,10 @@ export default function ServiceCard({
           <span className={checkClassName}>{icon}</span>
           <div>
             <strong>{service.name}</strong>
-            <span className={labelClassName}>{statusText}</span>
+            <span className={labelClassName}>
+              {statusText}
+              {responseText && <small className="live-response"> · {responseText}</small>}
+            </span>
           </div>
         </div>
         <div className="live-uptime">
