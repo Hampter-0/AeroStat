@@ -1,15 +1,17 @@
 //! The backend's recent log lines for System → Logs. Logs can hold IP
 //! addresses, usernames and email addresses, so they need their own permission.
 
-use axum::extract::Query;
-use axum::http::header;
+use axum::extract::{Query, State};
+use axum::http::{header, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
+use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::log_buffer::{self, LogLine, CAPACITY};
+use crate::state::AppState;
 
 const PAGE: usize = 500;
 
@@ -102,4 +104,15 @@ pub async fn download(user: CurrentUser, Query(query): Query<LogsQuery>) -> Resu
         ],
         text,
     ))
+}
+
+/// Empties the list in the panel. The terminal and `docker logs` keep
+/// everything. Written to the activity log and as the first new line, so
+/// clearing never goes unnoticed.
+pub async fn clear(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
+    user.require("system.logs")?;
+    log_buffer::clear();
+    tracing::info!("Logs cleared in the panel by {}", user.username);
+    activity::record(&state.db, &user, "system", "cleared the logs", None, "", None).await;
+    Ok(StatusCode::NO_CONTENT)
 }

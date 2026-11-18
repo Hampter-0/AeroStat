@@ -14,3 +14,12 @@ export async function fetchLogs(level: string, q: string, after: number | null):
     return null
   }
 }
+
+export async function clearLogs(): Promise<boolean> {
+  try {
+    await manageFetch('/system/logs', { method: 'DELETE' })
+    return true
+  } catch {
+    return false
+  }
+}

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Check, X } from '@/components/icons'
+import { Check, PendingRing, X } from '@/components/icons'
 import AddGroupForm from '@/components/manage/services/AddGroupForm'
 import CheckNowButton from '@/components/manage/services/CheckNowButton'
 import GroupHeader from '@/components/manage/services/GroupHeader'
@@ -54,7 +54,7 @@ function ServiceRows({
       {services.map(function (service, index) {
         let statusClass = 'service-status unknown'
         let statusLabel = 'Not checked yet'
-        let statusIcon = null
+        let statusIcon = <PendingRing size={16} />
         const status = liveStatus.get(service.id)
         if (status === 'online') {
           statusClass = 'service-status online'

@@ -53,7 +53,7 @@ pub fn router() -> Router<AppState> {
         .route("/backups/:id/restore", post(backups::restore))
         .route("/version/check", post(version::check))
         .route("/system", get(system::get))
-        .route("/system/logs", get(logs::list))
+        .route("/system/logs", get(logs::list).delete(logs::clear))
         .route("/system/logs/download", get(logs::download))
         .route("/profile", patch(profile::update))
         .route("/profile/password", post(profile::change_password))

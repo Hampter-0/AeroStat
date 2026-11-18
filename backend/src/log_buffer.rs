@@ -103,6 +103,14 @@ impl Visit for MessageVisitor {
     }
 }
 
+/// Forgets every kept line. Ids keep counting up, so a viewer that polls with
+/// `after` never sees an old id again.
+pub fn clear() {
+    if let Ok(mut buffer) = BUFFER.lock() {
+        buffer.lines.clear();
+    }
+}
+
 /// Every line kept right now, oldest first.
 pub fn lines() -> Vec<LogLine> {
     match BUFFER.lock() {

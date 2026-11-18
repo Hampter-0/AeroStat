@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { fetchLogs } from '@/app/manage/(panel)/system/logs-actions'
-import { Search } from '@/components/icons'
+import { clearLogs, fetchLogs } from '@/app/manage/(panel)/system/logs-actions'
+import { Check, PendingRing, Search } from '@/components/icons'
+import { useConfirm } from '@/components/manage/confirm/Confirm'
+import { useToast } from '@/components/manage/toast/Toasts'
 import { LOG_LEVELS, logsQuery, type LogLine, type LogsResponse } from '@/lib/logs'
 
 const POLL_MS = 5000
@@ -63,6 +65,8 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   const paused = useSyncExternalStore(subscribePaused, readPaused, serverPaused)
   const [loading, setLoading] = useState(false)
   const latest = useRef({ level: 'all', query: '', newest: 0 })
+  const confirm = useConfirm()
+  const toast = useToast()
 
   let newest = 0
   if (lines.length > 0) {
@@ -139,6 +143,27 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
     load(level, search)
   }
 
+  function clearAll() {
+    confirm({
+      title: 'Clear the logs?',
+      message: 'Everyone with access sees an empty list. The terminal and docker logs keep everything, and the activity log notes that you cleared them.',
+      confirmText: 'Clear logs',
+      danger: true,
+    }).then(function (ok) {
+      if (!ok) {
+        return
+      }
+      clearLogs().then(function (done) {
+        if (!done) {
+          toast('Could not clear the logs', 'error')
+          return
+        }
+        toast('Logs cleared', 'success')
+        load(level, query)
+      })
+    })
+  }
+
   function togglePause() {
     writePaused(!paused)
   }
@@ -163,10 +188,12 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   let pauseText = 'Pause'
   let liveClass = 'logs-live on'
   let liveText = 'Live'
+  let liveIcon = <Check size={11} />
   if (paused) {
     pauseText = 'Resume'
     liveClass = 'logs-live'
     liveText = 'Paused'
+    liveIcon = <PendingRing size={14} />
   }
 
   let emptyText = 'Nothing logged yet since the backend started.'
@@ -193,7 +220,10 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
             })}
           </select>
         </label>
-        <span className={liveClass}>{liveText}</span>
+        <span className={liveClass}>
+          <span className="logs-live-icon">{liveIcon}</span>
+          {liveText}
+        </span>
         <div className="logs-actions">
           <button type="button" className="button-secondary" onClick={togglePause}>
             {pauseText}
@@ -201,6 +231,9 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
           <a className="button-secondary" href={'/manage/logs/download?' + logsQuery(level, query)}>
             Download
           </a>
+          <button type="button" className="button-danger" onClick={clearAll}>
+            Clear
+          </button>
         </div>
       </div>
       <p className="logs-count">

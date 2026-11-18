@@ -1201,6 +1201,11 @@ a.button-secondary {
     background: var(--red);
 }
 
+.service-status.unknown {
+    color: var(--muted);
+    background: var(--chip-bg);
+}
+
 .add-to-group {
     margin-top: 12px;
     display: inline-block;
@@ -4044,17 +4049,23 @@ button.page-button {
     font-size: 12px;
 }
 
-.logs-live::before {
-    content: "";
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--faint);
+.logs-live-icon {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--muted);
+    background: var(--chip-bg);
 }
 
-.logs-live.on::before {
+.logs-live-icon svg {
+    display: block;
+}
+
+.logs-live.on .logs-live-icon {
+    color: #fff;
     background: var(--green);
-    box-shadow: 0 0 0 3px var(--success-bg);
 }
 
 .logs-actions {

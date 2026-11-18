@@ -68,9 +68,13 @@ export function ChevronRight() {
   )
 }
 
-export function PendingRing() {
+export function PendingRing({ size }: { size?: number }) {
+  let finalSize = size
+  if (finalSize === undefined) {
+    finalSize = 20
+  }
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg width={finalSize} height={finalSize} viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <circle cx="17.5" cy="10" r="1.3" fill="currentColor" />
       <circle cx="16.07" cy="14.41" r="1.3" fill="currentColor" />
       <circle cx="12.32" cy="17.13" r="1.3" fill="currentColor" />
