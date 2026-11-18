@@ -580,7 +580,7 @@ docker compose -f docker-compose.dev.yml up -d                       # Redis onl
 docker compose -f docker-compose.dev.yml --profile postgres up -d    # Redis and Postgres
 ```
 
-With the dev Postgres, use `DATABASE_URL=postgres://aerostat:aerostat@localhost:5432/aerostat` and `REDIS_URL=redis://localhost:6379` in `.env`.
+The root `.env.example` is for development and already points at the dev Postgres and Redis. `deploy/.env.example` is the one for installing with Docker.
 
 ```bash
 cp .env.example .env                              # backend settings
