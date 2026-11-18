@@ -1,12 +1,51 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { fetchLogs } from '@/app/manage/(panel)/system/logs-actions'
 import { Search } from '@/components/icons'
 import { LOG_LEVELS, logsQuery, type LogLine, type LogsResponse } from '@/lib/logs'
 
 const POLL_MS = 5000
 const SHOWN = 500
+const PAUSE_KEY = 'aerostat-logs-paused'
+const PAUSE_EVENT = 'aerostat-logs-paused'
+
+let memoryPaused = false
+
+function readPaused(): boolean {
+  try {
+    return window.localStorage.getItem(PAUSE_KEY) === '1'
+  } catch {
+    return memoryPaused
+  }
+}
+
+function serverPaused(): boolean {
+  return false
+}
+
+function subscribePaused(onChange: () => void) {
+  window.addEventListener('storage', onChange)
+  window.addEventListener(PAUSE_EVENT, onChange)
+  return function () {
+    window.removeEventListener('storage', onChange)
+    window.removeEventListener(PAUSE_EVENT, onChange)
+  }
+}
+
+function writePaused(paused: boolean) {
+  memoryPaused = paused
+  try {
+    if (paused) {
+      window.localStorage.setItem(PAUSE_KEY, '1')
+    } else {
+      window.localStorage.removeItem(PAUSE_KEY)
+    }
+  } catch {
+    memoryPaused = paused
+  }
+  window.dispatchEvent(new Event(PAUSE_EVENT))
+}
 
 function formatTime(iso: string, timezone: string): string {
   const date = new Date(iso)
@@ -21,7 +60,7 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   const [query, setQuery] = useState('')
   const [lines, setLines] = useState<LogLine[]>(initial.lines)
   const [matched, setMatched] = useState(initial.matched)
-  const [paused, setPaused] = useState(false)
+  const paused = useSyncExternalStore(subscribePaused, readPaused, serverPaused)
   const [loading, setLoading] = useState(false)
   const latest = useRef({ level: 'all', query: '', newest: 0 })
 
@@ -101,7 +140,7 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   }
 
   function togglePause() {
-    setPaused(!paused)
+    writePaused(!paused)
   }
 
   let countText = 'No log lines yet.'
