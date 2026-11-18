@@ -35,19 +35,16 @@ export default function RoleForm({
 
   let startName = ''
   let startHandle = ''
-  let startSuper = false
   let startSelected: string[] = []
   if (role) {
     startName = role.name
     startHandle = role.handle
-    startSuper = role.super_user
     startSelected = role.permissions
   }
 
   const [name, setName] = useState(startName)
   const [handle, setHandle] = useState(startHandle)
   const [handleTouched, setHandleTouched] = useState(role !== null)
-  const [superUser, setSuperUser] = useState(startSuper)
   const [selected, setSelected] = useState<string[]>(startSelected)
 
   function changeName(event: React.ChangeEvent<HTMLInputElement>) {
@@ -60,10 +57,6 @@ export default function RoleForm({
   function changeHandle(event: React.ChangeEvent<HTMLInputElement>) {
     setHandle(event.target.value)
     setHandleTouched(true)
-  }
-
-  function changeSuper(event: React.ChangeEvent<HTMLInputElement>) {
-    setSuperUser(event.target.checked)
   }
 
   let saveText = 'Save role'
@@ -103,32 +96,18 @@ export default function RoleForm({
             <small className="field-hint">A unique id for this role: lowercase letters, digits, - and _.</small>
           </label>
         </div>
-        <label className="check-row hint-row">
-          <input type="checkbox" name="super_user" checked={superUser} onChange={changeSuper} disabled={readOnly || !actor.is_admin} />
-          <span>
-            <strong>Super user</strong>
-            <small>Can do everything in the panel, including managing users and roles. Give this role wisely.</small>
-          </span>
-        </label>
+        <p className="field-hint">A role is a set of permissions. Full access is not a role: make someone an admin on their user page.</p>
       </section>
 
-      {superUser && (
-        <section className="manage-panel">
-          <p className="manage-empty">A super user can do everything, so there are no permissions to pick.</p>
-        </section>
-      )}
-
-      {!superUser && (
-        <PermissionTree
-          title="Permissions"
-          groups={groups}
-          actor={actor}
-          selected={selected}
-          onChange={setSelected}
-          disabled={readOnly}
-          locked={[]}
-        />
-      )}
+      <PermissionTree
+        title="Permissions"
+        groups={groups}
+        actor={actor}
+        selected={selected}
+        onChange={setSelected}
+        disabled={readOnly}
+        locked={[]}
+      />
 
       {!readOnly && (
         <div className="form-actions">

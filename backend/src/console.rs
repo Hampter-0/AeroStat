@@ -19,7 +19,7 @@ struct MenuItem {
     description: &'static str,
 }
 
-const MENU: [MenuItem; 15] = [
+const MENU: [MenuItem; 16] = [
     MenuItem { number: "1", name: "help", description: "Show all commands" },
     MenuItem { number: "2", name: "migrate", description: "Run database migrations" },
     MenuItem { number: "3", name: "create-admin", description: "Create an admin account (or reset one)" },
@@ -34,6 +34,7 @@ const MENU: [MenuItem; 15] = [
     MenuItem { number: "12", name: "backup", description: "Make a backup now" },
     MenuItem { number: "13", name: "restore", description: "Put a backup back (replaces the database)" },
     MenuItem { number: "14", name: "set-owner", description: "Make an account the owner, the others stop being owner" },
+    MenuItem { number: "15", name: "unsuspend", description: "Let a suspended account sign in again" },
     MenuItem { number: "0", name: "exit", description: "Leave the CLI" },
 ];
 
@@ -52,6 +53,7 @@ enum Action {
     Backup,
     Restore,
     SetOwner,
+    Unsuspend,
     Exit,
 }
 
@@ -71,6 +73,7 @@ fn parse_action(input: &str) -> Option<Action> {
         "12" | "backup" => Some(Action::Backup),
         "13" | "restore" => Some(Action::Restore),
         "14" | "set-owner" => Some(Action::SetOwner),
+        "15" | "unsuspend" => Some(Action::Unsuspend),
         "0" | "exit" | "quit" | "q" => Some(Action::Exit),
         _ => None,
     }
@@ -119,6 +122,7 @@ pub async fn run(pool: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
             Action::Backup => make_backup().await,
             Action::Restore => restore_backup().await,
             Action::SetOwner => set_owner(pool).await,
+            Action::Unsuspend => unsuspend(pool).await,
             Action::Exit => break,
         };
 
@@ -420,15 +424,30 @@ async fn enable_password_login(pool: &PgPool) -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn unsuspend(pool: &PgPool) -> anyhow::Result<()> {
+    let (id, username) = find_user(pool, &ask("Username or email")?).await?;
+    let result = sqlx::query("UPDATE users SET suspended = false WHERE id = $1 AND suspended")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    if result.rows_affected() == 0 {
+        success(&format!("'{username}' isn't suspended"));
+        return Ok(());
+    }
+    log_cli(pool, id, &username, "was unsuspended").await;
+    success(&format!("'{username}' can sign in again"));
+    Ok(())
+}
+
 /// Hands the owner role to another account. Only possible with server access,
 /// since the owner is the one account nobody else in the panel can change.
 async fn set_owner(pool: &PgPool) -> anyhow::Result<()> {
     let (id, username) = find_user(pool, &ask("Username or email of the new owner")?).await?;
     let is_super: bool = sqlx::query_scalar("SELECT user_is_super($1)").bind(id).fetch_one(pool).await?;
     if !is_super {
-        anyhow::bail!("'{username}' is not a super user. Make them one in the panel first");
+        anyhow::bail!("'{username}' is not an admin. Make them one in the panel first");
     }
-    if !confirm(&format!("Make '{username}' the owner? Every other owner becomes a normal super user"))? {
+    if !confirm(&format!("Make '{username}' the owner? Every other owner becomes a normal admin"))? {
         success("Nothing changed");
         return Ok(());
     }
@@ -510,7 +529,8 @@ struct UserListRow {
 async fn list_users(pool: &PgPool) -> anyhow::Result<()> {
     let users: Vec<UserListRow> = sqlx::query_as(
         "SELECT u.username, u.email, \
-         (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
+         (CASE WHEN u.super_user THEN ARRAY['Admin'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name) \
+          || CASE WHEN u.suspended THEN ARRAY['suspended'] ELSE ARRAY[]::text[] END) AS roles, \
          u.created_at FROM users u ORDER BY u.username",
     )
     .fetch_all(pool)

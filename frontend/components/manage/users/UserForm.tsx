@@ -39,12 +39,14 @@ export default function UserForm({
   let startPermissions: string[] = []
   let startSuper = false
   let startRequired = false
+  let startSuspended = false
   if (user) {
     userId = String(user.id)
     startRoles = user.role_ids
     startPermissions = user.permissions
     startSuper = user.super_user
     startRequired = user.two_factor_required
+    startSuspended = user.suspended
     if (user.email) {
       email = user.email
     }
@@ -53,6 +55,11 @@ export default function UserForm({
   const [extra, setExtra] = useState<string[]>(startPermissions)
   const [directSuper, setDirectSuper] = useState(startSuper)
   const [required, setRequired] = useState(startRequired)
+  const [suspended, setSuspended] = useState(startSuspended)
+
+  function changeSuspended(event: React.ChangeEvent<HTMLInputElement>) {
+    setSuspended(event.target.checked)
+  }
 
   function changeRequired(event: React.ChangeEvent<HTMLInputElement>) {
     setRequired(event.target.checked)
@@ -63,11 +70,15 @@ export default function UserForm({
   }
 
   const keepOwnDirectSuper = isSelf && startSuper
-  let superHint = 'Can do everything in the panel, including managing users and roles, without needing a role.'
+  let superHint = 'Full access to everything in the panel, including users, roles and settings. Roles don’t matter for an admin.'
   if (keepOwnDirectSuper) {
     superHint = superHint + ' You can’t take this away from yourself.'
   } else if (!actor.is_admin) {
-    superHint = superHint + ' Only a super user can change this.'
+    superHint = superHint + ' Only an admin can change this.'
+  }
+  let canSuspend = false
+  if (user && !isSelf && !user.owner) {
+    canSuspend = true
   }
 
   useEffect(
@@ -84,12 +95,9 @@ export default function UserForm({
   )
 
   const fromRoles: string[] = []
-  let superUser = directSuper
+  const superUser = directSuper
   for (const role of roles) {
     if (assigned.includes(role.id)) {
-      if (role.super_user) {
-        superUser = true
-      }
       for (const permission of role.permissions) {
         if (!fromRoles.includes(permission)) {
           fromRoles.push(permission)
@@ -148,7 +156,7 @@ export default function UserForm({
           />
           {keepOwnDirectSuper && <input type="hidden" name="super_user" value="on" />}
           <span>
-            <strong>Super user</strong>
+            <strong>Admin</strong>
             <small>{superHint}</small>
           </span>
         </label>
@@ -166,6 +174,15 @@ export default function UserForm({
             {isSelf && <small>Someone else has to change this for your own account.</small>}
           </span>
         </label>
+        {canSuspend && (
+          <label className="check-row hint-row">
+            <input type="checkbox" name="suspended" checked={suspended} onChange={changeSuspended} />
+            <span>
+              <strong>Suspended</strong>
+              <small>They can’t sign in and get no notifications. Suspending signs them out right away.</small>
+            </span>
+          </label>
+        )}
       </section>
 
       <section className="manage-panel">
@@ -174,13 +191,10 @@ export default function UserForm({
         <div className="permission-tree">
           {roles.map(function (role) {
             const has = assigned.includes(role.id)
-            const keepOwnSuper = isSelf && role.super_user && startRoles.includes(role.id)
             const canGive = canGiveRole(actor, role)
-            const disabled = !canGive || keepOwnSuper
+            const disabled = !canGive
             let hint = roleDescription(role)
-            if (keepOwnSuper) {
-              hint = hint + '. You can’t take this away from yourself.'
-            } else if (!canGive) {
+            if (!canGive) {
               hint = hint + '. It has rights you don’t have.'
             }
             function change(event: React.ChangeEvent<HTMLInputElement>) {
@@ -212,7 +226,7 @@ export default function UserForm({
 
       {superUser && (
         <section className="manage-panel">
-          <p className="manage-empty">A super user can do everything, so there are no extra permissions to pick.</p>
+          <p className="manage-empty">An admin can do everything, so there are no extra permissions to pick.</p>
         </section>
       )}
       {!superUser && (

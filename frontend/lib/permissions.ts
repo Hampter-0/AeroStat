@@ -20,7 +20,6 @@ export interface Role {
   id: number
   name: string
   handle: string
-  super_user: boolean
   permissions: string[]
   users: number
   created_at: string
@@ -29,7 +28,6 @@ export interface Role {
 export interface RoleSummary {
   id: number
   name: string
-  super_user: boolean
   permissions: string[]
 }
 

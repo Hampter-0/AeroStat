@@ -451,6 +451,11 @@
     font-size: 9px;
 }
 
+.you-tag.suspended {
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}
+
 .user-row-access {
     display: flex;
     flex-wrap: wrap;

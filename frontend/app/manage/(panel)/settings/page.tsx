@@ -183,7 +183,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <small className="field-hint">
                 The address people use to open this status page. Notifications and password reset links point to it, and passkeys only
                 work on this address. If you change it later, everyone has to add their passkeys again.
-                {!user.is_admin && ' Only a super user can change it.'}
+                {!user.is_admin && ' Only an admin can change it.'}
               </small>
             </label>
           </SettingsForm>

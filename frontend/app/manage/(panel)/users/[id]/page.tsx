@@ -40,7 +40,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   if (!isSelf && user.owner) {
     lockReason = 'This is the owner’s account. Only the owner can change it, on their own profile.'
   } else if (!isSelf && user.is_admin && !currentUser.owner) {
-    lockReason = 'Only the owner can change or delete another super user.'
+    lockReason = 'Only the owner can change or delete another admin.'
   }
   const canEdit = can(currentUser, 'users.edit') && lockReason === ''
   const canDelete = can(currentUser, 'users.delete') && lockReason === ''
@@ -51,10 +51,12 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   }
 
   let superText = 'No'
-  if (user.super_user) {
+  if (user.is_admin) {
     superText = 'Yes'
-  } else if (user.is_admin) {
-    superText = 'Yes, through a role'
+  }
+  let suspendedText = 'No'
+  if (user.suspended) {
+    suspendedText = 'Yes'
   }
   const roleNames: string[] = []
   for (const role of data.roles) {
@@ -99,8 +101,12 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
               <dd>{user.email || 'Not set'}</dd>
             </div>
             <div className="config-row">
-              <dt>Super user</dt>
+              <dt>Admin</dt>
               <dd>{superText}</dd>
+            </div>
+            <div className="config-row">
+              <dt>Suspended</dt>
+              <dd>{suspendedText}</dd>
             </div>
             <div className="config-row">
               <dt>Roles</dt>

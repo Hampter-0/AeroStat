@@ -111,9 +111,9 @@ pub async fn download(State(state): State<AppState>, user: CurrentUser, Path(id)
 /// Putting it back is done with the CLI, like any other backup.
 pub async fn upload(State(state): State<AppState>, user: CurrentUser, headers: HeaderMap, body: Body) -> Result<Json<Backup>, ApiError> {
     user.require(PERMISSION)?;
-    // A dump runs as SQL when it is restored, so only super users may add one.
+    // A dump runs as SQL when it is restored, so only admins may add one.
     if !user.is_admin {
-        return Err(ApiError::BadRequest("Only a super user can upload a backup".into()));
+        return Err(ApiError::BadRequest("Only an admin can upload a backup".into()));
     }
     let file_name = headers
         .get("x-file-name")
@@ -148,7 +148,7 @@ pub struct RestoreResult {
     safety_backup: String,
 }
 
-/// Puts a backup back from the panel, for super users only and after the
+/// Puts a backup back from the panel, for admins only and after the
 /// current password. The database as it is now is backed up first. In Docker
 /// the backend then restarts, so newer migrations run and nothing old stays in
 /// memory.
@@ -160,7 +160,7 @@ pub async fn restore(
 ) -> Result<Json<RestoreResult>, ApiError> {
     user.require(PERMISSION)?;
     if !user.is_admin {
-        return Err(ApiError::BadRequest("Only a super user can restore a backup".into()));
+        return Err(ApiError::BadRequest("Only an admin can restore a backup".into()));
     }
     let hash: String = sqlx::query_scalar("SELECT password_hash FROM users WHERE id = $1")
         .bind(user.id)

@@ -416,7 +416,7 @@ if (service.status === 'offline') {
 
 ## Troubleshooting
 
-**Logs in the panel.** Under **System → Logs** you see the backend's newest 2000 log lines, live, with a level filter, search and a download as a text file. It needs the **View logs** permission (super users always have it), since logs can hold IP addresses, usernames and email addresses. The lines live in memory, so they start over when the backend restarts; older ones are still in `docker compose logs backend`.
+**Logs in the panel.** Under **System → Logs** you see the backend's newest 2000 log lines, live, with a level filter, search and a download as a text file. It needs the **View logs** permission (admins always have it), since logs can hold IP addresses, usernames and email addresses. The lines live in memory, so they start over when the backend restarts; older ones are still in `docker compose logs backend`.
 
 **A service shows as down with status 403, but it works in your browser.** The site is probably behind Cloudflare or another firewall that blocks automated requests. AeroStat identifies itself as `AeroStat/<version> (+https://github.com/Hampter-0/AeroStat)`, which most setups allow. If it is still blocked, add a rule in the firewall that lets your AeroStat server's IP address through.
 
@@ -479,11 +479,14 @@ It can run migrations, create an admin, list accounts, reset a password (by user
 | `backups` | Lists the backups |
 | `backup` | Makes a backup now |
 | `restore` | Puts a backup back, after backing up the database as it is now |
-| `set-owner` | Makes a super user the owner, every other owner becomes a normal super user |
+| `set-owner` | Makes an admin the owner, every other owner becomes a normal admin |
+| `unsuspend` | Lets a suspended account sign in again |
 
-Each change shows up under Activity. Accounts made with `create-admin` are the owners of the install and get a crown in the users list.
+Each change shows up under Activity. Accounts made with `create-admin` are admins and the owners of the install. Running it again for an existing account sets a new password and lifts a suspension.
 
-Accounts follow an order: owner, then super users, then everyone else. Nobody else can change or delete the owner's account, and only the owner can change or delete another super user, take super user away from someone, or reset their password, email or two-factor. Someone without super user can only manage users who have no more rights than they have. So one stolen admin account can't lock the owner out. When someone changes your password or email in the panel, you get an email about it.
+An admin has full access to everything and gets a crown in the users list. Admin is a switch on the user, not a role: roles only hold permissions. Accounts follow an order: owner, then admins, then everyone else. Nobody else can change or delete the owner's account, and only the owner can change, suspend or delete another admin, take admin away from someone, or reset their password, email or two-factor. Someone who isn't an admin can only manage users who have no more rights than they have.
+
+A user can be **suspended** on their user page. They are signed out right away, can't sign in and get no notifications until someone turns it off again, or until `unsuspend` in the CLI. Nobody can suspend themselves or the owner. So one stolen admin account can't lock the owner out. When someone changes your password or email in the panel, you get an email about it.
 
 Single commands also work:
 
@@ -529,7 +532,7 @@ Everything worth keeping is in Postgres. AeroStat backs it up with `pg_dump` int
 
 - **Every day** after 03:00 in the site's timezone, keeping the last 7. Change this, or turn it off, under **System → Backups**.
 - **Before an update.** When a new version starts for the first time, it backs up the database before changing it. The last 3 are kept.
-- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included. Uploading a backup from elsewhere is for super users only, because a backup runs as SQL when it is restored; the CLI warns before restoring an uploaded one.
+- **By hand** with **Make a backup now** under **System → Backups**, where you can also download and delete them. Only people with the Backups permission see this; a backup holds everything, password hashes included. Uploading a backup from elsewhere is for admins only, because a backup runs as SQL when it is restored; the CLI warns before restoring an uploaded one.
 
 A backup on the same server is gone when the server is. Download one now and then, or copy the volume elsewhere, and keep a copy of your `.env` with it: without the same `SECRET_KEY` the authenticator apps stop working and everyone has to set them up again.
 
@@ -550,7 +553,7 @@ services:
 
 ### Restoring
 
-Super users can restore a backup under **System → Backups** with **Restore**, after entering their password. AeroStat first backs up the database as it is now, puts the chosen backup back, and then restarts the backend so newer migrations run; you sign in again afterwards. If anything fails, nothing is changed.
+Admins can restore a backup under **System → Backups** with **Restore**, after entering their password. AeroStat first backs up the database as it is now, puts the chosen backup back, and then restarts the backend so newer migrations run; you sign in again afterwards. If anything fails, nothing is changed.
 
 The same works from the server with the CLI, also when you can't sign in:
 

@@ -11,14 +11,11 @@ use crate::auth::{self, CurrentUser, PermissionGroup, PERMISSION_GROUPS};
 use crate::error::ApiError;
 use crate::state::AppState;
 
-use super::users::ensure_super_user_left;
-
 /// What the users page needs to show and hand out roles.
 #[derive(Serialize, sqlx::FromRow)]
 pub struct RoleSummary {
     pub id: i64,
     pub name: String,
-    pub super_user: bool,
     pub permissions: Vec<String>,
 }
 
@@ -27,13 +24,12 @@ pub struct RoleRow {
     id: i64,
     name: String,
     handle: String,
-    super_user: bool,
     permissions: Vec<String>,
     users: i64,
     created_at: DateTime<Utc>,
 }
 
-const ROLE_COLUMNS: &str = "r.id, r.name, r.handle, r.super_user, r.permissions, \
+const ROLE_COLUMNS: &str = "r.id, r.name, r.handle, r.permissions, \
      (SELECT COUNT(*) FROM user_roles ur WHERE ur.role_id = r.id) AS users, r.created_at";
 
 #[derive(Serialize)]
@@ -53,20 +49,18 @@ pub struct RoleBody {
     name: String,
     handle: String,
     #[serde(default)]
-    super_user: bool,
-    #[serde(default)]
     permissions: Vec<String>,
 }
 
 pub async fn all_summaries(db: &PgPool) -> Result<Vec<RoleSummary>, ApiError> {
-    let roles = sqlx::query_as("SELECT id, name, super_user, permissions FROM roles ORDER BY super_user DESC, name")
+    let roles = sqlx::query_as("SELECT id, name, permissions FROM roles ORDER BY name")
         .fetch_all(db)
         .await?;
     Ok(roles)
 }
 
 pub async fn summaries(db: &PgPool, ids: &[i64]) -> Result<Vec<RoleSummary>, ApiError> {
-    let roles = sqlx::query_as("SELECT id, name, super_user, permissions FROM roles WHERE id = ANY($1)")
+    let roles = sqlx::query_as("SELECT id, name, permissions FROM roles WHERE id = ANY($1)")
         .bind(ids)
         .fetch_all(db)
         .await?;
@@ -82,7 +76,6 @@ async fn find_role(db: &PgPool, id: i64) -> Result<RoleRow, ApiError> {
 struct CleanRole {
     name: String,
     handle: String,
-    super_user: bool,
     permissions: Vec<String>,
 }
 
@@ -100,26 +93,16 @@ fn clean(body: RoleBody) -> Result<CleanRole, ApiError> {
             "The handle can only use lowercase letters, digits, '-' and '_' (at most 50)".into(),
         ));
     }
-    // A super user can do everything, so a list of permissions would only mislead.
-    let permissions = if body.super_user {
-        Vec::new()
-    } else {
-        auth::normalize_permissions(&body.permissions)?
-    };
-    Ok(CleanRole {
-        name,
-        handle,
-        super_user: body.super_user,
-        permissions,
-    })
+    let permissions = auth::normalize_permissions(&body.permissions)?;
+    Ok(CleanRole { name, handle, permissions })
 }
 
 fn handle_taken(handle: &str) -> ApiError {
     ApiError::Conflict(format!("The handle '{handle}' is already used by another role"))
 }
 
-fn require_cover(actor: &CurrentUser, super_user: bool, permissions: &[String]) -> Result<(), ApiError> {
-    if !actor.covers(super_user, permissions) {
+fn require_cover(actor: &CurrentUser, permissions: &[String]) -> Result<(), ApiError> {
+    if !actor.covers(false, permissions) {
         return Err(ApiError::BadRequest(
             "A role can't have rights you don't have yourself".into(),
         ));
@@ -129,7 +112,7 @@ fn require_cover(actor: &CurrentUser, super_user: bool, permissions: &[String]) 
 
 pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Json<RolesResponse>, ApiError> {
     user.require("roles.view")?;
-    let query = format!("SELECT {ROLE_COLUMNS} FROM roles r ORDER BY r.super_user DESC, r.name");
+    let query = format!("SELECT {ROLE_COLUMNS} FROM roles r ORDER BY r.name");
     let roles: Vec<RoleRow> = sqlx::query_as(&query).fetch_all(&state.db).await?;
     Ok(Json(RolesResponse {
         roles,
@@ -156,15 +139,13 @@ pub async fn create(
 ) -> Result<(StatusCode, Json<RoleRow>), ApiError> {
     user.require("roles.create")?;
     let role = clean(body)?;
-    require_cover(&user, role.super_user, &role.permissions)?;
+    require_cover(&user, &role.permissions)?;
 
-    let created: Result<(i64,), sqlx::Error> = sqlx::query_as(
-        "INSERT INTO roles (name, handle, super_user, permissions) VALUES ($1, $2, $3, $4) RETURNING id",
-    )
-    .bind(&role.name)
-    .bind(&role.handle)
-    .bind(role.super_user)
-    .bind(&role.permissions)
+    let created: Result<(i64,), sqlx::Error> =
+        sqlx::query_as("INSERT INTO roles (name, handle, permissions) VALUES ($1, $2, $3) RETURNING id")
+            .bind(&role.name)
+            .bind(&role.handle)
+            .bind(&role.permissions)
     .fetch_one(&state.db)
     .await;
     let id = match created {
@@ -173,7 +154,7 @@ pub async fn create(
         Err(e) => return Err(e.into()),
     };
 
-    let details = json!({ "handle": role.handle, "super_user": role.super_user, "permissions": role.permissions });
+    let details = json!({ "handle": role.handle, "permissions": role.permissions });
     activity::record(&state.db, &user, "roles", "created role", None, &role.name, Some(details)).await;
     Ok((StatusCode::CREATED, Json(find_role(&state.db, id).await?)))
 }
@@ -186,28 +167,22 @@ pub async fn update(
 ) -> Result<Json<RoleRow>, ApiError> {
     user.require("roles.edit")?;
     let before = find_role(&state.db, id).await?;
-    require_cover(&user, before.super_user, &before.permissions)?;
+    require_cover(&user, &before.permissions)?;
     let role = clean(body)?;
-    require_cover(&user, role.super_user, &role.permissions)?;
+    require_cover(&user, &role.permissions)?;
 
-    let mut tx = state.db.begin().await?;
-    let supers_before = super::users::super_user_ids(&mut tx).await?;
-    let result = sqlx::query("UPDATE roles SET name = $1, handle = $2, super_user = $3, permissions = $4 WHERE id = $5")
+    let result = sqlx::query("UPDATE roles SET name = $1, handle = $2, permissions = $3 WHERE id = $4")
         .bind(&role.name)
         .bind(&role.handle)
-        .bind(role.super_user)
         .bind(&role.permissions)
         .bind(id)
-        .execute(&mut *tx)
+        .execute(&state.db)
         .await;
     match result {
         Ok(_) => {}
         Err(sqlx::Error::Database(e)) if e.is_unique_violation() => return Err(handle_taken(&role.handle)),
         Err(e) => return Err(e.into()),
     }
-    ensure_super_user_left(&mut tx, &user).await?;
-    super::users::ensure_supers_kept(&mut tx, &user, &supers_before).await?;
-    tx.commit().await?;
 
     let mut details = json!({});
     if before.name != role.name {
@@ -215,9 +190,6 @@ pub async fn update(
     }
     if before.handle != role.handle {
         details["handle"] = json!({ "from": before.handle, "to": role.handle });
-    }
-    if before.super_user != role.super_user {
-        details["super_user"] = json!({ "from": before.super_user, "to": role.super_user });
     }
     let added: Vec<&String> = role.permissions.iter().filter(|p| !before.permissions.contains(p)).collect();
     let removed: Vec<&String> = before.permissions.iter().filter(|p| !role.permissions.contains(p)).collect();
@@ -228,14 +200,6 @@ pub async fn update(
         details["permissions_removed"] = json!(removed);
     }
     activity::record(&state.db, &user, "roles", "edited role", None, &role.name, Some(details)).await;
-    if before.super_user != role.super_user || (role.super_user && before.name != role.name) {
-        let title = if role.super_user {
-            format!("{} made the role {} a super user role", user.username, role.name)
-        } else {
-            format!("{} took super user away from the role {}", user.username, role.name)
-        };
-        super::users::admin_notice(&state.db, &user, "admin_security", title, "/manage/roles");
-    }
     Ok(Json(find_role(&state.db, id).await?))
 }
 
@@ -246,19 +210,14 @@ pub async fn delete(
 ) -> Result<StatusCode, ApiError> {
     user.require("roles.delete")?;
     let before = find_role(&state.db, id).await?;
-    require_cover(&user, before.super_user, &before.permissions)?;
+    require_cover(&user, &before.permissions)?;
 
-    let mut tx = state.db.begin().await?;
-    let supers_before = super::users::super_user_ids(&mut tx).await?;
     sqlx::query("DELETE FROM roles WHERE id = $1")
         .bind(id)
-        .execute(&mut *tx)
+        .execute(&state.db)
         .await?;
-    ensure_super_user_left(&mut tx, &user).await?;
-    super::users::ensure_supers_kept(&mut tx, &user, &supers_before).await?;
-    tx.commit().await?;
 
-    let details = json!({ "users": before.users, "super_user": before.super_user, "permissions": before.permissions });
+    let details = json!({ "users": before.users, "permissions": before.permissions });
     activity::record(&state.db, &user, "roles", "deleted role", None, &before.name, Some(details)).await;
     Ok(StatusCode::NO_CONTENT)
 }

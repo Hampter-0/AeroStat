@@ -59,6 +59,7 @@ export async function updateUser(_state: FormState, formData: FormData): Promise
     super_user: boolean
     permissions: string[]
     two_factor_required: boolean
+    suspended: boolean
     password?: string
   } = {
     email: text(formData, 'email').trim(),
@@ -66,6 +67,7 @@ export async function updateUser(_state: FormState, formData: FormData): Promise
     super_user: formData.get('super_user') === 'on',
     permissions: permissions(formData),
     two_factor_required: formData.get('two_factor_required') === 'on',
+    suspended: formData.get('suspended') === 'on',
   }
   const password = text(formData, 'password')
   if (password) {

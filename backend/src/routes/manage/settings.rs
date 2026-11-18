@@ -163,10 +163,10 @@ pub async fn update(
             return Err(ApiError::BadRequest(format!("Unknown setting: {key}")));
         }
         user.require(site_settings::permission_for(&key))?;
-        // Reset links and passkeys use this address, so only super users may move it.
+        // Reset links and passkeys use this address, so only admins may move it.
         if key == PUBLIC_URL && !user.is_admin {
             return Err(ApiError::BadRequest(
-                "Only a super user can change the status page address, because sign-in links and passkeys use it".into(),
+                "Only an admin can change the status page address, because sign-in links and passkeys use it".into(),
             ));
         }
         let cleaned = match value.map(|v| v.trim().to_string()).filter(|v| !v.is_empty()) {

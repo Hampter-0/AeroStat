@@ -23,8 +23,10 @@ pub struct UserRow {
     email: Option<String>,
     is_admin: bool,
     role_ids: Vec<i64>,
-    /// Super user on its own, not through a role.
+    /// Admin: full access to everything, whatever the roles say.
     super_user: bool,
+    /// Can't sign in and gets no notifications.
+    suspended: bool,
     /// Given to this user directly, on top of their roles.
     permissions: Vec<String>,
     /// The authenticator app or email codes are on.
@@ -43,7 +45,7 @@ const USER_COLUMNS: &str = "u.id, u.username, u.email, user_is_super(u.id) AS is
      ARRAY(SELECT role_id FROM user_roles WHERE user_id = u.id ORDER BY role_id) AS role_ids, \
      u.super_user, u.permissions, (u.totp_secret IS NOT NULL OR u.email_two_factor) AS two_factor, \
      u.two_factor_required, (SELECT COUNT(*) FROM passkeys p WHERE p.user_id = u.id) AS passkeys, \
-     u.password_login, u.owner, \
+     u.password_login, u.owner, u.suspended, \
      u.created_at, u.last_login_at, \
      EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version";
 
@@ -76,6 +78,7 @@ pub struct UpdateUser {
     super_user: Option<bool>,
     permissions: Option<Vec<String>>,
     two_factor_required: Option<bool>,
+    suspended: Option<bool>,
     password: Option<String>,
     /// Missing keeps the address, an empty string removes it.
     email: Option<String>,
@@ -93,7 +96,7 @@ fn direct_permissions(actor: &CurrentUser, permissions: &[String]) -> Result<Vec
 
 fn require_super_to_change(actor: &CurrentUser) -> Result<(), ApiError> {
     if !actor.is_admin {
-        return Err(ApiError::BadRequest("Only a super user can make someone a super user".into()));
+        return Err(ApiError::BadRequest("Only an admin can make someone an admin".into()));
     }
     Ok(())
 }
@@ -139,7 +142,7 @@ async fn role_names(db: &PgPool, user_id: i64) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// Someone who isn't a super user can only manage users that have no more
+/// Someone who isn't an admin can only manage users that have no more
 /// rights than they have themselves.
 async fn require_reach(db: &PgPool, actor: &CurrentUser, target_id: i64) -> Result<(), ApiError> {
     let (is_super, permissions): (bool, Vec<String>) =
@@ -155,9 +158,9 @@ async fn require_reach(db: &PgPool, actor: &CurrentUser, target_id: i64) -> Resu
     Ok(())
 }
 
-/// Owner, then super users, then everyone else. Nobody but the owner can
-/// change the owner's account, and only the owner can change or delete
-/// another super user, so one admin account can't take over the others.
+/// Owner, then admins, then everyone else. Nobody but the owner can change
+/// the owner's account, and only the owner can change, suspend or delete
+/// another admin, so one admin account can't take over the others.
 fn require_rank(actor: &CurrentUser, target: &UserRow) -> Result<(), ApiError> {
     if target.id == actor.id {
         return Ok(());
@@ -168,12 +171,12 @@ fn require_rank(actor: &CurrentUser, target: &UserRow) -> Result<(), ApiError> {
         ));
     }
     if target.is_admin && !actor.owner {
-        return Err(ApiError::BadRequest("Only the owner can change or delete another super user".into()));
+        return Err(ApiError::BadRequest("Only the owner can change or delete another admin".into()));
     }
     Ok(())
 }
 
-/// Everyone who is a super user right now.
+/// Everyone who is an admin right now.
 pub(super) async fn super_user_ids(tx: &mut Transaction<'_, Postgres>) -> Result<Vec<i64>, ApiError> {
     let ids: Vec<i64> = sqlx::query_scalar("SELECT id FROM users WHERE user_is_super(id)")
         .fetch_all(&mut **tx)
@@ -181,8 +184,8 @@ pub(super) async fn super_user_ids(tx: &mut Transaction<'_, Postgres>) -> Result
     Ok(ids)
 }
 
-/// After a role change: owners stay super users, and only the owner can take
-/// super user away from someone else, also by editing or deleting a role.
+/// After a change: the owner stays an admin, and only the owner can take admin
+/// away from someone else.
 pub(super) async fn ensure_supers_kept(
     tx: &mut Transaction<'_, Postgres>,
     actor: &CurrentUser,
@@ -192,7 +195,7 @@ pub(super) async fn ensure_supers_kept(
         .fetch_one(&mut **tx)
         .await?;
     if owner_lost {
-        return Err(ApiError::BadRequest("The owner always stays a super user".into()));
+        return Err(ApiError::BadRequest("The owner always stays an admin".into()));
     }
     if actor.owner {
         return Ok(());
@@ -201,7 +204,7 @@ pub(super) async fn ensure_supers_kept(
     let lost = before.iter().any(|id| *id != actor.id && !after.contains(id));
     if lost {
         return Err(ApiError::BadRequest(
-            "This would take super user away from someone else. Only the owner can do that.".into(),
+            "This would take admin away from someone else. Only the owner can do that.".into(),
         ));
     }
     Ok(())
@@ -217,7 +220,7 @@ async fn assignable_roles(db: &PgPool, actor: &CurrentUser, ids: &[i64]) -> Resu
         return Err(ApiError::BadRequest("One or more roles don't exist".into()));
     }
     for role in &found {
-        if !actor.covers(role.super_user, &role.permissions) {
+        if !actor.covers(false, &role.permissions) {
             return Err(ApiError::BadRequest(format!(
                 "You can't give the role '{}', it has rights you don't have",
                 role.name
@@ -246,7 +249,7 @@ pub(super) async fn ensure_super_user_left(tx: &mut Transaction<'_, Postgres>, a
         .fetch_one(&mut **tx)
         .await?;
     if count == 0 {
-        return Err(ApiError::BadRequest("There must always be at least one super user".into()));
+        return Err(ApiError::BadRequest("There must always be at least one admin".into()));
     }
     if actor.is_admin {
         let (still_super,): (bool,) = sqlx::query_as("SELECT user_is_super($1)")
@@ -254,7 +257,7 @@ pub(super) async fn ensure_super_user_left(tx: &mut Transaction<'_, Postgres>, a
             .fetch_one(&mut **tx)
             .await?;
         if !still_super {
-            return Err(ApiError::BadRequest("You can't take away your own super user rights".into()));
+            return Err(ApiError::BadRequest("You can't take away your own admin rights".into()));
         }
     }
     Ok(())
@@ -360,6 +363,10 @@ pub async fn update(
     if super_change.is_some() {
         require_super_to_change(&user)?;
     }
+    let suspend_change = body.suspended.filter(|value| *value != target.suspended);
+    if suspend_change.is_some() && id == user.id {
+        return Err(ApiError::BadRequest("You can't suspend your own account".into()));
+    }
     let email = match body.email {
         Some(text) => Some(super::profile::clean_email(Some(text))?),
         None => None,
@@ -415,6 +422,21 @@ pub async fn update(
             .execute(&mut *tx)
             .await?;
         details["super_user"] = json!({ "from": target.super_user, "to": super_user });
+    }
+    if let Some(suspended) = suspend_change {
+        sqlx::query("UPDATE users SET suspended = $1 WHERE id = $2")
+            .bind(suspended)
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+        if suspended {
+            // Signed out everywhere at once, not only at the next sign-in.
+            sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+                .bind(id)
+                .execute(&mut *tx)
+                .await?;
+        }
+        details["suspended"] = json!({ "from": target.suspended, "to": suspended });
     }
     if let Some(required) = body.two_factor_required.filter(|value| *value != target.two_factor_required) {
         sqlx::query("UPDATE users SET two_factor_required = $1 WHERE id = $2")
@@ -481,9 +503,14 @@ pub async fn update(
     }
     let after = find_user(&state.db, id).await?;
     if after.is_admin != target.is_admin {
-        let what = if after.is_admin { "made {name} a super user" } else { "took super user away from {name}" };
+        let what = if after.is_admin { "made {name} an admin" } else { "took admin away from {name}" };
         let title = format!("{} {}", user.username, what.replace("{name}", &target.username));
         admin_notice(&state.db, &user, "admin_security", title, "/manage/users");
+    }
+    if after.suspended != target.suspended {
+        let what = if after.suspended { "suspended" } else { "unsuspended" };
+        let title = format!("{} {what} the user {}", user.username, target.username);
+        admin_notice(&state.db, &user, "admin_users", title, "/manage/users");
     }
     Ok(Json(after))
 }
@@ -572,51 +599,24 @@ pub async fn reset_two_factor(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// The first super user role, made when none exists yet.
-async fn super_role(pool: &PgPool) -> anyhow::Result<i64> {
-    let existing: Option<i64> = sqlx::query_scalar("SELECT id FROM roles WHERE super_user ORDER BY id LIMIT 1")
-        .fetch_optional(pool)
-        .await?;
-    if let Some(id) = existing {
-        return Ok(id);
-    }
-    let id: i64 = sqlx::query_scalar(
-        r#"
-        INSERT INTO roles (name, handle, super_user)
-        SELECT 'Admin', CASE WHEN EXISTS (SELECT 1 FROM roles WHERE handle = 'admin') THEN 'super-admin' ELSE 'admin' END, true
-        RETURNING id
-        "#,
-    )
-    .fetch_one(pool)
-    .await?;
-    Ok(id)
-}
-
 pub async fn create_admin_from_cli(pool: &sqlx::PgPool, username: &str, password: String) -> anyhow::Result<()> {
     let username = username.trim().to_lowercase();
     validate_username(&username).map_err(|e| anyhow::anyhow!(error_text(e)))?;
     validate_password(&password).map_err(|e| anyhow::anyhow!(error_text(e)))?;
 
     let password_hash = auth::hash_password(password).await?;
-    let id: i64 = sqlx::query_scalar(
+    sqlx::query(
         r#"
-        INSERT INTO users (username, password_hash, owner)
-        VALUES ($1, $2, true)
-        ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, owner = true
-        RETURNING id
+        INSERT INTO users (username, password_hash, owner, super_user)
+        VALUES ($1, $2, true, true)
+        ON CONFLICT (username) DO UPDATE
+            SET password_hash = EXCLUDED.password_hash, owner = true, super_user = true, suspended = false
         "#,
     )
     .bind(&username)
     .bind(&password_hash)
-    .fetch_one(pool)
+    .execute(pool)
     .await?;
-
-    let role = super_role(pool).await?;
-    sqlx::query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
-        .bind(id)
-        .bind(role)
-        .execute(pool)
-        .await?;
 
     Ok(())
 }

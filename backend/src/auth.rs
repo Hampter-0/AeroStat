@@ -218,12 +218,12 @@ pub struct CurrentUser {
     pub id: i64,
     pub username: String,
     pub email: Option<String>,
-    /// True when the user is a super user, directly or through a role.
+    /// True when the user is an admin.
     pub is_admin: bool,
     /// Everything the user's roles and extra permissions allow together.
     pub permissions: Vec<String>,
     pub roles: Vec<String>,
-    /// The entries of `roles` that make the user a super user.
+    /// "Admin" when the user is an admin, for the label in the panel.
     pub super_roles: Vec<String>,
     /// Permissions given to the user directly, next to their roles.
     pub extra_permissions: Vec<String>,
@@ -232,7 +232,7 @@ pub struct CurrentUser {
     /// then only the profile works.
     pub two_factor_setup_required: bool,
     /// Made with create-admin on the server. Only the owner can change other
-    /// super users, and nobody but the owner can change the owner's account.
+    /// admins, and nobody but the owner can change the owner's account.
     pub owner: bool,
     /// Whether the notification bell shows in the panel.
     pub panel_enabled: bool,
@@ -246,8 +246,8 @@ pub struct CurrentUser {
 /// Columns for loading a CurrentUser from the users table aliased as `u`.
 pub const CURRENT_USER_COLUMNS: &str = "u.id, u.username, u.email, u.owner, u.panel_enabled, \
      user_is_super(u.id) AS is_admin, user_permissions(u.id) AS permissions, \
-     (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
-     (CASE WHEN u.super_user THEN ARRAY['Super user'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND r.super_user ORDER BY r.name)) AS super_roles, \
+     (CASE WHEN u.super_user THEN ARRAY['Admin'] ELSE ARRAY[]::text[] END || ARRAY(SELECT r.name FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id ORDER BY r.name)) AS roles, \
+     (CASE WHEN u.super_user THEN ARRAY['Admin'] ELSE ARRAY[]::text[] END) AS super_roles, \
      u.permissions AS extra_permissions, \
      EXTRACT(EPOCH FROM u.avatar_updated_at)::bigint AS avatar_version, \
      (u.two_factor_required AND u.totp_secret IS NULL AND NOT u.email_two_factor \
@@ -297,7 +297,7 @@ impl FromRequestParts<AppState> for CurrentUser {
         let token_hash = hash_token(&token);
 
         let query = format!(
-            "SELECT {CURRENT_USER_COLUMNS} FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()"
+            "SELECT {CURRENT_USER_COLUMNS} FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now() AND NOT u.suspended"
         );
         let user: Option<CurrentUser> = sqlx::query_as(&query)
             .bind(&token_hash)

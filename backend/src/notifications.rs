@@ -217,7 +217,8 @@ async fn deliver_email(
     let recipients: Vec<(String,)> = sqlx::query_as(
         r#"
         SELECT email FROM users
-        WHERE email IS NOT NULL AND $1 = ANY(email_events) AND (user_is_super(id) OR $2 = ANY(user_permissions(id)))
+        WHERE email IS NOT NULL AND NOT suspended AND $1 = ANY(email_events)
+          AND (user_is_super(id) OR $2 = ANY(user_permissions(id)))
         "#,
     )
     .bind(event.kind())
@@ -309,14 +310,14 @@ async fn deliver_panel_event(
 }
 
 /// Saves the notification for everyone who may see it and kept this kind on.
-/// `permission` None means super users only. Old ones are removed after 30
+/// `permission` None means admins only. Old ones are removed after 30
 /// days so the table stays small.
 async fn save_panel(db: &PgPool, item: PanelItem, permission: Option<&str>, actor: Option<i64>) -> anyhow::Result<()> {
     sqlx::query(
         r#"
         INSERT INTO panel_notifications (user_id, kind, title, body, tone, path, important)
         SELECT id, $1, $2, $3, $4, $5, $6 FROM users
-        WHERE panel_enabled AND $1 = ANY(panel_events) AND id IS DISTINCT FROM $7
+        WHERE panel_enabled AND NOT suspended AND $1 = ANY(panel_events) AND id IS DISTINCT FROM $7
           AND (user_is_super(id) OR ($8::text IS NOT NULL AND $8 = ANY(user_permissions(id))))
         "#,
     )
@@ -1069,7 +1070,7 @@ async fn deliver_admin(db: &PgPool, notice: AdminNotice) -> anyhow::Result<()> {
     let recipients: Vec<(String,)> = sqlx::query_as(
         r#"
         SELECT email FROM users
-        WHERE email IS NOT NULL AND $1 = ANY(email_events) AND id IS DISTINCT FROM $3
+        WHERE email IS NOT NULL AND NOT suspended AND $1 = ANY(email_events) AND id IS DISTINCT FROM $3
           AND (user_is_super(id) OR ($2::text IS NOT NULL AND $2 = ANY(user_permissions(id))))
         "#,
     )

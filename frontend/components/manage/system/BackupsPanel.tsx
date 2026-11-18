@@ -216,7 +216,7 @@ export default function BackupsPanel({ data, timezone, isAdmin }: { data: Backup
         )}
         <p className="field-hint backup-hint">
           Keep a copy somewhere else too, with your <code>.env</code>: a backup on the same server is lost with the server. To
-          move to another server, upload a backup there. Super users can restore a backup here; the server can also do it with{' '}
+          move to another server, upload a backup there. Admins can restore a backup here; the server can also do it with{' '}
           <code>aerostat cli</code> → <code>restore</code>.
         </p>
       </section>

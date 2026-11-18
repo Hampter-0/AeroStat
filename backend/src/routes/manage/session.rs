@@ -116,6 +116,7 @@ pub async fn login(
     login_guard::release_ip(&state.redis, &ip).await;
     login_guard::clear_account(&state.redis, &account).await;
     // Only said after a correct password, so it doesn't tell strangers anything.
+    refuse_suspended(&state, user_id).await?;
     if !password_login {
         return Err(ApiError::BadRequest(
             "Password sign-in is turned off for this account. Sign in with a passkey.".into(),
@@ -129,6 +130,19 @@ pub async fn login(
     Ok(Json(LoginReply::Session(session)))
 }
 
+/// A suspended account gets no session, whatever way it signs in.
+pub(super) async fn refuse_suspended(state: &AppState, user_id: i64) -> Result<(), ApiError> {
+    let suspended: bool = sqlx::query_scalar("SELECT suspended FROM users WHERE id = $1")
+        .bind(user_id)
+        .fetch_optional(&state.db)
+        .await?
+        .unwrap_or(false);
+    if suspended {
+        return Err(ApiError::BadRequest("This account is suspended. Ask an admin to turn it back on.".into()));
+    }
+    Ok(())
+}
+
 /// Opens a session after a successful sign-in, by password or passkey.
 pub(super) async fn start_session(
     state: &AppState,
@@ -137,6 +151,7 @@ pub(super) async fn start_session(
     ip: &str,
     details: Option<serde_json::Value>,
 ) -> Result<Json<LoginResponse>, ApiError> {
+    refuse_suspended(state, user_id).await?;
     sqlx::query("UPDATE users SET last_login_at = now() WHERE id = $1")
         .bind(user_id)
         .execute(&state.db)

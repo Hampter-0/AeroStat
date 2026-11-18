@@ -135,7 +135,7 @@ export default async function ProfilePage() {
               {user.extra_permissions.length > 0 && <span className="chip">+{user.extra_permissions.length} extra</span>}
             </div>
           )}
-          {user.is_admin && <p className="manage-empty">You are a super user and can do everything in the panel.</p>}
+          {user.is_admin && <p className="manage-empty">You are an admin and can do everything in the panel.</p>}
         </Card>
 
         <Card icon={<Bell />} title="Notifications" wide={true} id="notifications">

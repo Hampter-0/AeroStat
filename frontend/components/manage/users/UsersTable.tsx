@@ -149,11 +149,11 @@ export default function UsersTable({
                 lastLogin = formatDateTimeShort(user.last_login_at, timezone)
               }
               const chips: { key: string; name: string; admin: boolean }[] = []
-              if (user.super_user) {
-                chips.push({ key: 'super', name: 'Super user', admin: true })
+              if (user.is_admin) {
+                chips.push({ key: 'admin', name: 'Admin', admin: true })
               }
               for (const role of rolesOf(user)) {
-                chips.push({ key: 'role-' + role.id, name: role.name, admin: role.super_user })
+                chips.push({ key: 'role-' + role.id, name: role.name, admin: false })
               }
               const open = expanded.includes(user.id)
               let shownChips = chips.slice(0, SHOWN_ROLES)
@@ -182,8 +182,8 @@ export default function UsersTable({
                       <span className="user-row-names">
                         <span className="user-row-title">
                           <strong>{user.username}</strong>
-                          {user.owner && (
-                            <span className="user-badge super" title="Owner">
+                          {user.is_admin && (
+                            <span className="user-badge super" title="Admin">
                               <Crown />
                             </span>
                           )}
@@ -197,6 +197,8 @@ export default function UsersTable({
                               <LockOpen size={13} />
                             </span>
                           )}
+                          {user.owner && <span className="you-tag">Owner</span>}
+                          {user.suspended && <span className="you-tag suspended">Suspended</span>}
                           {user.id === currentUserId && <span className="you-tag">You</span>}
                         </span>
                         {user.email && <small>{user.email}</small>}

@@ -19,7 +19,6 @@ export async function saveRole(_state: FormState, formData: FormData): Promise<F
   const body = JSON.stringify({
     name: text(formData, 'name'),
     handle: text(formData, 'handle'),
-    super_user: formData.get('super_user') === 'on',
     permissions: permissions,
   })
 

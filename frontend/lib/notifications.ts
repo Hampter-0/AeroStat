@@ -46,7 +46,7 @@ export const EVENT_GROUPS: { title: string; events: { id: string; label: string;
       {
         id: 'admin_security',
         label: 'Security changes',
-        hint: 'Super users, two-factor resets and restored backups',
+        hint: 'Admins, suspensions, two-factor resets and restored backups',
       },
     ],
   },

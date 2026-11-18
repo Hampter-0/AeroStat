@@ -90,9 +90,6 @@ export default function RolesTable({ roles, openText }: { roles: Role[]; openTex
               if (role.permissions.length === 1) {
                 access = <span className="table-muted">1 permission</span>
               }
-              if (role.super_user) {
-                access = <span className="chip admin">Super user</span>
-              }
               return (
                 <tr key={role.id}>
                   <td>
