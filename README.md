@@ -103,7 +103,7 @@ curl -o .env https://raw.githubusercontent.com/Hampter-0/AeroStat/main/deploy/.e
 Fill in `.env` (the keys and the database password, see the [installation guide](https://docs.aerostatus.nl/guide/installation)), then start it and create your admin account:
 
 ```bash
-docker compose --profile postgres up -d
+docker compose up -d
 docker compose exec -it backend aerostat create-admin --username admin
 ```
 

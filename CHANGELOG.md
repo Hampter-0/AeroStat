@@ -4,6 +4,21 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.27.2
+
+### Changes
+
+- The footer of the status page says "Powered by AeroStat" with a link to aerostatus.nl, instead of repeating the site name.
+- `COMPOSE_PROFILES=postgres` in `.env` starts the bundled Postgres, so `docker compose pull && docker compose up -d` (the update command the panel copies) also updates Postgres. Leave it empty when you use your own Postgres.
+
+### Updating
+
+Using the Postgres that comes with AeroStat? Add this line to your `.env`, or `docker compose pull` keeps skipping the Postgres image:
+
+```ini
+COMPOSE_PROFILES=postgres
+```
+
 ## 0.27.1
 
 ### Changes

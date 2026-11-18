@@ -24,7 +24,7 @@ export default async function PublicLayout({ children }: { children: ReactNode }
       <main>{children}</main>
       <footer className="public-footer">
         <TimezonePicker label={label} siteTimezone={display.siteTimezone} choice={display.choice} zones={zones} />
-        <PoweredBy siteName={config.siteName} />
+        <PoweredBy />
       </footer>
     </>
   )

@@ -30,9 +30,14 @@
     font-size: 11px;
 }
 
-.powered-by strong {
+.powered-by a {
     color: var(--text);
     font-weight: 600;
+    text-decoration: none;
+}
+
+.powered-by a:hover {
+    text-decoration: underline;
 }
 .public-footer {
     padding-top: 28px;
