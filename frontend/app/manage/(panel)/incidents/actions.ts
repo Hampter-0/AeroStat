@@ -80,6 +80,7 @@ export async function updateIncident(_state: FormState, formData: FormData): Pro
         severity: text(formData, 'severity'),
         affected_services: selectedServices(formData),
         started_at: await changedTime(formData, 'started_at'),
+        resolved_at: await changedTime(formData, 'resolved_at'),
       }),
     })
   } catch (error) {
@@ -106,7 +107,11 @@ export async function postUpdate(_state: FormState, formData: FormData): Promise
   try {
     await manageFetch('/incidents/' + encodeURIComponent(id) + '/updates', {
       method: 'POST',
-      body: JSON.stringify({ status: text(formData, 'status'), message: text(formData, 'message') }),
+      body: JSON.stringify({
+        status: text(formData, 'status'),
+        message: text(formData, 'message'),
+        created_at: await timeField(formData, 'created_at'),
+      }),
     })
   } catch (error) {
     return { error: errorMessage(error), success: null }

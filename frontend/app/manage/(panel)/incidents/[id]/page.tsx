@@ -62,6 +62,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
             statuses={INCIDENT_STATUSES}
             hints={STATUS_HINTS}
             action={postUpdate}
+            timezone={timezone}
           />
         </section>
       )}
@@ -91,7 +92,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
       {canEdit && (
         <section className="manage-panel">
           <h2>Details</h2>
-          <IncidentForm key={incident.created_at} services={services} incident={incident} timezone={timezone} />
+          <IncidentForm key={incident.created_at + '-' + incident.resolved_at} services={services} incident={incident} timezone={timezone} />
         </section>
       )}
 

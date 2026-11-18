@@ -10,6 +10,8 @@ import type { RoleSummary } from '@/lib/permissions'
 import { formatDateTimeShort } from '@/lib/time'
 import type { UserRecord } from '@/lib/users'
 
+const SHOWN_ROLES = 2
+
 export default function UsersTable({
   users,
   roles,
@@ -26,6 +28,21 @@ export default function UsersTable({
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE)
+  const [expanded, setExpanded] = useState<number[]>([])
+
+  function toggleRoles(userId: number) {
+    if (expanded.includes(userId)) {
+      const next: number[] = []
+      for (const id of expanded) {
+        if (id !== userId) {
+          next.push(id)
+        }
+      }
+      setExpanded(next)
+    } else {
+      setExpanded(expanded.concat([userId]))
+    }
+  }
 
   const roleById = new Map<number, RoleSummary>()
   for (const role of roles) {
@@ -131,7 +148,24 @@ export default function UsersTable({
               if (user.last_login_at) {
                 lastLogin = formatDateTimeShort(user.last_login_at, timezone)
               }
-              const userRoles = rolesOf(user)
+              const chips: { key: string; name: string; admin: boolean }[] = []
+              if (user.super_user) {
+                chips.push({ key: 'super', name: 'Super user', admin: true })
+              }
+              for (const role of rolesOf(user)) {
+                chips.push({ key: 'role-' + role.id, name: role.name, admin: role.super_user })
+              }
+              const open = expanded.includes(user.id)
+              let shownChips = chips.slice(0, SHOWN_ROLES)
+              if (open) {
+                shownChips = chips
+              }
+              const hiddenChips = chips.slice(SHOWN_ROLES)
+              const hiddenNames: string[] = []
+              for (const chip of hiddenChips) {
+                hiddenNames.push(chip.name)
+              }
+              const hiddenText = hiddenNames.join(', ')
               const passkeyOnly = user.passkeys > 0 && !user.password_login
               const secured = user.two_factor || passkeyOnly
               let secureText = 'No two-factor sign-in'
@@ -169,27 +203,51 @@ export default function UsersTable({
                       </span>
                     </div>
                   </td>
-                  <td>
+                  <td className="users-roles-cell">
                     <div className="user-row-access">
-                      {user.super_user && <span className="chip admin">Super user</span>}
-                      {userRoles.length === 0 && user.permissions.length === 0 && !user.super_user && (
-                        <span className="chip muted">No role</span>
-                      )}
-                      {userRoles.map(function (role) {
+                      {chips.length === 0 && user.permissions.length === 0 && <span className="chip muted">No role</span>}
+                      {shownChips.map(function (chip) {
                         let className = 'chip'
-                        if (role.super_user) {
+                        if (chip.admin) {
                           className = 'chip admin'
                         }
                         return (
-                          <span className={className} key={role.id}>
-                            {role.name}
+                          <span className={className} key={chip.key}>
+                            {chip.name}
                           </span>
                         )
                       })}
+                      {hiddenChips.length > 0 && !open && (
+                        <button
+                          type="button"
+                          className="chip more"
+                          title={hiddenText}
+                          aria-label={'Show ' + hiddenChips.length + ' more roles: ' + hiddenText}
+                          onClick={function () {
+                            toggleRoles(user.id)
+                          }}
+                        >
+                          +{hiddenChips.length}
+                        </button>
+                      )}
+                      {hiddenChips.length > 0 && open && (
+                        <button
+                          type="button"
+                          className="chip more"
+                          onClick={function () {
+                            toggleRoles(user.id)
+                          }}
+                        >
+                          Less
+                        </button>
+                      )}
                       {user.permissions.length > 0 && <span className="chip">+{user.permissions.length} extra</span>}
                     </div>
                   </td>
-                  <td className="table-muted">{lastLogin}</td>
+                  <td className="table-muted users-login-cell">
+                    <span className="users-login-label">Last sign-in </span>
+                    {lastLogin}
+                  </td>
                   <td className="table-action">
                     <Link href={'/manage/users/' + user.id} className="button-secondary">
                       {openText}

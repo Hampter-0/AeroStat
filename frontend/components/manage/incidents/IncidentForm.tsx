@@ -19,6 +19,8 @@ interface ExistingIncident {
   severity: string
   affected_services: string[] | null
   created_at: string
+  status: string
+  resolved_at: string | null
 }
 
 export default function IncidentForm({
@@ -40,9 +42,14 @@ export default function IncidentForm({
   useResultToast(state)
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
   const [status, setStatus] = useState('investigating')
+  const [endedAt, setEndedAt] = useState('')
 
   function changeStatus(event: React.ChangeEvent<HTMLSelectElement>) {
     setStatus(event.target.value)
+  }
+
+  function changeEndedAt(event: React.ChangeEvent<HTMLInputElement>) {
+    setEndedAt(event.target.value)
   }
 
   let title = ''
@@ -50,6 +57,8 @@ export default function IncidentForm({
   let severity = 'minor'
   let selected: string[] = preselected
   let startedAt = ''
+  let resolvedAt = ''
+  let incidentResolved = false
   if (incident) {
     title = incident.title
     if (incident.description) {
@@ -60,11 +69,15 @@ export default function IncidentForm({
       selected = incident.affected_services
     }
     startedAt = toInputValue(incident.created_at, timezone)
+    if (incident.status === 'resolved' && incident.resolved_at) {
+      incidentResolved = true
+      resolvedAt = toInputValue(incident.resolved_at, timezone)
+    }
   }
 
   const zone = zoneAbbreviation(timezone)
   let resolved = false
-  if (status === 'resolved') {
+  if (status === 'resolved' || endedAt !== '') {
     resolved = true
   }
 
@@ -94,6 +107,7 @@ export default function IncidentForm({
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {incident && <input type="hidden" name="id" value={incident.id} />}
       {incident && <input type="hidden" name="started_at_before" value={startedAt} />}
+      {incidentResolved && <input type="hidden" name="resolved_at_before" value={resolvedAt} />}
       <label>
         <span>Title</span>
         <input name="title" defaultValue={title} required maxLength={200} placeholder="Short summary visitors will see" />
@@ -116,7 +130,7 @@ export default function IncidentForm({
       </label>
       <ServicePicker services={services} selected={selected} />
 
-      {!incident && (
+      {!incident && endedAt === '' && (
         <label>
           <span>Status</span>
           <select name="status" value={status} onChange={changeStatus}>
@@ -137,11 +151,18 @@ export default function IncidentForm({
           <input name="started_at" type="datetime-local" defaultValue={startedAt} required={Boolean(incident)} />
           <small className="field-hint">{startHint}</small>
         </label>
-        {!incident && resolved && (
+        {!incident && (
           <label>
-            <span>Resolved at ({zone})</span>
-            <input name="resolved_at" type="datetime-local" />
-            <small className="field-hint">Leave empty if it was fixed just now.</small>
+            <span>Ended at ({zone})</span>
+            <input name="resolved_at" type="datetime-local" value={endedAt} onChange={changeEndedAt} />
+            <small className="field-hint">Leave empty if it is still going on.</small>
+          </label>
+        )}
+        {incidentResolved && (
+          <label>
+            <span>Ended at ({zone})</span>
+            <input name="resolved_at" type="datetime-local" defaultValue={resolvedAt} required />
+            <small className="field-hint">Moves the Resolved update in the timeline.</small>
           </label>
         )}
       </div>

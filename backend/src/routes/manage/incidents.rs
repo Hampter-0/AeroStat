@@ -27,7 +27,8 @@ pub struct CreateIncident {
     message: String,
     /// When it started, for an incident that is posted late. Defaults to now.
     started_at: Option<DateTime<Utc>>,
-    /// Only with status "resolved": when it was fixed. Defaults to now.
+    /// When it was fixed. Given, it makes a past incident that is resolved
+    /// straight away. With status "resolved" and no time, it is now.
     resolved_at: Option<DateTime<Utc>>,
 }
 
@@ -38,6 +39,8 @@ pub struct UpdateIncident {
     severity: String,
     affected_services: Vec<String>,
     started_at: Option<DateTime<Utc>>,
+    /// Only for a resolved incident: moves its Resolved update.
+    resolved_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Deserialize)]
@@ -162,7 +165,11 @@ pub async fn create(
     user.require("incidents.create")?;
     let title = clean_title(&body.title)?;
     let message = clean_message(&body.message)?;
-    check_status(&body.status)?;
+    let mut status = body.status.clone();
+    if body.resolved_at.is_some() {
+        status = "resolved".to_string();
+    }
+    check_status(&status)?;
     check_severity(&body.severity)?;
     check_services(&state.db, &body.affected_services).await?;
 
@@ -172,7 +179,7 @@ pub async fn create(
     // A resolved incident is a backfill of something that already happened.
     // Its one update is posted at the time it was fixed, so the incident runs
     // from started_at to resolved_at. Like Statuspage, nobody is notified.
-    let backfill = body.status == "resolved";
+    let backfill = status == "resolved";
     let mut update_at = started_at;
     if backfill {
         let resolved_at = body.resolved_at.unwrap_or(now);
@@ -193,7 +200,7 @@ pub async fn create(
     )
     .bind(&title)
     .bind(clean_description(body.description))
-    .bind(&body.status)
+    .bind(&status)
     .bind(&body.severity)
     .bind(&body.affected_services)
     .bind(started_at)
@@ -202,7 +209,7 @@ pub async fn create(
 
     sqlx::query("INSERT INTO incident_updates (incident_id, status, message, created_at) VALUES ($1, $2, $3, $4)")
         .bind(id)
-        .bind(&body.status)
+        .bind(&status)
         .bind(&message)
         .bind(update_at)
         .execute(&mut *tx)
@@ -224,7 +231,7 @@ pub async fn create(
         Event::IncidentCreated {
             id,
             title: title.clone(),
-            status: body.status.clone(),
+            status: status.clone(),
             severity: body.severity.clone(),
             message: message.clone(),
             services: body.affected_services.clone(),
@@ -259,6 +266,46 @@ pub async fn update(
         }
     }
 
+    // The end of a resolved incident is the time of its newest update, the
+    // Resolved one. Moving the end moves that update; it has to stay after
+    // every other update, or another one would become the newest.
+    let mut moved_end: Option<(i64, DateTime<Utc>)> = None;
+    if let Some(resolved_at) = body.resolved_at {
+        if incident.status != "resolved" {
+            return Err(ApiError::BadRequest(
+                "It is still going on. Post a Resolved update to end it".into(),
+            ));
+        }
+        if Some(resolved_at) != incident.resolved_at {
+            check_not_future(resolved_at, "The end time")?;
+            if resolved_at < started_at {
+                return Err(ApiError::BadRequest("It can't end before it started".into()));
+            }
+            let (last_id, previous): (i64, Option<DateTime<Utc>>) = sqlx::query_as(
+                r#"
+                SELECT latest.id,
+                    (SELECT MAX(created_at) FROM incident_updates WHERE incident_id = $1 AND id <> latest.id)
+                FROM (
+                    SELECT id FROM incident_updates WHERE incident_id = $1
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                ) latest
+                "#,
+            )
+            .bind(id)
+            .fetch_one(&state.db)
+            .await?;
+            if let Some(previous) = previous {
+                if resolved_at < previous {
+                    return Err(ApiError::BadRequest(
+                        "It can't end before its other updates. Move those first".into(),
+                    ));
+                }
+            }
+            moved_end = Some((last_id, resolved_at));
+        }
+    }
+
+    let mut tx = state.db.begin().await?;
     sqlx::query(
         r#"
         UPDATE incidents SET title = $1, description = $2, severity = $3, affected_services = $4, created_at = $5
@@ -271,8 +318,17 @@ pub async fn update(
     .bind(&body.affected_services)
     .bind(started_at)
     .bind(id)
-    .execute(&state.db)
+    .execute(&mut *tx)
     .await?;
+    if let Some((update_id, resolved_at)) = moved_end {
+        sqlx::query("UPDATE incident_updates SET created_at = $1 WHERE id = $2")
+            .bind(resolved_at)
+            .bind(update_id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    sync_status(&state.db, id).await?;
 
     let details = activity::changes(before, snapshot(&state, "incidents", id).await);
     log(&state, &user, "edited incident", Some(id), &title, details).await;
@@ -306,16 +362,29 @@ pub async fn add_update(
     check_status(&body.status)?;
     let message = clean_message(&body.message)?;
 
+    // An update can be dated back, for something you post afterwards. One that
+    // is more than a few minutes old is news to nobody, so it isn't sent out.
+    let now = Utc::now();
+    let posted_at = body.created_at.unwrap_or(now);
+    check_not_future(posted_at, "An update")?;
+    if posted_at < incident.created_at {
+        return Err(ApiError::BadRequest(
+            "An update can't be before the incident started. Change the start time first".into(),
+        ));
+    }
+    let backdated = posted_at < now - Duration::minutes(5);
+
     let created: StatusUpdate = sqlx::query_as(
         r#"
-        INSERT INTO incident_updates (incident_id, status, message)
-        VALUES ($1, $2, $3)
+        INSERT INTO incident_updates (incident_id, status, message, created_at)
+        VALUES ($1, $2, $3, $4)
         RETURNING id, status, message, created_at
         "#,
     )
     .bind(id)
     .bind(&body.status)
     .bind(&message)
+    .bind(posted_at)
     .fetch_one(&state.db)
     .await?;
 
@@ -327,6 +396,9 @@ pub async fn add_update(
     };
     let details = Some(json!({ "update": created }));
     log(&state, &user, action, Some(id), &incident.title, details).await;
+    if backdated {
+        return Ok((StatusCode::CREATED, Json(created)));
+    }
     notifications::notify_by(
         &state.db,
         Event::IncidentUpdated {

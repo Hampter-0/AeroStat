@@ -30,7 +30,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 ## Features
 
 - Public status page with daily uptime bars, incidents and maintenance
-- Incidents with their real start and end time: post one late, add one that is already over, or move an update to the right time. A critical incident turns its days red and counts as downtime
+- Incidents with their real start and end time: fill in Ended at to add one that is already over, date an update back, or move the end afterwards. Updates dated back send no notifications. A critical incident turns its days red and counts as downtime
 - HTTP(S) checks with status codes and keywords, TCP port checks and DNS record checks, plus a warning before an HTTPS certificate runs out
 - Admin panel at `/manage`: services and groups, incidents, maintenance, branding, users and roles with fine-grained permissions, activity log, live backend logs
 - Sign in with a password or a passkey, see and sign out your sessions

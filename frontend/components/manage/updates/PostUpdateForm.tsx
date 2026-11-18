@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatStatus } from '@/lib/format'
+import { zoneAbbreviation } from '@/lib/time'
 import { useFormSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
@@ -14,12 +15,14 @@ export default function PostUpdateForm({
   statuses,
   hints,
   action,
+  timezone = null,
 }: {
   parentId: number
   currentStatus: string
   statuses: string[]
   hints: Record<string, string>
   action: (state: FormState, formData: FormData) => Promise<FormState>
+  timezone?: string | null
 }) {
   const [state, formAction, pending] = useActionState(action, initialState)
   useResultToast(state)
@@ -55,6 +58,13 @@ export default function PostUpdateForm({
         <span>Message</span>
         <textarea name="message" rows={3} required placeholder="What changed? This is shown on the status page." />
       </label>
+      {timezone && (
+        <label className="update-time">
+          <span>Time ({zoneAbbreviation(timezone)})</span>
+          <input name="created_at" type="datetime-local" />
+          <small className="field-hint">Leave empty for now. An earlier time adds it to the timeline without a notification.</small>
+        </label>
+      )}
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

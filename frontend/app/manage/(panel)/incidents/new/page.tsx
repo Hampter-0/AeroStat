@@ -33,7 +33,7 @@ export default async function NewIncidentPage({ searchParams }: { searchParams: 
       </Link>
       <header className="manage-page-header">
         <h1>New incident</h1>
-        <p>It shows up on the status page as soon as you create it. Pick Resolved to add one that is already over.</p>
+        <p>It shows up on the status page as soon as you create it. Fill in Ended at to add one that is already over.</p>
       </header>
       <section className="manage-panel">
         <IncidentForm services={services} incident={null} timezone={timezone} preselected={preselected} />
