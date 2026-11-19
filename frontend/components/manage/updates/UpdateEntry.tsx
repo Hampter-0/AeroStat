@@ -5,6 +5,7 @@ import type { FormState } from '@/app/manage/actions'
 import { useConfirm } from '@/components/manage/confirm/Confirm'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatDateTime, formatStatus } from '@/lib/format'
+import { updateTone } from '@/lib/incidents'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
 import type { StatusUpdate } from '@/lib/types'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -80,7 +81,7 @@ export default function UpdateEntry({
   return (
     <li className={'manage-update status-' + update.status}>
       <div className="manage-update-head">
-        <span className={'status-chip status-' + update.status}>{formatStatus(update.status)}</span>
+        <span className={'state-badge tone-' + updateTone(update.status)}>{formatStatus(update.status)}</span>
         <time>{formatDateTime(update.created_at, timezone)}</time>
         {canEdit && (
           <button type="button" className="link-button" onClick={toggleEditing}>

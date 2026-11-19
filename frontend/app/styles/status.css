@@ -78,16 +78,8 @@ main {
     background: var(--muted);
 }
 
-.notice.scheduled::before {
-    background: var(--warning);
-}
-
-.notice.ongoing-maintenance::before {
-    background: var(--info);
-}
-
-.notice.incident::before {
-    background: var(--danger-text);
+.notice[class*="tone-"]::before {
+    background: var(--tone);
 }
 
 .notice-icon {
@@ -96,24 +88,6 @@ main {
     display: grid;
     place-items: center;
     border-radius: 50%;
-}
-
-.notice-icon.scheduled {
-    color: var(--warning-text);
-    background: var(--warning-bg);
-    border: 1px solid var(--warning-border);
-}
-
-.notice-icon.ongoing-maintenance {
-    color: var(--info);
-    background: var(--info-bg);
-    border: 1px solid var(--info-border);
-}
-
-.notice-icon.incident {
-    color: var(--danger-text);
-    background: var(--danger-bg);
-    border: 1px solid var(--danger-border);
 }
 
 .notice-copy h2 {

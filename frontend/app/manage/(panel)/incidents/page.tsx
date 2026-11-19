@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getIncidents, getServiceNames } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
+import { incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import type { Incident } from '@/lib/types'
@@ -34,7 +35,7 @@ function IncidentList({
                 {names.join(', ')} · {formatDateTime(incident.created_at, timezone)}
               </span>
             </div>
-            <span className={'status-chip status-' + incident.status}>{formatStatus(incident.status)}</span>
+            <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
           </Link>
         )
       })}

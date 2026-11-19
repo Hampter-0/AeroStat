@@ -5,6 +5,7 @@ import { getIncidentsBetween, hasIncidentsBefore } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage, shiftMonth, type CalendarMonth } from '@/lib/months'
 import { formatDayLong } from '@/lib/time'
+import { incidentTone } from '@/lib/incidents'
 import type { Incident } from '@/lib/types'
 
 function capitalize(text: string) {
@@ -12,12 +13,8 @@ function capitalize(text: string) {
 }
 
 function IncidentEntry({ incident, timezone }: { incident: Incident; timezone: string }) {
-  let tagClassName = 'scheduled-tag'
-  let tagLabel = capitalize(incident.status)
-  if (incident.status === 'resolved') {
-    tagClassName = 'resolved-tag'
-    tagLabel = 'Resolved'
-  }
+  const tagClassName = 'state-badge tone-' + incidentTone(incident.status, incident.severity)
+  const tagLabel = capitalize(incident.status)
 
   return (
     <Link href={'/incidents/' + incident.id} className="event-preview-link">

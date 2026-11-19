@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getAllMaintenance, getServiceNames } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
+import { maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import type { MaintenanceWindow } from '@/lib/types'
@@ -34,7 +35,7 @@ function MaintenanceList({
                 {names.join(', ')} · {formatDateTime(item.scheduled_start, timezone)}
               </span>
             </div>
-            <span className={'status-chip status-' + item.status}>{formatStatus(item.status)}</span>
+            <span className={'state-badge tone-' + maintenanceTone(item.status)}>{formatStatus(item.status)}</span>
           </Link>
         )
       })}

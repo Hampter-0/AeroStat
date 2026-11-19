@@ -115,35 +115,9 @@ a.range-button:hover {
 }
 
 .event-title-row>strong {
-    color: var(--warning);
+    color: var(--text);
     font-size: 17px;
-    font-weight: 400;
-}
-
-.resolved-tag,
-.scheduled-tag,
-.completed-tag {
-    padding: 4px 8px;
-    border-radius: 20px;
-    font-size: 9px;
-}
-
-.resolved-tag {
-    border: 1px solid var(--success-border);
-    color: var(--success-text);
-    background: var(--success-bg);
-}
-
-.scheduled-tag {
-    border: 1px solid var(--warning-border);
-    color: var(--warning-text);
-    background: var(--warning-bg);
-}
-
-.completed-tag {
-    border: 1px solid var(--success-border);
-    color: var(--success-text);
-    background: var(--success-bg);
+    font-weight: 600;
 }
 
 .event-description {
@@ -171,21 +145,4 @@ a.range-button:hover {
     border-left: 3px solid var(--border-soft);
     color: var(--subtle);
     font-size: 11px;
-}
-
-.in-progress-tag {
-  padding: 4px 8px;
-  border-radius: 20px;
-  border: 1px solid var(--info-border);
-  color: var(--info);
-  background: var(--info-bg);
-  font-size: 9px;
-}
-.cancelled-tag {
-  padding: 4px 8px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
-  color: var(--text-soft);
-  background: var(--panel-soft);
-  font-size: 9px;
 }

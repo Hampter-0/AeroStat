@@ -9,6 +9,7 @@ import { UPDATE_COMMAND, getVersionInfo } from '@/lib/version'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { formatStatus } from '@/lib/format'
+import { incidentTone } from '@/lib/incidents'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { currentTimeMs, formatDateTimeShort, formatDuration } from '@/lib/time'
 import type { IncidentDetail, MaintenanceWindow, ServiceStatus } from '@/lib/types'
@@ -254,7 +255,7 @@ export default async function ManageOverviewPage() {
               }
               return (
                 <Link href={'/manage/incidents/' + incident.id} className="manage-list-row dashboard-incident" key={incident.id}>
-                  <span className="dashboard-incident-icon">
+                  <span className={'dashboard-incident-icon tone-icon tone-' + incidentTone(incident.status, incident.severity)}>
                     <AlertSmall size={14} />
                   </span>
                   <div>
@@ -264,7 +265,7 @@ export default async function ManageOverviewPage() {
                     </span>
                     {latest && <em>{latest}</em>}
                   </div>
-                  <span className={'status-chip status-' + incident.status}>{formatStatus(incident.status)}</span>
+                  <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
                 </Link>
               )
             })}
@@ -295,7 +296,7 @@ export default async function ManageOverviewPage() {
                     </strong>
                     <span>Ends in {formatDuration(new Date(item.scheduled_end).getTime() - now)}</span>
                   </div>
-                  <span className="status-chip status-in_progress">In progress</span>
+                  <span className="state-badge tone-blue">In progress</span>
                 </Link>
               )
             })}
@@ -309,7 +310,7 @@ export default async function ManageOverviewPage() {
                       {formatDateTimeShort(item.scheduled_start, timezone)}
                     </span>
                   </div>
-                  <span className="status-chip status-scheduled">Scheduled</span>
+                  <span className="state-badge tone-blue">Scheduled</span>
                 </Link>
               )
             })}

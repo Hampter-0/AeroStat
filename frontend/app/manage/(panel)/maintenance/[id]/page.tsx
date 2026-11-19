@@ -8,7 +8,7 @@ import PostUpdateForm from '@/components/manage/updates/PostUpdateForm'
 import UpdateEntry from '@/components/manage/updates/UpdateEntry'
 import { getMaintenance, getStatus } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
-import { MAINTENANCE_HINTS, MAINTENANCE_UPDATE_STATUSES } from '@/lib/maintenance'
+import { MAINTENANCE_HINTS, MAINTENANCE_UPDATE_STATUSES, maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import {
@@ -56,7 +56,7 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
 
       <header className="manage-page-header with-action">
         <div>
-          <span className={'status-chip status-' + maintenance.status}>{formatStatus(maintenance.status)}</span>
+          <span className={'state-badge tone-' + maintenanceTone(maintenance.status)}>{formatStatus(maintenance.status)}</span>
           <h1>{maintenance.title}</h1>
           <p>
             {formatDateTime(maintenance.scheduled_start, timezone)} – {formatDateTime(maintenance.scheduled_end, timezone)}

@@ -8,3 +8,26 @@ export const STATUS_HINTS: Record<string, string> = {
   monitoring: 'A fix is out, we are watching',
   resolved: 'Everything is back to normal',
 }
+
+export function incidentTone(status: string, severity: string): string {
+  if (status === 'resolved') {
+    return 'green'
+  }
+  if (severity === 'critical') {
+    return 'red'
+  }
+  if (severity === 'major') {
+    return 'orange'
+  }
+  return 'amber'
+}
+
+export function updateTone(status: string): string {
+  if (status === 'resolved' || status === 'completed') {
+    return 'green'
+  }
+  if (status === 'scheduled' || status === 'in_progress') {
+    return 'blue'
+  }
+  return 'gray'
+}

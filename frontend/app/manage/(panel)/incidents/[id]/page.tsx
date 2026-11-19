@@ -7,7 +7,7 @@ import PostUpdateForm from '@/components/manage/updates/PostUpdateForm'
 import UpdateEntry from '@/components/manage/updates/UpdateEntry'
 import { getIncident, getStatus } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
-import { INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
+import { INCIDENT_STATUSES, STATUS_HINTS, incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import { deleteIncident, deleteUpdate, editUpdate, postUpdate } from '../actions'
@@ -44,7 +44,7 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
 
       <header className="manage-page-header with-action">
         <div>
-          <span className={'status-chip status-' + incident.status}>{formatStatus(incident.status)}</span>
+          <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
           <h1>{incident.title}</h1>
           <p>Started {formatDateTime(incident.created_at, timezone)}</p>
         </div>

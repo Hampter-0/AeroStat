@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getIncident, getServiceNames } from '@/lib/api'
+import { incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatDayLong } from '@/lib/time'
@@ -49,12 +50,8 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     notFound()
   }
 
-  let tagClassName = 'scheduled-tag'
-  let tagLabel = capitalize(incident.status)
-  if (incident.status === 'resolved') {
-    tagClassName = 'resolved-tag'
-    tagLabel = 'Resolved'
-  }
+  const tagClassName = 'state-badge tone-' + incidentTone(incident.status, incident.severity)
+  const tagLabel = capitalize(incident.status)
 
   const serviceNames = await getServiceNames()
   let affectedServices: string[] = []

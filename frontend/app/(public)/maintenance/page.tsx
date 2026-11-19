@@ -6,18 +6,16 @@ import { getDisplayTime } from '@/lib/visitor-time'
 import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage, shiftMonth, type CalendarMonth } from '@/lib/months'
 import { formatWindow } from '@/lib/time'
 import type { MaintenanceWindow } from '@/lib/types'
+import { maintenanceTone } from '@/lib/maintenance'
 
 function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: MaintenanceWindow; timezone: string }) {
-  let tagClassName = 'scheduled-tag'
+  const tagClassName = 'state-badge tone-' + maintenanceTone(maintenanceWindow.status)
   let tagLabel = 'Scheduled'
   if (maintenanceWindow.status === 'in_progress') {
-    tagClassName = 'in-progress-tag'
     tagLabel = 'In progress'
   } else if (maintenanceWindow.status === 'completed') {
-    tagClassName = 'completed-tag'
     tagLabel = 'Completed'
   } else if (maintenanceWindow.status === 'cancelled') {
-    tagClassName = 'cancelled-tag'
     tagLabel = 'Cancelled'
   }
 

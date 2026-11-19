@@ -857,7 +857,7 @@ body:has(.manage-login) {
     gap: 16px;
 }
 
-.manage-page-header .status-chip {
+.manage-page-header .state-badge {
     margin-bottom: 10px;
     display: inline-block;
 }
@@ -915,40 +915,6 @@ a.button-secondary {
 .manage-list-row div span {
     color: var(--muted);
     font-size: 13px;
-}
-
-.status-chip {
-    padding: 3px 9px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text-soft);
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.status-chip.status-investigating {
-    border-color: var(--danger-border);
-    color: var(--danger-text);
-    background: var(--danger-bg);
-}
-
-.status-chip.status-identified {
-    border-color: var(--warning-border);
-    color: var(--warning-text);
-    background: var(--warning-bg);
-}
-
-.status-chip.status-monitoring {
-    border-color: var(--info-border);
-    color: var(--info);
-    background: var(--info-bg);
-}
-
-.status-chip.status-resolved {
-    border-color: var(--success-border);
-    color: var(--success-text);
-    background: var(--success-bg);
 }
 
 .status-options {
@@ -1127,29 +1093,6 @@ a.button-secondary {
 
 .status-options.three {
     grid-template-columns: repeat(3, 1fr);
-}
-
-.status-chip.status-scheduled {
-    border-color: var(--warning-border);
-    color: var(--warning-text);
-    background: var(--warning-bg);
-}
-
-.status-chip.status-in_progress {
-    border-color: var(--info-border);
-    color: var(--info);
-    background: var(--info-bg);
-}
-
-.status-chip.status-completed {
-    border-color: var(--success-border);
-    color: var(--success-text);
-    background: var(--success-bg);
-}
-
-.status-chip.status-cancelled {
-    color: var(--muted);
-    border-style: dashed;
 }
 
 .manage-update.status-scheduled {
@@ -1674,8 +1617,6 @@ a.button-secondary {
     display: grid;
     place-items: center;
     border-radius: 50%;
-    color: #fff;
-    background: var(--red);
 }
 
 .manage-list-row div em {

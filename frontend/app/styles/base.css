@@ -133,3 +133,77 @@ body {
 :root[data-theme="dark"] body {
     --link: color-mix(in srgb, var(--blue) 65%, white);
 }
+
+.tone-red {
+    --tone: #ef4444;
+    --tone-text: #dc2626;
+}
+
+.tone-orange {
+    --tone: #f97316;
+    --tone-text: #c2410c;
+}
+
+.tone-amber {
+    --tone: #eab308;
+    --tone-text: #a16207;
+}
+
+.tone-blue {
+    --tone: #3b82f6;
+    --tone-text: #1d4ed8;
+}
+
+.tone-green {
+    --tone: #22c55e;
+    --tone-text: #15803d;
+}
+
+.tone-gray {
+    --tone: #71717b;
+    --tone-text: #52525c;
+}
+
+:root[data-theme="dark"] .tone-red {
+    --tone-text: #f87171;
+}
+
+:root[data-theme="dark"] .tone-orange {
+    --tone-text: #fb923c;
+}
+
+:root[data-theme="dark"] .tone-amber {
+    --tone-text: #facc15;
+}
+
+:root[data-theme="dark"] .tone-blue {
+    --tone-text: #60a5fa;
+}
+
+:root[data-theme="dark"] .tone-green {
+    --tone-text: #4ade80;
+}
+
+:root[data-theme="dark"] .tone-gray {
+    --tone-text: #a1a1aa;
+}
+
+.state-badge {
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+    border-radius: 6px;
+    color: var(--tone-text);
+    background: color-mix(in srgb, var(--tone) 12%, transparent);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.tone-icon {
+    color: var(--tone-text);
+    background: color-mix(in srgb, var(--tone) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+}

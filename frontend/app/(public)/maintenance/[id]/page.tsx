@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getMaintenance, getServiceNames } from '@/lib/api'
+import { maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatWindow } from '@/lib/time'
@@ -44,21 +45,18 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
     notFound()
   }
 
-  let tagClassName = 'scheduled-tag'
+  const tagClassName = 'state-badge tone-' + maintenanceTone(maintenanceWindow.status)
   let tagLabel = 'Scheduled'
   let isCompleted = false
   let isOngoing = false
 
   if (maintenanceWindow.status === 'in_progress') {
-    tagClassName = 'in-progress-tag'
     tagLabel = 'In progress'
     isOngoing = true
   } else if (maintenanceWindow.status === 'completed') {
-    tagClassName = 'completed-tag'
     tagLabel = 'Completed'
     isCompleted = true
   } else if (maintenanceWindow.status === 'cancelled') {
-    tagClassName = 'cancelled-tag'
     tagLabel = 'Cancelled'
   }
 

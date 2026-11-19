@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import LastChecked from '@/components/status/LastChecked'
 import ServiceSection from '@/components/status/ServiceSection'
-import { AlertSmall, AlertTriangle, Arrow, Check, Server, Tool, X } from '@/components/icons'
+import { AlertSmall, Arrow, Check, Clock, Server, Tool, X } from '@/components/icons'
 import { getIncidents, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { currentTimeMs, formatWindow, zoneAbbreviation } from '@/lib/time'
 import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from '@/lib/types'
+import { incidentTone } from '@/lib/incidents'
 
 export default async function Home() {
   const { timezone, siteTimezone } = await getDisplayTime()
@@ -159,8 +160,8 @@ export default async function Home() {
       </section>
 
       {downNoticeText && (
-        <section className="notice incident">
-          <span className="notice-icon incident">
+        <section className="notice tone-red">
+          <span className="notice-icon tone-icon">
             <AlertSmall />
           </span>
           <div className="notice-copy">
@@ -172,8 +173,8 @@ export default async function Home() {
 
       {ongoingIncidents.map(function (incident) {
         return (
-          <section className="notice incident" key={'incident-' + incident.id}>
-            <span className="notice-icon incident">
+          <section className={'notice tone-' + incidentTone(incident.status, incident.severity)} key={'incident-' + incident.id}>
+            <span className="notice-icon tone-icon">
               <AlertSmall />
             </span>
             <div className="notice-copy">
@@ -189,8 +190,8 @@ export default async function Home() {
 
       {ongoingMaintenanceWindows.map(function (maintenanceWindow) {
         return (
-          <section className="notice ongoing-maintenance" key={'ongoing-maintenance-' + maintenanceWindow.id}>
-            <span className="notice-icon ongoing-maintenance">
+          <section className="notice tone-blue" key={'ongoing-maintenance-' + maintenanceWindow.id}>
+            <span className="notice-icon tone-icon">
               <Tool />
             </span>
             <div className="notice-copy">
@@ -205,9 +206,9 @@ export default async function Home() {
       })}
 
       {upcomingMaintenanceWindow && (
-        <section className="notice scheduled">
-          <span className="notice-icon scheduled">
-            <AlertTriangle />
+        <section className="notice tone-blue">
+          <span className="notice-icon tone-icon">
+            <Clock />
           </span>
           <div className="notice-copy">
             <h2>Scheduled maintenance</h2>

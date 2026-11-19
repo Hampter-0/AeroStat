@@ -4,6 +4,16 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.28.1
+
+### Changes
+
+- Incident badges, notices and icons follow the severity, the same in the panel and on the status page: minor is yellow, major orange and only critical red. Resolved is green.
+- Maintenance is blue while planned or in progress, green when completed and grey when cancelled.
+- Badges have the new look: slightly rounded, with a soft background and border in their colour.
+- Incident titles on the status page are plain text again instead of always orange.
+- New screenshots in the README.
+
 ## 0.28.0
 
 ### Changes
