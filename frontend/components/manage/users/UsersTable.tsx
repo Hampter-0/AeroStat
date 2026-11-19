@@ -247,7 +247,6 @@ export default function UsersTable({
                     </div>
                   </td>
                   <td className="table-muted users-login-cell">
-                    <span className="users-login-label">Last sign-in </span>
                     {lastLogin}
                   </td>
                   <td className="table-action">

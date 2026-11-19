@@ -4249,15 +4249,20 @@ button.page-button {
 }
 
 .activity-table.users-table {
+    min-width: 760px;
     table-layout: fixed;
 }
 
 .users-table th:nth-child(1) {
-    width: 38%;
+    width: 34%;
 }
 
 .users-table th:nth-child(2) {
-    width: 32%;
+    width: 26%;
+}
+
+.users-table td.users-login-cell {
+    white-space: nowrap;
 }
 
 .users-table th:nth-child(4) {
@@ -4280,65 +4285,3 @@ button.chip.more:hover {
     border-color: var(--link);
 }
 
-.users-login-label {
-    display: none;
-}
-
-@media (max-width: 760px) {
-    .users-table thead {
-        display: none;
-    }
-
-    .users-table,
-    .users-table tbody {
-        display: block;
-    }
-
-    .activity-table.users-table {
-        min-width: 0;
-    }
-
-    .users-table tr {
-        padding: 14px 16px;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 10px 12px;
-        border-bottom: 1px solid var(--border-soft);
-    }
-
-    .users-table td {
-        padding: 0;
-        border: 0;
-    }
-
-    .users-table td:first-child {
-        min-width: 0;
-        grid-column: 1;
-        grid-row: 1;
-    }
-
-    .users-table td.table-action {
-        width: auto;
-        grid-column: 2;
-        grid-row: 1;
-    }
-
-    .users-table td.users-roles-cell,
-    .users-table td.users-login-cell,
-    .users-table td.manage-empty {
-        grid-column: 1 / -1;
-    }
-
-    .users-table td.users-login-cell {
-        font-size: 14px;
-    }
-
-    .users-login-label {
-        display: inline;
-    }
-
-    .users-table .user-row-names small {
-        overflow-wrap: anywhere;
-    }
-}

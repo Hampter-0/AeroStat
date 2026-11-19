@@ -4,6 +4,13 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.28.3
+
+### Fixes
+
+- The users table stays a table on a phone and scrolls sideways, like the activity log, instead of turning into cards that pushed the page wider than the screen.
+- The last sign-in date has room again and no longer runs into the Edit button.
+
 ## 0.28.2
 
 ### Fixes
