@@ -28,7 +28,7 @@
     display: grid;
     place-items: center;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 12px;
     color: var(--text-soft);
     background: var(--panel-soft);
 }

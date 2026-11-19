@@ -4,6 +4,15 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.28.0
+
+### Changes
+
+- The panel has a new look: a top bar with the status page link, theme and an account menu, and a sidebar with groups you can fold away (Status page, People, System). On a phone the sidebar slides in from the menu button.
+- Bigger text, fields and buttons, rounder cards, and tab bars for Settings, System, Profile and the Activity filters.
+- The status page uses the same colours, with rounder cards and the Status, Incidents, Maintenance and Contact links as a tab bar.
+- Your accent colour from Settings is still used for buttons, links and the active tab.
+
 ## 0.27.3
 
 ### New

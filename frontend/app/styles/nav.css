@@ -34,44 +34,51 @@
 }
 
 .status-nav-right {
+    padding: 4px;
     display: flex;
     align-items: center;
+    gap: 2px;
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 10px;
     background: var(--panel);
-    box-shadow: 0 2px 6px var(--shadow);
-    overflow: hidden;
 }
 
 .status-nav-right a {
-    min-height: 30px;
-    padding: 0 11px;
+    min-height: 32px;
+    padding: 0 12px;
     display: inline-flex;
     align-items: center;
     border: 0;
-    color: var(--text-soft);
+    border-radius: 7px;
+    color: var(--muted);
     background: transparent;
-    font-size: 10px;
+    font-size: 13px;
+    font-weight: 500;
     text-decoration: none;
 }
 
-.status-nav-right a+a {
-    border-left: 1px solid var(--border-soft);
+.status-nav-right a:hover {
+    color: var(--text);
+    background: var(--panel-hover);
 }
 
-.status-nav-right a:hover,
 .status-nav-right a.active {
     color: var(--link);
-    background: var(--panel-soft);
-}
-
-.status-nav-right a.active {
+    background: var(--nav-active);
     font-weight: 600;
 }
+
 .status-nav-actions {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.status-nav-actions .dropdown-trigger {
+    height: 42px;
+    padding: 0 12px;
+    border-radius: 10px;
+    box-shadow: none;
 }
 
 .dropdown {
@@ -85,7 +92,7 @@
     align-items: center;
     gap: 4px;
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 8px;
     color: var(--text-soft);
     background: var(--panel);
     box-shadow: 0 2px 6px var(--shadow);
@@ -115,7 +122,7 @@
     padding: 4px;
     display: grid;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 10px;
     background: var(--panel);
     box-shadow: 0 8px 24px var(--tooltip-shadow);
 }
@@ -128,10 +135,10 @@
     align-items: center;
     gap: 8px;
     border: 0;
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--text-soft);
     background: transparent;
-    font-size: 11px;
+    font-size: 13px;
     text-align: left;
     text-decoration: none;
 }

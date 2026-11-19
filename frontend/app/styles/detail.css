@@ -19,7 +19,7 @@
 .detail-card {
     margin-top: 20px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 12px;
     background: var(--panel);
     overflow: hidden;
 }
@@ -86,7 +86,7 @@
 .update-card {
     padding: 17px 18px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 12px;
     background: var(--panel);
 }
 

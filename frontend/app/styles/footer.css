@@ -59,7 +59,7 @@
     height: 28px;
     padding: 0 6px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 8px;
     color: var(--text-soft);
     background: var(--panel);
     font: inherit;

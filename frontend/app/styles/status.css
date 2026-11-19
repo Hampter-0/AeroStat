@@ -44,7 +44,7 @@ main {
     align-items: center;
     gap: 2px;
     color: var(--subtle);
-    font-size: 10px;
+    font-size: 12px;
     text-decoration: none;
 }
 
@@ -63,9 +63,8 @@ main {
     align-items: center;
     gap: 14px;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 12px;
     background: var(--panel);
-    box-shadow: 0 8px 24px var(--shadow);
 }
 
 .notice::before {
@@ -119,14 +118,14 @@ main {
 
 .notice-copy h2 {
     margin: 0 0 3px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .notice-copy p {
     margin: 0;
     color: var(--text-soft);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .text-button {
@@ -137,7 +136,7 @@ main {
     border: 0;
     color: var(--link);
     background: transparent;
-    font-size: 9px;
+    font-size: 11px;
     text-decoration: none;
 }
 
@@ -164,9 +163,8 @@ main {
 
 .live-service-section {
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 12px;
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .live-section-heading {
@@ -177,14 +175,14 @@ main {
     align-items: center;
     justify-content: space-between;
     border: 0;
-    border-radius: 3px;
+    border-radius: 11px;
     color: var(--text);
     background: var(--panel);
     text-align: left;
 }
 
 .live-section-heading[aria-expanded="true"] {
-    border-radius: 3px 3px 0 0;
+    border-radius: 11px 11px 0 0;
 }
 
 .live-section-heading:hover {
@@ -198,12 +196,12 @@ main {
 }
 
 .live-section-heading strong {
-    font-size: 12px;
+    font-size: 15px;
 }
 
 .live-section-heading small {
     color: var(--subtle);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .live-section-status {
@@ -211,7 +209,7 @@ main {
     align-items: center;
     gap: 7px;
     color: var(--success);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .live-section-status.down {
@@ -233,16 +231,15 @@ main {
     display: grid;
     gap: 12px;
     border-top: 1px solid var(--border-soft);
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 11px 11px;
     background: var(--panel-soft);
 }
 
 .live-service-card {
     padding: 18px 18px 16px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 10px;
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .live-service-heading {
@@ -285,7 +282,7 @@ main {
     display: block;
     margin-top: 3px;
     color: var(--success);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .live-service-name>div>span.down {
@@ -304,7 +301,7 @@ main {
 .live-uptime strong {
     display: block;
     color: var(--text);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
 }
 
@@ -312,7 +309,7 @@ main {
     display: block;
     margin-top: 3px;
     color: var(--subtle);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .uptime-bars {
@@ -368,7 +365,7 @@ a.bar {
     color: var(--muted);
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 10px;
     box-shadow: 0 8px 24px var(--tooltip-shadow);
     opacity: 0;
     visibility: hidden;
@@ -396,7 +393,7 @@ a.bar {
     gap: 7px;
     padding-bottom: 9px;
     color: var(--text);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -431,28 +428,28 @@ a.bar {
     display: block;
     margin-bottom: 8px;
     color: var(--text);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .downtime-duration {
     display: block;
     margin-bottom: 8px;
     color: var(--red);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .tooltip-calm {
     display: block;
     margin-bottom: 4px;
     color: var(--text);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .tooltip-uptime {
     display: block;
     margin-bottom: 8px;
     color: var(--text-soft);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .tooltip-uptime:has(+ .tooltip-response) {
@@ -464,7 +461,7 @@ a.bar {
     padding-top: 9px;
     border-top: 1px solid var(--border-soft);
     color: var(--muted);
-    font-size: 9px;
+    font-size: 11px;
     text-align: center;
 }
 
@@ -473,7 +470,7 @@ a.bar {
     display: flex;
     justify-content: space-between;
     color: var(--subtle);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .history-mobile {
@@ -486,9 +483,8 @@ a.bar {
     padding: 40px 28px;
     text-align: center;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 12px;
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .status-unavailable h2 {
@@ -500,7 +496,7 @@ a.bar {
 .status-unavailable p {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .notice+.notice {
@@ -581,7 +577,7 @@ a.bar {
 .last-checked {
     margin: 6px 0 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .live-check.pending {
@@ -598,6 +594,6 @@ a.bar {
     border: 1px dashed var(--border);
     border-radius: 8px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 13px;
     text-align: center;
 }

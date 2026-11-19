@@ -1,120 +1,231 @@
 .manage-shell {
+    --sidebar-width: 260px;
+    --topbar-height: 64px;
     min-height: 100vh;
     min-height: 100dvh;
     display: grid;
-    grid-template-columns: 232px 1fr;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-rows: var(--topbar-height) 1fr;
     background: var(--panel-soft);
 }
 
-.manage-sidebar {
+.manage-topbar {
     position: sticky;
+    z-index: 40;
     top: 0;
-    height: 100vh;
-    height: 100dvh;
-    padding: 20px 14px;
+    grid-column: 1 / -1;
+    height: var(--topbar-height);
+    padding: 0 20px 0 0;
     display: flex;
-    flex-direction: column;
-    gap: 22px;
-    border-right: 1px solid var(--border);
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
     background: var(--panel);
 }
 
 .manage-brand {
-    padding: 0 8px;
+    width: var(--sidebar-width);
+    height: 100%;
+    padding: 0 24px;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     color: var(--text);
-    font-size: 17px;
-    font-weight: 500;
+    font-size: 18px;
+    font-weight: 600;
     letter-spacing: -.02em;
     text-decoration: none;
 }
 
+.manage-brand span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-menu {
+    display: none;
+}
+
+.topbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-link {
+    height: 36px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-soft);
+    background: var(--field);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.topbar-link:hover {
+    color: var(--link);
+}
+
+.manage-topbar .dropdown-trigger {
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--field);
+    box-shadow: none;
+}
+
+.account-trigger {
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: none;
+}
+
+.account-trigger:hover,
+.account-trigger[aria-expanded="true"] {
+    border-color: var(--link);
+}
+
+.account-dropdown {
+    min-width: 220px;
+    padding: 6px;
+}
+
+.account-dropdown-head {
+    margin-bottom: 4px;
+    padding: 8px 10px 10px;
+    display: grid;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+}
+
+.account-dropdown-head strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-dropdown-head span {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-dropdown a,
+.account-dropdown button {
+    width: 100%;
+    min-height: 36px;
+    font-size: 13px;
+}
+
+.account-dropdown form {
+    display: grid;
+}
+
+.manage-sidebar {
+    position: sticky;
+    top: var(--topbar-height);
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+}
+
 .manage-nav {
+    display: grid;
+    gap: 18px;
+}
+
+.nav-group {
     display: grid;
     gap: 2px;
 }
 
-.manage-nav a {
-    min-height: 34px;
-    padding: 0 10px;
+.nav-group-toggle {
+    margin-bottom: 4px;
+    padding: 4px 12px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    border-radius: 5px;
+    justify-content: space-between;
+    border: 0;
+    color: var(--muted);
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.nav-group-toggle:hover {
+    color: var(--text);
+}
+
+.nav-group-toggle .chevron {
+    width: 14px;
+    height: 14px;
+    transform: rotate(180deg);
+    transition: transform .18s ease;
+}
+
+.nav-group-toggle .chevron.open {
+    transform: none;
+}
+
+.manage-nav a {
+    min-height: 42px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 8px;
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: 500;
     text-decoration: none;
+}
+
+.manage-nav a svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--subtle);
 }
 
 .manage-nav a:hover {
     color: var(--text);
-    background: var(--panel-soft);
+    background: var(--panel-hover);
 }
 
 .manage-nav a.active {
     color: var(--link);
-    background: var(--panel-soft);
+    background: var(--nav-active);
     font-weight: 600;
 }
 
-.manage-account {
-    margin-top: auto;
-    padding: 12px 0 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    border-top: 1px solid var(--border-soft);
+.manage-nav a.active svg {
+    color: var(--link);
 }
 
-.manage-account-user {
-    min-width: 0;
-    margin: -8px 0;
-    padding: 8px 10px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    border-radius: 6px;
-    text-decoration: none;
-}
-
-.manage-account-user:hover,
-.manage-account-user.active {
-    background: var(--panel-soft);
-}
-
-.manage-account-text {
-    min-width: 0;
-    display: grid;
-}
-
-.manage-account-text strong {
-    overflow: hidden;
-    color: var(--text);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.manage-account-text span {
-    overflow: hidden;
-    color: var(--subtle);
-    font-size: 10px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.manage-account-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.manage-account .dropdown-menu {
-    top: auto;
-    bottom: calc(100% + 6px);
+.manage-scrim {
+    display: none;
 }
 
 .icon-button {
@@ -135,11 +246,11 @@
 
 .manage-content {
     min-width: 0;
-    padding: 40px 32px 80px;
+    padding: 36px 40px 88px;
 }
 
 .manage-page {
-    width: min(860px, 100%);
+    width: min(1040px, 100%);
     margin: 0 auto;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -147,16 +258,17 @@
 }
 
 .manage-page-header h1 {
-    margin: 0 0 6px;
+    margin: 0 0 8px;
     color: var(--text);
-    font-size: 24px;
+    font-size: 30px;
+    font-weight: 700;
     letter-spacing: -.03em;
 }
 
 .manage-page-header p {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .manage-cards {
@@ -166,15 +278,14 @@
 }
 
 .manage-card {
-    padding: 18px;
+    padding: 20px;
     display: grid;
     gap: 6px;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-soft);
+    border-radius: 12px;
+    color: var(--muted);
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
-    font-size: 11px;
+    font-size: 13px;
     text-decoration: none;
 }
 
@@ -184,7 +295,7 @@
 
 .manage-card strong {
     color: var(--text);
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .manage-card em {
@@ -197,17 +308,17 @@
 }
 
 .manage-panel {
-    padding: 20px;
+    padding: 24px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 12px;
     background: var(--panel);
-    box-shadow: 0 3px 9px var(--shadow);
 }
 
 .manage-panel h2 {
-    margin: 0 0 16px;
+    margin: 0 0 18px;
     color: var(--text);
-    font-size: 14px;
+    font-size: 17px;
+    font-weight: 600;
 }
 
 .manage-form {
@@ -224,19 +335,19 @@
 }
 
 .manage-form label>span {
-    color: var(--text-soft);
-    font-size: 11px;
+    color: var(--text);
+    font-size: 14px;
     font-weight: 500;
 }
 
 .manage-form input:not([type="checkbox"]):not([type="radio"]) {
-    height: 36px;
-    padding: 0 10px;
+    height: 42px;
+    padding: 0 14px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 8px;
     color: var(--text);
-    background: var(--panel-soft);
-    font-size: 12px;
+    background: var(--field);
+    font-size: 14px;
 }
 
 .manage-form input:not([type="checkbox"]):not([type="radio"]):focus {
@@ -264,7 +375,7 @@
     border: 1px solid var(--border-soft);
     border-radius: 5px;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 13px;
     cursor: pointer;
 }
 
@@ -339,7 +450,7 @@
 .manage-form .admin-row small,
 .manage-form .hint-row small {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .form-actions {
@@ -354,7 +465,7 @@
     padding: 9px 11px;
     border: 1px solid var(--danger-border);
     border-radius: 5px;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--danger-text);
     background: var(--danger-bg);
 }
@@ -362,11 +473,11 @@
 .button-primary,
 .button-secondary,
 .button-danger {
-    height: 34px;
-    padding: 0 14px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 500;
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .button-primary {
@@ -382,12 +493,12 @@
 .button-secondary {
     border: 1px solid var(--border);
     color: var(--text-soft);
-    background: var(--panel);
+    background: var(--field);
 }
 
 .button-secondary:hover {
     color: var(--text);
-    background: var(--panel-soft);
+    background: var(--panel-hover);
 }
 
 .button-danger {
@@ -448,7 +559,7 @@
     border-radius: 20px;
     color: var(--muted);
     background: var(--chip-bg);
-    font-size: 9px;
+    font-size: 11px;
 }
 
 .you-tag.suspended {
@@ -467,7 +578,7 @@
     border: 1px solid var(--border);
     border-radius: 20px;
     color: var(--text-soft);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .chip.admin {
@@ -587,7 +698,7 @@
     justify-content: center;
     gap: 6px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .manage-login-footer a {
@@ -595,54 +706,82 @@
     text-decoration: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 900px) {
     .manage-shell {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: auto 1fr;
     }
 
-    .manage-sidebar {
-        position: static;
-        height: auto;
-        padding: 12px 14px;
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: center;
-        align-content: flex-start;
-        gap: 10px;
-        border-right: 0;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .manage-nav {
-        order: 3;
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
+    .manage-topbar {
+        padding: 0 14px 0 8px;
         gap: 4px;
     }
 
-    .manage-nav a {
-        flex: 0 0 auto;
-        min-height: 32px;
-        padding: 0 9px;
-        gap: 7px;
-        border: 1px solid var(--border-soft);
-    }
-
-    .manage-nav a.active {
-        border-color: var(--link);
-    }
-
-    .manage-account {
-        margin: 0 0 0 auto;
+    .topbar-menu {
+        width: 40px;
+        height: 40px;
         padding: 0;
-        border-top: 0;
+        display: grid;
+        flex-shrink: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 8px;
+        color: var(--text-soft);
+        background: none;
     }
 
-    .manage-account .dropdown-menu {
-        top: calc(100% + 6px);
-        bottom: auto;
+    .topbar-menu svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .topbar-menu:hover {
+        background: var(--panel-hover);
+    }
+
+    .manage-brand {
+        width: auto;
+        min-width: 0;
+        padding: 0 4px;
+        font-size: 16px;
+    }
+
+    .manage-sidebar {
+        position: fixed;
+        z-index: 35;
+        top: var(--topbar-height);
+        bottom: 0;
+        left: 0;
+        width: min(300px, 86vw);
+        height: auto;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform .2s ease, visibility .2s;
+    }
+
+    .manage-sidebar.open {
+        transform: none;
+        visibility: visible;
+        box-shadow: 0 0 40px var(--tooltip-shadow);
+    }
+
+    .manage-scrim {
+        position: fixed;
+        z-index: 30;
+        inset: var(--topbar-height) 0 0;
+        display: block;
+        background: rgba(0, 0, 0, .45);
+    }
+}
+
+@media (max-width: 760px) {
+    .topbar-link span {
+        display: none;
+    }
+
+    .topbar-link {
+        width: 36px;
+        padding: 0;
+        justify-content: center;
     }
 
     .manage-content {
@@ -683,18 +822,18 @@ body:has(.manage-login) {
 
 .manage-form textarea,
 .manage-form select {
-    padding: 9px 10px;
+    padding: 11px 14px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 8px;
     color: var(--text);
-    background: var(--panel-soft);
+    background: var(--field);
     font: inherit;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .manage-form select {
-    height: 36px;
-    padding: 0 8px;
+    height: 42px;
+    padding: 0 12px;
 }
 
 .manage-form textarea {
@@ -739,7 +878,7 @@ a.button-secondary {
 .manage-empty {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .manage-list {
@@ -775,7 +914,7 @@ a.button-secondary {
 
 .manage-list-row div span {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .status-chip {
@@ -783,7 +922,7 @@ a.button-secondary {
     border: 1px solid var(--border);
     border-radius: 20px;
     color: var(--text-soft);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 500;
     white-space: nowrap;
 }
@@ -840,12 +979,12 @@ a.button-secondary {
 
 .manage-form .status-option strong {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .manage-form .status-option small {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .manage-form .status-option:has(input:checked) {
@@ -865,7 +1004,7 @@ a.button-secondary {
     margin-bottom: 6px;
     padding: 0;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
 }
 
@@ -876,7 +1015,7 @@ a.button-secondary {
 
 .service-picker-group>span {
     color: var(--subtle);
-    font-size: 10px;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: .04em;
 }
@@ -920,7 +1059,7 @@ a.button-secondary {
 
 .manage-update-head time {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .manage-update-head .link-button {
@@ -930,7 +1069,7 @@ a.button-secondary {
 .manage-update>p {
     margin: 10px 0 0;
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
     white-space: pre-wrap;
 }
@@ -944,7 +1083,7 @@ a.button-secondary {
     border: 0;
     color: var(--link);
     background: none;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .form-actions.spread {
@@ -967,7 +1106,7 @@ a.button-secondary {
 .danger-zone p {
     margin: 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 @media (max-width: 760px) {
@@ -1068,7 +1207,7 @@ a.button-secondary {
     width: auto;
     height: 34px;
     margin-top: 0;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .header-actions {
@@ -1114,14 +1253,14 @@ a.button-secondary {
 
 .inline-form input {
     min-width: 0;
-    height: 34px;
+    height: 40px;
     flex: 1;
-    padding: 0 10px;
+    padding: 0 12px;
     border: 1px solid var(--border);
-    border-radius: 5px;
+    border-radius: 8px;
     color: var(--text);
-    background: var(--panel-soft);
-    font-size: 12px;
+    background: var(--field);
+    font-size: 14px;
 }
 
 .inline-form input:focus {
@@ -1172,7 +1311,7 @@ a.button-secondary {
 .service-row-main span {
     overflow: hidden;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1219,7 +1358,7 @@ a.button-secondary {
 
 .field-hint {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .manage-page-header code {
@@ -1227,7 +1366,7 @@ a.button-secondary {
     border-radius: 4px;
     color: var(--text-soft);
     background: var(--chip-bg);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 @media (max-width: 760px) {
@@ -1247,7 +1386,7 @@ a.button-secondary {
     display: flex;
     align-items: center;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .danger-zone .button-danger,
@@ -1276,28 +1415,32 @@ a.button-secondary {
 }
 
 .settings-tabs {
+    padding: 8px;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    border-bottom: 1px solid var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
 }
 
 .settings-tabs a {
-    margin-bottom: -1px;
-    padding: 9px 12px;
-    border-bottom: 2px solid transparent;
-    color: var(--text-soft);
-    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
     text-decoration: none;
 }
 
 .settings-tabs a:hover {
     color: var(--text);
+    background: var(--panel-hover);
 }
 
 .settings-tabs a.active {
-    border-bottom-color: var(--link);
     color: var(--link);
+    background: var(--nav-active);
     font-weight: 600;
 }
 
@@ -1336,7 +1479,7 @@ a.button-secondary {
     gap: 14px;
     border: 1px dashed var(--border);
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .color-preview-link {
@@ -1386,7 +1529,7 @@ a.button-secondary {
 
 .asset-preview span {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .asset-body {
@@ -1404,7 +1547,7 @@ a.button-secondary {
 
 .asset-body small {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .asset-form {
@@ -1418,7 +1561,7 @@ a.button-secondary {
     min-width: 0;
     max-width: 100%;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .asset-body .link-button {
@@ -1500,7 +1643,7 @@ a.button-secondary {
 
 .dashboard-status div span {
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .dashboard-warning {
@@ -1517,7 +1660,7 @@ a.button-secondary {
 .dashboard-warning > p {
     margin: -6px 0 14px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .dashboard-incident {
@@ -1538,7 +1681,7 @@ a.button-secondary {
 .manage-list-row div em {
     overflow: hidden;
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 13px;
     font-style: normal;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1570,7 +1713,7 @@ a.button-secondary {
 
 .stat-tile span {
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .stat-tile strong {
@@ -1581,7 +1724,7 @@ a.button-secondary {
 
 .stat-tile small {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .sparkline-grid {
@@ -1608,7 +1751,7 @@ a.button-secondary {
 .sparkline-head strong {
     overflow: hidden;
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1616,7 +1759,7 @@ a.button-secondary {
 .sparkline-head span {
     flex: 0 0 auto;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .sparkline-head b {
@@ -1682,12 +1825,12 @@ a.button-secondary {
 
 .sparkline-tooltip strong {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .sparkline-tooltip span {
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 @media (max-width: 760px) {
@@ -1718,7 +1861,7 @@ a.button-secondary {
     align-items: center;
     gap: 5px;
     color: var(--link);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     text-decoration: none;
 }
@@ -1733,13 +1876,13 @@ a.button-secondary {
     justify-items: end;
     gap: 2px;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
     white-space: nowrap;
 }
 
 .service-stats b {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -1779,7 +1922,7 @@ a.button-secondary {
 .user-row-names small {
     overflow: hidden;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1787,7 +1930,7 @@ a.button-secondary {
 .sparkline-range {
     margin: -6px 0 0;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .activity-list {
@@ -1836,33 +1979,38 @@ a.button-secondary {
     display: flex;
     gap: 10px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     white-space: nowrap;
 }
 
 .activity-filters {
+    padding: 8px;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
 }
 
 .activity-filter {
-    padding: 5px 12px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    color: var(--text-soft);
-    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 500;
     text-decoration: none;
 }
 
 .activity-filter:hover {
-    border-color: var(--link);
+    color: var(--text);
+    background: var(--panel-hover);
 }
 
 .activity-filter.active {
-    border-color: var(--info-border);
-    color: var(--info);
-    background: var(--info-bg);
+    color: var(--link);
+    background: var(--nav-active);
+    font-weight: 600;
 }
 
 @media (max-width: 640px) {
@@ -1884,16 +2032,16 @@ a.button-secondary {
 }
 
 .activity-search {
-    width: min(280px, 100%);
-    height: 36px;
-    padding: 0 10px;
+    width: min(300px, 100%);
+    height: 40px;
+    padding: 0 12px;
     display: flex;
     align-items: center;
     gap: 8px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--muted);
-    background: var(--panel);
+    background: var(--field);
 }
 
 .activity-search:focus-within {
@@ -1940,14 +2088,14 @@ a.button-secondary {
 }
 
 .per-page select {
-    height: 32px;
-    padding: 0 8px;
+    height: 36px;
+    padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text);
-    background: var(--panel-soft);
+    background: var(--field);
     font: inherit;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .pagination {
@@ -2068,7 +2216,7 @@ button.page-button:hover {
     border-radius: 4px;
     color: var(--text-soft);
     background: var(--chip-bg);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .activity-when {
@@ -2133,7 +2281,7 @@ button.page-button:hover {
 .activity-dialog-head p {
     margin: 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .activity-dialog-head .icon-button:hover {
@@ -2147,7 +2295,7 @@ button.page-button:hover {
     border-radius: 8px;
     color: var(--text-soft);
     background: var(--panel-soft);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.6;
 }
 
@@ -2176,21 +2324,18 @@ button.page-button:hover {
 
 .manage-version {
     margin-top: auto;
-    padding: 0 10px 10px;
+    padding: 12px 12px 0;
+    border-top: 1px solid var(--border-soft);
     display: flex;
     align-items: center;
     gap: 8px;
     color: var(--subtle);
-    font-size: 11px;
-}
-
-.manage-version + .manage-account {
-    margin-top: 0;
+    font-size: 13px;
 }
 
 .version-update {
     color: var(--link);
-    font-size: 11px;
+    font-size: 13px;
     text-decoration: none;
 }
 
@@ -2223,7 +2368,7 @@ button.page-button:hover {
 
 .update-notice span {
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 14px;
     overflow-wrap: anywhere;
 }
 
@@ -2231,7 +2376,7 @@ button.page-button:hover {
     padding: 1px 5px;
     border-radius: 4px;
     background: var(--panel);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .update-notice-actions {
@@ -2246,12 +2391,6 @@ button.page-button:hover {
     align-items: center;
     gap: 4px;
     text-decoration: none;
-}
-
-@media (max-width: 760px) {
-    .manage-version {
-        display: none;
-    }
 }
 
 .update-check {
@@ -2275,18 +2414,18 @@ button.page-button:hover {
 
 .update-check-info span {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .update-check-info small {
     color: var(--subtle);
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.5;
 }
 
 .update-check-info a {
     color: var(--link);
-    font-size: 12px;
+    font-size: 14px;
     text-decoration: none;
 }
 
@@ -2343,7 +2482,7 @@ button.page-button:hover {
 .info-tile > div > span,
 .health-tile > div > span {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .info-tile strong,
@@ -2356,7 +2495,7 @@ button.page-button:hover {
 .info-tile small,
 .health-tile small {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .health-tile-icon {
@@ -2389,7 +2528,7 @@ button.page-button:hover {
 
 .history-table code {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .history-table .chip {
@@ -2410,7 +2549,7 @@ button.page-button:hover {
 .panel-intro {
     margin: -6px 0 16px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .notification-group {
@@ -2425,7 +2564,7 @@ button.page-button:hover {
     margin-bottom: 8px;
     padding: 0;
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -2442,7 +2581,7 @@ button.page-button:hover {
 
 .notification-test > span {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .notification-test .form-error {
@@ -2465,7 +2604,7 @@ button.page-button:hover {
     gap: 12px;
     padding: 10px 0;
     border-bottom: 1px solid var(--border-soft);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .config-row dt {
@@ -2485,7 +2624,7 @@ button.page-button:hover {
 .config-footnote {
     margin: 14px 0 0;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .config-example {
@@ -2495,7 +2634,7 @@ button.page-button:hover {
     border-radius: 6px;
     color: var(--text-soft);
     background: var(--chip-bg);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.6;
 }
 
@@ -2559,7 +2698,7 @@ button.page-button:hover {
 
 .table-count {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .table-user {
@@ -2614,7 +2753,7 @@ button.page-button:hover {
     max-width: 360px;
     overflow: hidden;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -2739,7 +2878,7 @@ button.page-button:hover {
 
 .profile-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
     gap: 16px;
 }
 
@@ -2829,7 +2968,7 @@ button.page-button:hover {
 
 .passkey-text small {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .passkey-remove .form-error {
@@ -2851,7 +2990,7 @@ button.page-button:hover {
     align-items: center;
     gap: 12px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     text-transform: uppercase;
 }
 
@@ -2901,7 +3040,7 @@ button.page-button:hover {
 
 .notification-address {
     margin: 0;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .two-factor-step {
@@ -2923,7 +3062,7 @@ button.page-button:hover {
 }
 
 .two-factor-links .link-button {
-    font-size: 12px;
+    font-size: 14px;
     text-decoration: none;
     cursor: pointer;
 }
@@ -2946,7 +3085,7 @@ button.page-button:hover {
     border-radius: 6px;
     color: var(--text);
     background: var(--chip-bg);
-    font-size: 12px;
+    font-size: 14px;
     letter-spacing: 0.04em;
     overflow-wrap: anywhere;
     text-align: center;
@@ -3100,12 +3239,12 @@ button.page-button:hover {
 
 .backup-made small {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .backups-table code {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .backup-actions {
@@ -3219,7 +3358,7 @@ button.page-button:hover {
     max-width: 170px;
     height: 32px;
     padding: 0 28px 0 10px;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .backup-location {
@@ -3237,7 +3376,7 @@ button.page-button:hover {
 
 .backup-location code {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .backup-location pre {
@@ -3248,7 +3387,7 @@ button.page-button:hover {
     border-radius: 6px;
     color: var(--text);
     background: var(--panel-soft);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .badge-card {
@@ -3286,7 +3425,7 @@ button.page-button:hover {
 
 .badge-preview label span {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .badge-preview input {
@@ -3313,7 +3452,7 @@ button.page-button:hover {
 
 .copy-field-label {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -3334,7 +3473,7 @@ button.page-button:hover {
     padding: 8px 10px;
     overflow-x: auto;
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
     white-space: nowrap;
 }
 
@@ -3360,7 +3499,7 @@ button.page-button:hover {
     align-items: center;
     gap: 4px;
     justify-self: start;
-    font-size: 12px;
+    font-size: 14px;
     text-decoration: none;
 }
 
@@ -3397,7 +3536,7 @@ button.page-button:hover {
 
 .help-link small {
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .help-guide {
@@ -3432,7 +3571,7 @@ button.page-button:hover {
 
 .help-guide-body code {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .help-code {
@@ -3443,7 +3582,7 @@ button.page-button:hover {
     border-radius: 6px;
     color: var(--text);
     background: var(--panel-soft);
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
 }
 
@@ -3530,7 +3669,7 @@ button.page-button:hover {
     max-width: 100%;
     color: var(--muted);
     font: inherit;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .manage-content input[type="file"]::file-selector-button {
@@ -3541,7 +3680,7 @@ button.page-button:hover {
     color: var(--text);
     background: var(--panel-soft);
     font: inherit;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
 }
@@ -3567,7 +3706,7 @@ button.page-button:hover {
     padding: 0 0 6px;
     border-top: 0;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
     text-align: center;
 }
@@ -3580,13 +3719,13 @@ button.page-button:hover {
 
 .notify-text strong {
     color: var(--text);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
 }
 
 .notify-text small {
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .manage-form .check-row.notify-check {
@@ -3645,7 +3784,7 @@ button.page-button:hover {
     border-radius: 999px;
     color: #ffffff;
     background: var(--link);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1;
 }
@@ -3698,7 +3837,7 @@ button.page-button:hover {
     display: block;
     margin-top: 2px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .bell-head-actions {
@@ -3746,7 +3885,7 @@ button.page-button:hover {
     border-radius: 5px;
     color: var(--text-soft);
     background: none;
-    font-size: 12px;
+    font-size: 14px;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
@@ -3770,7 +3909,7 @@ button.page-button:hover {
 .bell-menu-title {
     padding: 4px 10px;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -3799,7 +3938,7 @@ button.page-button:hover {
     border-bottom: 2px solid transparent;
     color: var(--muted);
     background: none;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
 }
@@ -3819,7 +3958,7 @@ button.page-button:hover {
     border-radius: 999px;
     color: var(--text-soft);
     background: var(--chip-bg);
-    font-size: 10px;
+    font-size: 12px;
     text-align: center;
 }
 
@@ -3896,7 +4035,7 @@ button.page-button:hover {
 
 .bell-item-text strong {
     color: var(--text-soft);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1.4;
     overflow-wrap: anywhere;
@@ -3913,7 +4052,7 @@ button.page-button:hover {
     border-radius: 999px;
     color: var(--danger-text);
     background: var(--danger-bg);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     vertical-align: 1px;
 }
@@ -3921,7 +4060,7 @@ button.page-button:hover {
 .bell-item-body {
     display: -webkit-box;
     color: var(--muted);
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.45;
     overflow: hidden;
     overflow-wrap: anywhere;
@@ -3931,7 +4070,7 @@ button.page-button:hover {
 
 .bell-item-text time {
     color: var(--faint);
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .bell-item-remove {
@@ -3963,7 +4102,7 @@ button.page-button:hover {
 .bell-empty {
     padding: 28px 20px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
     text-align: center;
 }
 
@@ -3976,7 +4115,7 @@ button.page-button:hover {
 }
 
 .bell-foot .link-button {
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .bell-foot .link-button:last-child {
@@ -4051,7 +4190,7 @@ button.page-button {
     align-items: center;
     gap: 6px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .logs-live-icon {
@@ -4082,7 +4221,7 @@ button.page-button {
     margin: 0;
     padding: 0 16px 12px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .logs-view {
@@ -4091,7 +4230,7 @@ button.page-button {
     border-top: 1px solid var(--border-soft);
     background: var(--panel-soft);
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1.5;
 }
 
@@ -4186,7 +4325,7 @@ button.page-button {
 button.chip.more {
     background: none;
     font: inherit;
-    font-size: 10px;
+    font-size: 12px;
     cursor: pointer;
 }
 
@@ -4246,7 +4385,7 @@ button.chip.more:hover {
     }
 
     .users-table td.users-login-cell {
-        font-size: 12px;
+        font-size: 14px;
     }
 
     .users-login-label {
