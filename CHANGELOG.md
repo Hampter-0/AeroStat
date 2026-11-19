@@ -4,6 +4,13 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.28.2
+
+### Fixes
+
+- The Admin, Owner, You, Suspended and role badges, Current in the version history and the accent colour preview have the new badge look.
+- The users table fits between 760 and 1100 pixels wide again; the Edit button no longer falls off the right edge.
+
 ## 0.28.1
 
 ### Changes

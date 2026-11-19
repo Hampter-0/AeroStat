@@ -555,16 +555,19 @@
 }
 
 .you-tag {
-    padding: 2px 7px;
-    border-radius: 20px;
+    padding: 1px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
     color: var(--muted);
     background: var(--chip-bg);
     font-size: 11px;
+    font-weight: 600;
 }
 
 .you-tag.suspended {
+    border-color: color-mix(in srgb, #ef4444 30%, transparent);
     color: var(--danger-text);
-    background: var(--danger-bg);
+    background: color-mix(in srgb, #ef4444 12%, transparent);
 }
 
 .user-row-access {
@@ -576,15 +579,18 @@
 .chip {
     padding: 3px 8px;
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 6px;
     color: var(--text-soft);
+    background: var(--chip-bg);
     font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 
 .chip.admin {
-    border-color: var(--info-border);
-    color: var(--info);
-    background: var(--info-bg);
+    border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+    color: var(--link);
+    background: color-mix(in srgb, var(--blue) 14%, transparent);
 }
 
 .chip.muted {
@@ -1437,10 +1443,13 @@ a.button-secondary {
 }
 
 .color-preview-chip {
-    padding: 3px 9px;
-    border: 1px solid var(--preview);
-    border-radius: 20px;
+    padding: 3px 8px;
+    border: 1px solid color-mix(in srgb, var(--preview) 35%, transparent);
+    border-radius: 6px;
     color: var(--preview);
+    background: color-mix(in srgb, var(--preview) 14%, transparent);
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .asset-list {
@@ -4244,19 +4253,15 @@ button.page-button {
 }
 
 .users-table th:nth-child(1) {
-    width: 36%;
+    width: 38%;
 }
 
 .users-table th:nth-child(2) {
-    width: 34%;
-}
-
-.users-table th:nth-child(3) {
-    width: 20%;
+    width: 32%;
 }
 
 .users-table th:nth-child(4) {
-    width: 10%;
+    width: 96px;
 }
 
 .users-table .table-user {
