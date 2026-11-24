@@ -120,16 +120,16 @@
 }
 
 .update-marker {
-  position: absolute;
-  left: -11px;
-  top: 2px;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--panel);
+    position: absolute;
+    left: -11px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--panel);
 }
 
 .update-marker.done {
@@ -140,11 +140,6 @@
 .update-marker.pending {
     color: var(--faint);
     background: var(--panel);
-}
-
-.update-marker.ongoing-incident {
-    color: #fff;
-    background: var(--red);
 }
 
 .update-marker.ongoing-maintenance {

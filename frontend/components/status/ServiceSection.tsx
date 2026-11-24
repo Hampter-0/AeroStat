@@ -2,36 +2,50 @@
 
 import { useState } from 'react'
 import type { DayHistory, ServiceStatus, UptimeStats } from '@/lib/types'
-import { Check, Chevron, X } from '@/components/icons'
+import { Check, Chevron, Tool, X } from '@/components/icons'
 import ServiceCard from './ServiceCard'
 
 export default function ServiceSection({
   groupName,
   services,
   uptimeByServiceId,
+  maintenanceServiceIds,
   defaultOpen,
   dayNote,
 }: {
   groupName: string
   services: ServiceStatus[]
   uptimeByServiceId: Map<string, UptimeStats>
+  maintenanceServiceIds: string[]
   defaultOpen: boolean
   dayNote: string
 }) {
   const [open, setOpen] = useState(defaultOpen)
 
   let allOnline = true
+  let inMaintenance = false
   for (const service of services) {
     if (service.status === 'offline') {
-      allOnline = false
+      if (maintenanceServiceIds.includes(service.id)) {
+        inMaintenance = true
+      } else {
+        allOnline = false
+      }
     }
   }
 
   let statusClassName = 'live-section-status'
   let statusText = 'Operational'
+  let statusIcon = <Check size={12} />
+  if (inMaintenance) {
+    statusClassName = 'live-section-status maintenance'
+    statusText = 'Maintenance'
+    statusIcon = <Tool size={12} />
+  }
   if (!allOnline) {
     statusClassName = 'live-section-status down'
     statusText = 'Degraded'
+    statusIcon = <X size={12} />
   }
 
   function toggleOpen() {
@@ -51,8 +65,7 @@ export default function ServiceSection({
           <small>{serviceCountLabel}</small>
         </span>
         <span className={statusClassName}>
-          {!allOnline && <X size={12} />}
-          {allOnline && <Check size={12} />} {statusText} <Chevron open={open} />
+          {statusIcon} {statusText} <Chevron open={open} />
         </span>
       </button>
       {open && (
@@ -72,6 +85,7 @@ export default function ServiceSection({
               <ServiceCard
                 service={service}
                 uptimePercent={uptimePercent}
+                inMaintenance={maintenanceServiceIds.includes(service.id)}
                 days={days}
                 dayNote={dayNote}
                 key={service.id}

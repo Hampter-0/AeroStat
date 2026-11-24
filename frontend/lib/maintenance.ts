@@ -14,5 +14,8 @@ export function maintenanceTone(status: string): string {
   if (status === 'cancelled') {
     return 'gray'
   }
+  if (status === 'scheduled') {
+    return 'amber'
+  }
   return 'blue'
 }

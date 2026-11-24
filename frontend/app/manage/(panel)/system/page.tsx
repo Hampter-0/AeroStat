@@ -14,6 +14,7 @@ import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatBytes, formatCount, formatMs, type SystemInfo } from '@/lib/system'
 import { currentTimeMs, formatAgo, formatDateTimeShort, formatDuration } from '@/lib/time'
 import { getVersionInfo } from '@/lib/version'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'System',
@@ -188,10 +189,7 @@ export default async function SystemPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>System</h1>
-        <p>The server AeroStat runs on, its version and its health.</p>
-      </header>
+      <PageHeader title="System" description="The server AeroStat runs on, its version and its health." />
 
       <nav className="settings-tabs" aria-label="System sections">
         {tabs.map(function (option) {

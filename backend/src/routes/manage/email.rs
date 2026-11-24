@@ -91,9 +91,9 @@ pub struct MyNotifications {
     email: Option<String>,
     email_configured: bool,
     events: Vec<String>,
-    /// What shows up in the bell in the panel.
+    /// What pops up in the panel.
     panel_events: Vec<String>,
-    /// False when this user turned the bell off.
+    /// False when this user turned panel notifications off.
     panel_enabled: bool,
     /// Only the events this user is allowed to see.
     available_events: Vec<&'static str>,

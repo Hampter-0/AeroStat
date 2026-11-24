@@ -5,6 +5,7 @@ import IncidentForm from '@/components/manage/incidents/IncidentForm'
 import { getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'New incident',
@@ -31,10 +32,7 @@ export default async function NewIncidentPage({ searchParams }: { searchParams: 
       <Link href="/manage/incidents" className="back-button">
         <ChevronLeft /> Incidents
       </Link>
-      <header className="manage-page-header">
-        <h1>New incident</h1>
-        <p>It shows up on the status page as soon as you create it. Fill in Ended at to add one that is already over.</p>
-      </header>
+      <PageHeader title="New incident" description="It shows up on the status page as soon as you create it. Fill in Ended at to add one that is already over." />
       <section className="manage-panel">
         <IncidentForm services={services} incident={null} timezone={timezone} preselected={preselected} />
       </section>

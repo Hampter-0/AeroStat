@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import RolesTable from '@/components/manage/roles/RolesTable'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { PermissionGroup, Role } from '@/lib/permissions'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Roles',
@@ -27,17 +28,17 @@ export default async function RolesPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header with-action">
-        <div>
-          <h1>Roles</h1>
-          <p>A role is a set of permissions. Give users one or more roles to decide what they can do.</p>
-        </div>
-        {can(user, 'roles.create') && (
-          <Link href="/manage/roles/new" className="button-primary">
-            Create role
-          </Link>
-        )}
-      </header>
+      <PageHeader
+        title="Roles"
+        description="A role is a set of permissions. Give users one or more roles to decide what they can do."
+        action={
+          can(user, 'roles.create') && (
+            <Link href="/manage/roles/new" className="button-primary">
+              Create role
+            </Link>
+          )
+        }
+      />
 
       <section className="manage-panel activity-panel">
         {data.roles.length === 0 && <p className="manage-empty activity-empty">No roles yet.</p>}

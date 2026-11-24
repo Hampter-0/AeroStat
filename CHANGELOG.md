@@ -4,6 +4,23 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.29.0
+
+### New
+
+- Panel notifications pop up at the bottom right while you use the panel, instead of collecting in a bell. Notifications that came in while you were away show when you open the panel: the newest three and how many more there were. **Show notifications in the panel** on your profile turns them off.
+- When you create an incident or maintenance, tick a whole group or **Select all**. The status page then shows the group name, or **All**, instead of every service.
+
+### Changes
+
+- Colours follow the severity everywhere, also on Discord, in emails and in link previews: minor is yellow, major orange and only critical red. Planned maintenance is yellow, maintenance in progress blue.
+- A service that is down while its maintenance is in progress shows **Maintenance** in blue instead of red: on the status page, in its group, in its uptime bar and on the panel dashboard.
+- The incident and maintenance timelines on the status page show an icon per status: an alert or wrench while it runs, a clock when planned, a check when done and a cross when cancelled. The icons are centred on the line.
+- The panel looks more like Paymenter: a wider sidebar without a border, larger menu text, bolder table headers and links. In light mode the top bar, sidebar and cards are light grey on a white page.
+- Separators use a comma instead of a dot.
+- The logs no longer have a Pause button; they always stay live.
+- On a phone, holding a response time graph on the dashboard shows the value instead of selecting text.
+
 ## 0.28.3
 
 ### Fixes

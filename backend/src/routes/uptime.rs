@@ -20,7 +20,9 @@ pub struct UptimeStats {
 #[derive(Serialize)]
 pub struct DayHistory {
     date: String,
-    /// "online" | "degraded" | "offline" | "no_data"
+    /// "online" | "degraded" | "offline" | "maintenance" | "no_data".
+    /// Downtime during maintenance counts as maintenance, unless a critical
+    /// incident made it an outage.
     status: String,
     downtime_minutes: i64,
     /// Share of the day the service was up, for the bar's tooltip. Today
@@ -184,9 +186,12 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         let (mut status, mut downtime_minutes, avg_response_time_ms) = parse_rollup(statuses[i].as_deref());
         let checked = status != "no_data";
         let mut events = Vec::new();
+        let mut outage = false;
+        let mut in_maintenance = false;
         for incident in &incidents {
             if covers_day(incident, *date, tz) {
                 if is_outage(incident) {
+                    outage = true;
                     status = "offline".to_string();
                     // The checks may have seen part of it; take whichever saw more.
                     downtime_minutes = downtime_minutes.max(minutes_on_day(incident, *date, tz));
@@ -200,12 +205,17 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         }
         for window in &maintenance {
             if covers_day(window, *date, tz) {
+                in_maintenance = true;
                 events.push(DayEvent {
                     kind: "maintenance",
                     id: window.id,
                     title: window.title.clone(),
                 });
             }
+        }
+
+        if in_maintenance && !outage && (status == "offline" || status == "degraded") {
+            status = "maintenance".to_string();
         }
 
         let uptime_percent = if !checked {

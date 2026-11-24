@@ -4,6 +4,7 @@ import { ChevronLeft } from '@/components/icons'
 import RoleForm from '@/components/manage/roles/RoleForm'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { PermissionGroup, Role } from '@/lib/permissions'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Create role',
@@ -27,10 +28,7 @@ export default async function NewRolePage() {
       <Link href="/manage/roles" className="back-button">
         <ChevronLeft /> Roles
       </Link>
-      <header className="manage-page-header">
-        <h1>Create role</h1>
-        <p>Pick what people with this role can do. Ticking an action also ticks the view it needs.</p>
-      </header>
+      <PageHeader title="Create role" description="Pick what people with this role can do. Ticking an action also ticks the view it needs." />
       <RoleForm role={null} groups={data.permission_groups} actor={user} readOnly={false} />
     </div>
   )

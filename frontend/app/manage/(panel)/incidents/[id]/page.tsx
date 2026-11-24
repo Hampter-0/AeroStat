@@ -11,6 +11,8 @@ import { INCIDENT_STATUSES, STATUS_HINTS, incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import { deleteIncident, deleteUpdate, editUpdate, postUpdate } from '../actions'
+import PageHeader from '@/components/manage/PageHeader'
+import StateBadge from '@/components/StateBadge'
 
 export const metadata = {
   title: 'Incident',
@@ -42,16 +44,16 @@ export default async function ManageIncidentPage({ params }: { params: Promise<{
         <ChevronLeft /> Incidents
       </Link>
 
-      <header className="manage-page-header with-action">
-        <div>
-          <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
-          <h1>{incident.title}</h1>
-          <p>Started {formatDateTime(incident.created_at, timezone)}</p>
-        </div>
-        <a href={'/incidents/' + incident.id} target="_blank" className="button-secondary">
-          <ExternalLink /> View public page
-        </a>
-      </header>
+      <PageHeader
+        badge={<StateBadge tone={incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</StateBadge>}
+        title={incident.title}
+        description={<>Started {formatDateTime(incident.created_at, timezone)}</>}
+        action={
+          <a href={'/incidents/' + incident.id} target="_blank" className="button-secondary">
+            <ExternalLink /> View public page
+          </a>
+        }
+      />
 
       {can(user, 'incidents.update') && (
         <section className="manage-panel">

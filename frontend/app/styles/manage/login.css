@@ -1,0 +1,96 @@
+.manage-login {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 32px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--panel-soft);
+}
+
+.manage-login-inner {
+    width: min(400px, 100%);
+    display: grid;
+    align-content: start;
+    gap: 22px;
+}
+
+.manage-login-brand {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+}
+
+.manage-login-heading h1 {
+    margin: 0 0 4px;
+    color: var(--text);
+    font-size: 26px;
+    letter-spacing: -.03em;
+}
+
+.manage-login-heading p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.manage-login-card {
+    padding: 22px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+.manage-login-card .manage-form label>span {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.manage-login-card .button-primary {
+    width: 100%;
+    height: 42px;
+    margin-top: 4px;
+    font-size: 14px;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon svg {
+    position: absolute;
+    left: 12px;
+    color: var(--subtle);
+    pointer-events: none;
+}
+
+.manage-form .input-with-icon input:not([type="checkbox"]):not([type="radio"]) {
+    width: 100%;
+    height: 42px;
+    padding-left: 38px;
+    font-size: 13px;
+}
+
+.manage-login-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.manage-login-footer a {
+    color: var(--link);
+    text-decoration: none;
+}

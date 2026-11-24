@@ -26,7 +26,10 @@ export function updateTone(status: string): string {
   if (status === 'resolved' || status === 'completed') {
     return 'green'
   }
-  if (status === 'scheduled' || status === 'in_progress') {
+  if (status === 'scheduled') {
+    return 'amber'
+  }
+  if (status === 'in_progress') {
     return 'blue'
   }
   return 'gray'

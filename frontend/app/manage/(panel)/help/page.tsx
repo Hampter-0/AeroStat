@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AlertTriangle, Check, ExternalLink } from '@/components/icons'
 import { can, manageFetch, requireUser } from '@/lib/manage'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Help',
@@ -152,10 +153,7 @@ export default async function HelpPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Help</h1>
-        <p>Where to get help, how to set things up and what to do when something goes wrong.</p>
-      </header>
+      <PageHeader title="Help" description="Where to get help, how to set things up and what to do when something goes wrong." />
 
       {status && (
         <section className="manage-panel">

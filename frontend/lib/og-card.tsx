@@ -4,13 +4,24 @@ export const OG_SIZE = { width: 1200, height: 630 }
 
 export type OgIcon = 'check' | 'cross' | 'alert' | 'wrench' | 'server'
 
-const GREEN = '#22a45d'
-const RED = '#e5484d'
-const AMBER = '#d29922'
-const BLUE = '#1678c2'
+const GREEN = '#22c55e'
+const RED = '#ef4444'
+const ORANGE = '#f97316'
+const AMBER = '#eab308'
+const BLUE = '#3b82f6'
 const GREY = '#8b949e'
 
-export const OG_COLORS = { green: GREEN, red: RED, amber: AMBER, blue: BLUE, grey: GREY }
+export const OG_COLORS = { green: GREEN, red: RED, orange: ORANGE, amber: AMBER, blue: BLUE, grey: GREY }
+
+export function severityColor(severity: string): string {
+  if (severity === 'critical') {
+    return RED
+  }
+  if (severity === 'major') {
+    return ORANGE
+  }
+  return AMBER
+}
 
 function Icon({ icon }: { icon: OgIcon }) {
   let path = 'M30 50 l14 14 28 -30'
@@ -50,7 +61,7 @@ export function ogCard({
   if (headline.length > 70) {
     headlineSize = 42
   }
-  let footerPrefix = siteName + ' · Powered by'
+  let footerPrefix = siteName + ', powered by'
   if (siteName === 'AeroStat') {
     footerPrefix = 'Powered by'
   }

@@ -126,8 +126,8 @@ export default function SecurityKeys({ passkeys, available }: { passkeys: Passke
                 <span className="passkey-text">
                   <strong>{passkey.name}</strong>
                   <small>
-                    {passkey.addedText} · {passkey.usedText}
-                    {passkey.discoverable && ' · without username'}
+                    {passkey.addedText}, {passkey.usedText}
+                    {passkey.discoverable && ', without username'}
                   </small>
                 </span>
                 <RemoveButton id={passkey.id} name={passkey.name} />

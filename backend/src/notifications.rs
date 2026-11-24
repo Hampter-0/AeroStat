@@ -1,6 +1,6 @@
 //! Notifications about services, incidents and maintenance. Each event goes
 //! to the Discord webhook, by email to panel users who asked for it, and to
-//! the bell in the panel.
+//! notifications that pop up in the panel.
 
 use std::time::Duration;
 
@@ -28,11 +28,30 @@ pub const EVENT_KINDS: [&str; 10] = [
     "maintenance_cancelled",
 ];
 
-const RED: u32 = 0xE5484D;
-const GREEN: u32 = 0x2EA043;
-const YELLOW: u32 = 0xD29922;
-const BLUE: u32 = 0x1678C2;
+const RED: u32 = 0xEF4444;
+const ORANGE: u32 = 0xF97316;
+const GREEN: u32 = 0x22C55E;
+const YELLOW: u32 = 0xEAB308;
+const BLUE: u32 = 0x3B82F6;
 const GREY: u32 = 0x8B949E;
+
+/// The same colours as the badges on the site: minor is yellow, major
+/// orange and only critical red.
+fn severity_color(severity: &str) -> u32 {
+    match severity {
+        "critical" => RED,
+        "major" => ORANGE,
+        _ => YELLOW,
+    }
+}
+
+fn severity_card(severity: &str) -> &'static str {
+    match severity {
+        "critical" => "red",
+        "major" => "orange",
+        _ => "amber",
+    }
+}
 
 pub enum Event {
     ServiceDown {
@@ -62,6 +81,7 @@ pub enum Event {
         id: i64,
         title: String,
         status: String,
+        severity: String,
         message: String,
         services: Vec<String>,
     },
@@ -162,7 +182,7 @@ pub fn notify(db: &PgPool, event: Event) {
 }
 
 /// Like `notify`, for something a panel user did. They don't get it in their
-/// own bell.
+/// own panel notifications.
 pub fn notify_by(db: &PgPool, event: Event, actor: Option<i64>) {
     let db = db.clone();
     tokio::spawn(async move {
@@ -248,7 +268,7 @@ async fn deliver_email(
     Ok(())
 }
 
-/// What a notification in the bell says and where it leads.
+/// What a panel notification says and where it leads.
 struct PanelItem {
     kind: &'static str,
     title: String,
@@ -261,6 +281,7 @@ struct PanelItem {
 fn tone_name(color: u32) -> &'static str {
     match color {
         RED => "red",
+        ORANGE => "orange",
         GREEN => "green",
         YELLOW => "amber",
         BLUE => "blue",
@@ -447,35 +468,35 @@ async fn event_card(db: &PgPool, event: &Event) -> Card {
                 subline: format!("Valid until {}", times.format(*expires_at)),
             }
         }
-        Event::IncidentCreated { title, status, .. } => Card {
+        Event::IncidentCreated { title, status, severity, .. } => Card {
             icon: "alert",
-            color: "amber",
+            color: severity_card(severity),
             headline: title.clone(),
-            subline: format!("New incident · {}", capitalize(status)),
+            subline: format!("New incident, {}", capitalize(status)),
         },
         Event::IncidentUpdated { title, status, .. } if status == "resolved" => Card {
             icon: "check",
             color: "green",
             headline: title.clone(),
-            subline: "Incident · Resolved".to_string(),
+            subline: "Incident, resolved".to_string(),
         },
-        Event::IncidentUpdated { title, status, .. } => Card {
+        Event::IncidentUpdated { title, status, severity, .. } => Card {
             icon: "alert",
-            color: "amber",
+            color: severity_card(severity),
             headline: title.clone(),
-            subline: format!("Ongoing incident · {}", capitalize(status)),
+            subline: format!("Ongoing incident, {}", capitalize(status)),
         },
         Event::MaintenanceScheduled { title, start, end, .. } => Card {
             icon: "wrench",
-            color: "blue",
+            color: "amber",
             headline: title.clone(),
-            subline: format!("Scheduled maintenance · {} to {}", times.format(*start), times.format(*end)),
+            subline: format!("Scheduled maintenance, {} to {}", times.format(*start), times.format(*end)),
         },
         Event::MaintenanceStarted { title, end, .. } => Card {
             icon: "wrench",
             color: "blue",
             headline: title.clone(),
-            subline: format!("Ongoing maintenance · until {}", times.format(*end)),
+            subline: format!("Ongoing maintenance, until {}", times.format(*end)),
         },
         Event::MaintenanceCompleted { title, .. } => Card {
             icon: "check",
@@ -642,12 +663,12 @@ async fn content(
             (
                 format!("New incident: {title}"),
                 message.clone(),
-                YELLOW,
+                severity_color(severity),
                 link(settings, &format!("/incidents/{id}")),
                 services.clone(),
             )
         }
-        Event::IncidentUpdated { id, title, status, message, services } => {
+        Event::IncidentUpdated { id, title, status, severity, message, services } => {
             if status == "resolved" {
                 (
                     format!("Incident resolved: {title}"),
@@ -661,7 +682,7 @@ async fn content(
                 (
                     format!("Incident update: {title}"),
                     message.clone(),
-                    YELLOW,
+                    severity_color(severity),
                     link(settings, &format!("/incidents/{id}")),
                     services.clone(),
                 )
@@ -670,7 +691,7 @@ async fn content(
         Event::MaintenanceScheduled { id, title, start, end, services } => (
             format!("Maintenance planned: {title}"),
             format!("From {} to {}.", times.format(*start), times.format(*end)),
-            BLUE,
+            YELLOW,
             link(settings, &format!("/maintenance/{id}")),
             services.clone(),
         ),
@@ -1033,7 +1054,7 @@ pub struct AdminNotice {
     pub actor: Option<i64>,
 }
 
-/// Puts the notice in the bell and mails it, in the background, to everyone
+/// Saves the notice for the panel and mails it, in the background, to everyone
 /// who turned it on and may see it.
 pub fn notify_admins(db: &PgPool, notice: AdminNotice) {
     let db = db.clone();

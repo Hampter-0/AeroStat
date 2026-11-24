@@ -6,6 +6,7 @@ import RoleForm from '@/components/manage/roles/RoleForm'
 import { can, ManageApiError, manageFetch, requireUser } from '@/lib/manage'
 import type { PermissionGroup, Role } from '@/lib/permissions'
 import { deleteRole } from '../actions'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Role',
@@ -51,10 +52,10 @@ export default async function EditRolePage({ params }: { params: Promise<{ id: s
       <Link href="/manage/roles" className="back-button">
         <ChevronLeft /> Roles
       </Link>
-      <header className="manage-page-header">
-        <h1>{role.name}</h1>
-        <p>{usersText}</p>
-      </header>
+      <PageHeader
+        title={role.name}
+        description={usersText}
+      />
 
       <RoleForm key={role.id} role={role} groups={data.permission_groups} actor={user} readOnly={!can(user, 'roles.edit')} />
 

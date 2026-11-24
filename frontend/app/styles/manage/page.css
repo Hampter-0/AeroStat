@@ -1,0 +1,293 @@
+.manage-content {
+    min-width: 0;
+    padding: 36px 40px 88px;
+}
+
+.manage-page {
+    width: min(1040px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+}
+
+.manage-page-header h1 {
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+}
+
+.manage-page-header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.manage-panel {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.manage-panel h2 {
+    margin: 0 0 18px;
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.manage-form {
+    display: grid;
+    gap: 14px;
+}
+
+.manage-form label {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 6px;
+}
+
+.manage-form label>span {
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.manage-form input:not([type="checkbox"]):not([type="radio"]) {
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--field);
+    font-size: 14px;
+}
+
+.manage-form input:not([type="checkbox"]):not([type="radio"]):focus {
+    border-color: var(--link);
+    outline: 2px solid var(--info-bg);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 8px;
+}
+
+.manage-form .check-row {
+    padding: 9px 10px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--border-soft);
+    border-radius: 5px;
+    color: var(--text-soft);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.manage-form .check-row input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--link);
+}
+
+.manage-form .check-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: inline-grid;
+    place-content: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--panel-soft);
+    appearance: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.manage-form .check-row input[type="checkbox"]::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transform: scale(0);
+    transition: transform 120ms ease;
+}
+
+.manage-form .check-row input[type="checkbox"]:checked {
+    border-color: var(--link);
+    background: var(--link);
+}
+
+.manage-form .check-row input[type="checkbox"]:checked::after {
+    transform: scale(1);
+}
+
+.manage-form .check-row input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--info-bg);
+    outline-offset: 1px;
+}
+
+.manage-form .check-row input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
+.manage-form .hint-row span {
+    display: grid;
+    gap: 2px;
+}
+
+.manage-form .hint-row {
+    align-items: flex-start;
+}
+
+.manage-form .hint-row input {
+    margin-top: 0;
+}
+
+.manage-form .hint-row strong {
+    color: var(--text);
+}
+
+.manage-form .hint-row small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.form-error {
+    margin: 0;
+    padding: 9px 11px;
+    border: 1px solid var(--danger-border);
+    border-radius: 5px;
+    font-size: 13px;
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}
+
+.button-primary,
+.button-secondary,
+.button-danger {
+    height: 38px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.button-primary {
+    border: 1px solid var(--blue);
+    color: #fff;
+    background: var(--blue);
+}
+
+.button-primary:hover {
+    filter: brightness(1.08);
+}
+
+.button-secondary {
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    background: var(--field);
+}
+
+.button-secondary:hover {
+    color: var(--text);
+    background: var(--panel-hover);
+}
+
+.button-danger {
+    border: 1px solid var(--danger-border);
+    color: var(--danger-text);
+    background: transparent;
+}
+
+.button-danger:hover {
+    background: var(--danger-bg);
+}
+
+.button-primary:disabled,
+.button-danger:disabled {
+    opacity: .6;
+    cursor: default;
+}
+
+.user-row-title {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.you-tag {
+    padding: 1px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    background: var(--chip-bg);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.you-tag.suspended {
+    border-color: color-mix(in srgb, #ef4444 30%, transparent);
+    color: var(--danger-text);
+    background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.user-row-access {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-soft);
+    background: var(--chip-bg);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.chip.admin {
+    border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+    color: var(--link);
+    background: color-mix(in srgb, var(--blue) 14%, transparent);
+}
+
+.chip.muted {
+    color: var(--muted);
+    border-style: dashed;
+}
+
+.danger-zone {
+    padding-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--border-soft);
+}

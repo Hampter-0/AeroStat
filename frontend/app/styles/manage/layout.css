@@ -1,0 +1,244 @@
+.manage-shell {
+    --sidebar-width: 320px;
+    --topbar-height: 64px;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    grid-template-rows: var(--topbar-height) 1fr;
+    background: var(--panel-soft);
+}
+
+.manage-topbar {
+    position: sticky;
+    z-index: 40;
+    top: 0;
+    grid-column: 1 / -1;
+    height: var(--topbar-height);
+    padding: 0 20px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+}
+
+.manage-brand {
+    width: var(--sidebar-width);
+    height: 100%;
+    padding: 0 24px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    text-decoration: none;
+}
+
+.manage-brand span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-menu {
+    display: none;
+}
+
+.topbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.topbar-link {
+    height: 36px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-soft);
+    background: var(--field);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.topbar-link:hover {
+    color: var(--link);
+}
+
+.manage-topbar .dropdown-trigger {
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--field);
+    box-shadow: none;
+}
+
+.account-trigger {
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    background: none;
+}
+
+.account-trigger:hover,
+.account-trigger[aria-expanded="true"] {
+    border-color: var(--link);
+}
+
+.account-dropdown {
+    min-width: 220px;
+    padding: 6px;
+}
+
+.account-dropdown-head {
+    margin-bottom: 4px;
+    padding: 8px 10px 10px;
+    display: grid;
+    gap: 2px;
+    border-bottom: 1px solid var(--border);
+}
+
+.account-dropdown-head strong {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-dropdown-head span {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-dropdown a,
+.account-dropdown button {
+    width: 100%;
+    min-height: 36px;
+    font-size: 13px;
+}
+
+.account-dropdown form {
+    display: grid;
+}
+
+.manage-sidebar {
+    position: sticky;
+    top: var(--topbar-height);
+    height: calc(100vh - var(--topbar-height));
+    height: calc(100dvh - var(--topbar-height));
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    background: var(--panel);
+}
+
+.manage-nav {
+    display: grid;
+    gap: 18px;
+}
+
+.nav-group {
+    display: grid;
+    gap: 2px;
+}
+
+.nav-group-toggle {
+    margin-bottom: 4px;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 0;
+    color: var(--muted);
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+}
+
+.nav-group-toggle:hover {
+    color: var(--text);
+}
+
+.nav-group-toggle .chevron {
+    width: 14px;
+    height: 14px;
+    transform: rotate(180deg);
+    transition: transform .18s ease;
+}
+
+.nav-group-toggle .chevron.open {
+    transform: none;
+}
+
+.manage-nav a {
+    min-height: 42px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.manage-nav a svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: var(--subtle);
+}
+
+.manage-nav a:hover {
+    color: var(--text);
+    background: var(--panel-hover);
+}
+
+.manage-nav a.active {
+    color: var(--link);
+    background: var(--nav-active);
+    font-weight: 600;
+}
+
+.manage-nav a.active svg {
+    color: var(--link);
+}
+
+.manage-scrim {
+    display: none;
+}
+
+.icon-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-soft);
+    background: var(--panel);
+}
+
+.icon-button:hover {
+    color: var(--danger-text);
+}

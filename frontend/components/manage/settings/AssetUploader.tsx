@@ -46,7 +46,7 @@ export default function AssetUploader({
       <div className="asset-body">
         <strong>{label}</strong>
         <small>
-          {statusText} · {hint}
+          {statusText}, {hint}
         </small>
         <form ref={uploadFormRef} action={uploadAction} onSubmit={uploadSubmit} className="asset-form">
           <input type="hidden" name="name" value={name} />

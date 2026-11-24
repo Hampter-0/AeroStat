@@ -1,0 +1,234 @@
+.manage-error {
+    display: grid;
+    gap: 10px;
+    text-align: center;
+}
+
+.manage-error h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: 18px;
+}
+
+.manage-error p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.manage-error-actions {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.manage-login-card .manage-error-actions .button-primary {
+    width: auto;
+    height: 34px;
+    margin-top: 0;
+    font-size: 14px;
+}
+
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.group-header {
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.group-header h2 {
+    margin: 0;
+}
+
+.group-header .form-error {
+    width: 100%;
+}
+
+.group-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.link-button.danger {
+    color: var(--danger-text);
+}
+
+.inline-form {
+    display: flex;
+    flex: 1;
+    gap: 8px;
+}
+
+.inline-form input {
+    min-width: 0;
+    height: 40px;
+    flex: 1;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--field);
+    font-size: 14px;
+}
+
+.inline-form input:focus {
+    border-color: var(--link);
+    outline: 2px solid var(--info-bg);
+}
+
+.move-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.icon-button.small {
+    width: 28px;
+    height: 28px;
+}
+
+.icon-button.small:hover {
+    color: var(--link);
+}
+
+.icon-button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.service-row {
+    padding: 10px 12px;
+}
+
+.service-row:hover {
+    border-color: var(--border-soft);
+}
+
+.service-row-main {
+    min-width: 0;
+    display: grid;
+    flex: 1;
+    gap: 3px;
+    text-decoration: none;
+}
+
+.service-row-main strong {
+    color: var(--text);
+    font-size: 13px;
+}
+
+.service-row-main span {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.service-row-main:hover strong {
+    color: var(--link);
+}
+
+.service-status {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    flex: 0 0 22px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--faint);
+}
+
+.service-status svg {
+    display: block;
+}
+
+.service-status.online {
+    background: var(--green);
+}
+
+.service-status.offline {
+    background: var(--red);
+}
+
+.service-status.unknown {
+    color: var(--muted);
+    background: var(--chip-bg);
+}
+
+.add-to-group {
+    margin-top: 12px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.field-hint {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.manage-page-header code {
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--text-soft);
+    background: var(--chip-bg);
+    font-size: 13px;
+}
+
+@media (max-width: 760px) {
+    .header-actions {
+        justify-content: flex-start;
+    }
+}
+
+.interval-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+}
+
+.interval-suffix {
+    display: flex;
+    align-items: center;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.danger-zone .button-danger,
+.danger-zone .button-secondary {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.group-header-actions form {
+    display: flex;
+    align-items: center;
+}
+
+.group-header-actions .link-button {
+    line-height: 1;
+}
+
+.check-now-button {
+    min-width: 128px;
+}
+
+.check-now-button.failed {
+    border-color: var(--danger-border);
+    color: var(--danger-text);
+    background: var(--danger-bg);
+}

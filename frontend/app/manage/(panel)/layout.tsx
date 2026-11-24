@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import Bell from '@/components/manage/bell/Bell'
 import ManageSidebar from '@/components/manage/ManageSidebar'
+import PanelNotices from '@/components/manage/PanelNotices'
 import ConfirmProvider from '@/components/manage/confirm/Confirm'
 import ToastProvider from '@/components/manage/toast/Toasts'
 import { getSiteConfig } from '@/lib/branding'
@@ -15,9 +15,9 @@ export default async function PanelLayout({ children }: { children: ReactNode })
   const user = await requireUser(true)
   const config = await getSiteConfig()
   const version = await getVersionInfo()
-  let showBell = true
+  let showNotices = true
   if (user.panel_enabled === false) {
-    showBell = false
+    showNotices = false
   }
 
   return (
@@ -27,7 +27,7 @@ export default async function PanelLayout({ children }: { children: ReactNode })
           <ManageSidebar siteName={config.siteName} user={user} version={version} />
           <div className="manage-content">{children}</div>
         </div>
-        {showBell && <Bell timezone={config.timezone} />}
+        {showNotices && <PanelNotices />}
       </ConfirmProvider>
     </ToastProvider>
   )

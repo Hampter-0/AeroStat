@@ -4,6 +4,7 @@ import { ChevronLeft } from '@/components/icons'
 import ServiceForm from '@/components/manage/services/ServiceForm'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { ManageServicesResponse } from '@/lib/services'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Add service',
@@ -30,10 +31,7 @@ export default async function NewServicePage({ searchParams }: { searchParams: P
       <Link href="/manage/services" className="back-button">
         <ChevronLeft /> Services
       </Link>
-      <header className="manage-page-header">
-        <h1>Add service</h1>
-        <p>AeroStat starts checking it within a few seconds.</p>
-      </header>
+      <PageHeader title="Add service" description="AeroStat starts checking it within a few seconds." />
       <section className="manage-panel">
         <ServiceForm groups={data.groups} service={null} defaultGroupId={defaultGroupId} certificateText={null} />
       </section>

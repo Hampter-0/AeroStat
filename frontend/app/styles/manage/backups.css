@@ -1,0 +1,157 @@
+.backup-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.backup-bar h2 {
+    margin: 0;
+}
+
+.backup-bar .button-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backup-made {
+    display: grid;
+    gap: 2px;
+}
+
+.backup-made strong {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.backup-made small {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.backups-table code {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.backup-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+}
+
+.backup-delete .form-error {
+    margin-top: 6px;
+}
+
+.backup-hint {
+    margin: 0;
+    padding: 12px 16px 16px;
+}
+
+.manage-form .input-with-icon.has-toggle input:not([type="checkbox"]):not([type="radio"]) {
+    padding-right: 42px;
+}
+
+.input-with-icon .password-toggle {
+    position: absolute;
+    right: 6px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    color: var(--subtle);
+    background: none;
+    cursor: pointer;
+}
+
+.input-with-icon .password-toggle:hover {
+    color: var(--text);
+}
+
+.input-with-icon .password-toggle svg {
+    position: static;
+    pointer-events: none;
+}
+
+.button-soft {
+    width: 100%;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--info-border);
+    border-radius: 6px;
+    color: var(--info);
+    background: var(--info-bg);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button-soft:hover:not(:disabled) {
+    border-color: var(--link);
+}
+
+.manage-login-card .button-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.backup-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.backup-buttons .button-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.backups-table .chip {
+    white-space: nowrap;
+}
+
+.backup-location {
+    display: grid;
+    gap: 10px;
+}
+
+.backup-location p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.backup-location code {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.backup-location pre {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font-size: 14px;
+}

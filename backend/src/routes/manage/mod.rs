@@ -1,13 +1,13 @@
 mod activity;
 mod backups;
 mod dashboard;
-mod bell;
 mod email;
 mod help;
 mod logs;
 mod incidents;
 mod maintenance;
 mod notifications;
+mod panel_notices;
 mod passkeys;
 mod password_reset;
 mod profile;
@@ -80,11 +80,9 @@ pub fn router() -> Router<AppState> {
         )
         .route("/profile/avatar", put(profile::upload_avatar).delete(profile::delete_avatar))
         .route("/avatar/:id", get(profile::avatar))
-        .route("/bell", get(bell::list).delete(bell::clear))
-        .route("/bell/count", get(bell::count))
-        .route("/bell/read", post(bell::mark_read))
-        .route("/bell/mute", put(bell::mute))
-        .route("/bell/:id", delete(bell::remove))
+        .route("/panel-notices", get(panel_notices::unread))
+        .route("/panel-notices/count", get(panel_notices::count))
+        .route("/panel-notices/read", post(panel_notices::mark_read))
         .route("/dashboard", get(dashboard::get))
         .route("/activity", get(activity::list))
         .route("/users", get(users::list).post(users::create))

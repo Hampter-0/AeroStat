@@ -15,6 +15,7 @@ import { manageFetch, requireUser } from '@/lib/manage'
 import type { PasskeysResponse } from '@/lib/passkeys'
 import { currentTimeMs, formatAgo, formatDateTimeShort } from '@/lib/time'
 import type { TwoFactorStatus } from '@/lib/two-factor'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Profile',
@@ -71,10 +72,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Profile</h1>
-        <p>How you sign in and how others see you in the panel.</p>
-      </header>
+      <PageHeader title="Profile" description="How you sign in and how others see you in the panel." />
       <ProfileTabs active="/manage/profile" />
 
       {user.two_factor_setup_required && (

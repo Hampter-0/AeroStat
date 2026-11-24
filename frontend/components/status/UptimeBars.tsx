@@ -82,6 +82,17 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
             icon = <X size={11} />
           }
 
+          if (day.status === 'maintenance') {
+            stateClassName = ' maintenance'
+            label = 'Maintenance'
+            icon = <Tool size={11} />
+            for (const event of day.events) {
+              if (event.kind === 'maintenance') {
+                href = '/maintenance/' + event.id
+              }
+            }
+          }
+
           const centerPercent = ((index + 0.5) / shownDays.length) * 100
           const mobileIndex = index - (shownDays.length - MOBILE_DAYS)
           const mobileCenterPercent = ((mobileIndex + 0.5) / MOBILE_DAYS) * 100

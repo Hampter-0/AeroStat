@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Check } from '@/components/icons'
+import { IncidentMarker } from '@/components/status/EventMarker'
 import RangePicker from '@/components/status/RangePicker'
 import { getIncidentsBetween, hasIncidentsBefore } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
@@ -7,22 +8,20 @@ import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage,
 import { formatDayLong } from '@/lib/time'
 import { incidentTone } from '@/lib/incidents'
 import type { Incident } from '@/lib/types'
-
-function capitalize(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
+import StateBadge from '@/components/StateBadge'
+import { formatStatus } from '@/lib/format'
 
 function IncidentEntry({ incident, timezone }: { incident: Incident; timezone: string }) {
-  const tagClassName = 'state-badge tone-' + incidentTone(incident.status, incident.severity)
-  const tagLabel = capitalize(incident.status)
+  const tagTone = incidentTone(incident.status, incident.severity)
+  const tagLabel = formatStatus(incident.status)
 
   return (
     <Link href={'/incidents/' + incident.id} className="event-preview-link">
       <div className="event-preview">
-        <span className="event-marker">!</span>
+        <IncidentMarker status={incident.status} severity={incident.severity} />
         <span className="event-title-row">
           <strong>{incident.title}</strong>
-          <span className={tagClassName}>{tagLabel}</span>
+          <StateBadge tone={tagTone}>{tagLabel}</StateBadge>
         </span>
         {incident.description && <span className="event-description">{incident.description}</span>}
         <span className="event-meta">Reported on {formatDayLong(incident.created_at, timezone)}</span>

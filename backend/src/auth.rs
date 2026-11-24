@@ -234,7 +234,7 @@ pub struct CurrentUser {
     /// Made with create-admin on the server. Only the owner can change other
     /// admins, and nobody but the owner can change the owner's account.
     pub owner: bool,
-    /// Whether the notification bell shows in the panel.
+    /// Whether notifications pop up in the panel.
     pub panel_enabled: bool,
     /// The address this request came from, for the activity log. Empty when
     /// the user was loaded outside a request.

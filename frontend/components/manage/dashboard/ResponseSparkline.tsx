@@ -96,7 +96,7 @@ export default function ResponseSparkline({
       total = total + value
     }
     const average = Math.round(total / values.length)
-    rangeText = '24h avg ' + average + ' ms · min ' + Math.min(...values) + ' · max ' + Math.max(...values)
+    rangeText = '24h avg ' + average + ' ms, min ' + Math.min(...values) + ', max ' + Math.max(...values)
   }
 
   let summary = name + ': no response time data in the last 24 hours'
@@ -169,6 +169,7 @@ export default function ResponseSparkline({
           preserveAspectRatio="none"
           role="img"
           aria-label={summary}
+          onPointerDown={onPointerMove}
           onPointerMove={onPointerMove}
           onPointerLeave={onPointerLeave}
         >

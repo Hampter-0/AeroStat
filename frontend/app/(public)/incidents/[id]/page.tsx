@@ -3,15 +3,13 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
-import { getIncident, getServiceNames } from '@/lib/api'
+import { getAffectedLabels, getIncident } from '@/lib/api'
 import { incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatDayLong } from '@/lib/time'
-
-function capitalize(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
+import StateBadge from '@/components/StateBadge'
+import { formatStatus } from '@/lib/format'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -50,14 +48,10 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
     notFound()
   }
 
-  const tagClassName = 'state-badge tone-' + incidentTone(incident.status, incident.severity)
-  const tagLabel = capitalize(incident.status)
+  const tagTone = incidentTone(incident.status, incident.severity)
+  const tagLabel = formatStatus(incident.status)
 
-  const serviceNames = await getServiceNames()
-  let affectedServices: string[] = []
-  if (incident.affected_services) {
-    affectedServices = incident.affected_services
-  }
+  const affectedServices = await getAffectedLabels(incident.affected_services)
 
   const entries: TimelineEntry[] = []
   if (incident.updates.length > 0) {
@@ -70,7 +64,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       }
       entries.push({
         key: 'update-' + update.id,
-        label: capitalize(update.status),
+        label: formatStatus(update.status),
         time: formatDateTime(update.created_at),
         message: update.message,
         markerClassName: markerClassName,
@@ -105,7 +99,7 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       </Link>
       <article className="detail-card">
         <header className="detail-header">
-          <span className={tagClassName}>{tagLabel}</span>
+          <StateBadge tone={tagTone}>{tagLabel}</StateBadge>
           <h1>{incident.title}</h1>
           <p>{formatFullDate(incident.created_at)}</p>
         </header>
@@ -113,10 +107,10 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         <div className="affected-row">
           <span>Affected services</span>
           <div>
-            {affectedServices.map(function (serviceId) {
+            {affectedServices.map(function (label) {
               return (
-                <span className="service-chip" key={serviceId}>
-                  {serviceNames.get(serviceId) || serviceId}
+                <span className="service-chip" key={label}>
+                  {label}
                 </span>
               )
             })}

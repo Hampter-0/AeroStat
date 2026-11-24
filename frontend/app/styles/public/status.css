@@ -30,6 +30,10 @@ main {
     background: var(--amber);
 }
 
+.operational-check.maintenance {
+    background: var(--blue);
+}
+
 .operational-hero h1 {
     margin: 16px 0 2px;
     color: var(--text);
@@ -190,6 +194,10 @@ main {
     color: var(--red);
 }
 
+.live-section-status.maintenance {
+    color: var(--info);
+}
+
 .live-section-status .chevron {
     margin-left: 6px;
     color: var(--muted);
@@ -245,6 +253,10 @@ main {
     background: var(--red);
 }
 
+.live-check.maintenance {
+    background: var(--blue);
+}
+
 .live-service-name strong {
     display: block;
     color: var(--text);
@@ -261,6 +273,10 @@ main {
 
 .live-service-name>div>span.down {
     color: var(--red);
+}
+
+.live-service-name>div>span.maintenance {
+    color: var(--info);
 }
 
 .live-response {

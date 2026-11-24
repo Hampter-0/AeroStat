@@ -5,14 +5,15 @@
     font-synthesis: none;
     color-scheme: light;
 
-    --panel: #fff;
-    --panel-soft: #f4f4f5;
-    --panel-hover: #fafafa;
+    --panel: #f4f5fb;
+    --panel-soft: #fff;
+    --panel-hover: #eceef6;
     --field: #fff;
-    --chip-bg: #f4f4f5;
+    --table-head: #fafafa;
+    --chip-bg: #eceef5;
     --border: #e4e4e7;
     --border-soft: #ececef;
-    --nav-active: color-mix(in srgb, var(--blue) 10%, white);
+    --nav-active: #e8eaf3;
 
     --text: #18181b;
     --text-soft: #3f3f46;
@@ -53,6 +54,7 @@
     --panel-soft: #10121e;
     --panel-hover: #1c1e2d;
     --field: #222432;
+    --table-head: #222432;
     --chip-bg: #222432;
     --border: #2e303d;
     --border-soft: #262836;

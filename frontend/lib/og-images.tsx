@@ -1,12 +1,9 @@
 import { getIncident, getMaintenance } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
-import { OG_COLORS, ogCard } from '@/lib/og-card'
+import { OG_COLORS, ogCard, severityColor } from '@/lib/og-card'
 import { getPublicStatus } from '@/lib/public-status'
 import { formatWindow } from '@/lib/time'
-
-function capitalize(text: string) {
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
+import { formatStatus } from '@/lib/format'
 
 export async function statusImage() {
   const config = await getSiteConfig()
@@ -77,13 +74,13 @@ export async function incidentImage(id: string) {
   }
 
   if (incident.status === 'resolved') {
-    return ogCard({ icon: 'check', color: OG_COLORS.green, headline: incident.title, subline: 'Incident · Resolved', siteName: config.siteName })
+    return ogCard({ icon: 'check', color: OG_COLORS.green, headline: incident.title, subline: 'Incident, resolved', siteName: config.siteName })
   }
   return ogCard({
     icon: 'alert',
-    color: OG_COLORS.amber,
+    color: severityColor(incident.severity),
     headline: incident.title,
-    subline: 'Ongoing incident · ' + capitalize(incident.status),
+    subline: 'Ongoing incident, ' + formatStatus(incident.status),
     siteName: config.siteName,
   })
 }
@@ -103,10 +100,11 @@ export async function maintenanceImage(id: string) {
 
   const when = formatWindow(maintenance.scheduled_start, maintenance.scheduled_end, config.timezone)
   let label = 'Scheduled maintenance'
-  let color = OG_COLORS.blue
+  let color = OG_COLORS.amber
   let icon: 'wrench' | 'check' = 'wrench'
   if (maintenance.status === 'in_progress') {
     label = 'Ongoing maintenance'
+    color = OG_COLORS.blue
   } else if (maintenance.status === 'completed') {
     label = 'Completed maintenance'
     color = OG_COLORS.green
@@ -116,5 +114,5 @@ export async function maintenanceImage(id: string) {
     color = OG_COLORS.grey
   }
 
-  return ogCard({ icon: icon, color: color, headline: maintenance.title, subline: label + ' · ' + when, siteName: config.siteName })
+  return ogCard({ icon: icon, color: color, headline: maintenance.title, subline: label + ', ' + when, siteName: config.siteName })
 }

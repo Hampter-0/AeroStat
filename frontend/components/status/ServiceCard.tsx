@@ -1,15 +1,17 @@
 import type { DayHistory, ServiceStatus } from '@/lib/types'
-import { Check, PendingRing, X } from '@/components/icons'
+import { Check, PendingRing, Tool, X } from '@/components/icons'
 import UptimeBars from './UptimeBars'
 
 export default function ServiceCard({
   service,
   uptimePercent,
+  inMaintenance,
   days,
   dayNote,
 }: {
   service: ServiceStatus
   uptimePercent: number | null
+  inMaintenance: boolean
   days: DayHistory[]
   dayNote: string
 }) {
@@ -17,7 +19,12 @@ export default function ServiceCard({
   let labelClassName = ''
   let statusText = 'Operational'
   let icon = <Check size={15} />
-  if (service.status === 'offline') {
+  if (service.status === 'offline' && inMaintenance) {
+    checkClassName = 'live-check maintenance'
+    labelClassName = 'maintenance'
+    statusText = 'Maintenance'
+    icon = <Tool size={14} />
+  } else if (service.status === 'offline') {
     checkClassName = 'live-check down'
     labelClassName = 'down'
     statusText = 'Down'
@@ -48,7 +55,7 @@ export default function ServiceCard({
             <strong>{service.name}</strong>
             <span className={labelClassName}>
               {statusText}
-              {responseText && <small className="live-response"> · {responseText}</small>}
+              {responseText && <small className="live-response">, {responseText}</small>}
             </span>
           </div>
         </div>

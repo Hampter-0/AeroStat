@@ -3,6 +3,7 @@ import SessionsTable from '@/components/manage/profile/SessionsTable'
 import { manageFetch, requireUser } from '@/lib/manage'
 import { describeAgent, type SessionInfo, type SessionRow } from '@/lib/sessions'
 import { currentTimeMs, formatAgo } from '@/lib/time'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Sessions',
@@ -39,10 +40,7 @@ export default async function SessionsPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Sessions</h1>
-        <p>Every device that is signed in to your account. Log out the ones you don&apos;t recognise.</p>
-      </header>
+      <PageHeader title="Sessions" description="Every device that is signed in to your account. Log out the ones you don&apos;t recognise." />
       <ProfileTabs active="/manage/profile/sessions" />
       <section className="manage-panel activity-panel">
         <SessionsTable sessions={rows} />

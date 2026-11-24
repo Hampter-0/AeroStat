@@ -36,7 +36,7 @@ export interface DayEvent {
 
 export interface DayHistory {
   date: string
-  status: 'online' | 'degraded' | 'offline' | 'no_data'
+  status: 'online' | 'degraded' | 'offline' | 'maintenance' | 'no_data'
   downtime_minutes: number
   uptime_percent?: number | null
   avg_response_time_ms?: number | null

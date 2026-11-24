@@ -13,6 +13,8 @@ import { incidentTone } from '@/lib/incidents'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { currentTimeMs, formatDateTimeShort, formatDuration } from '@/lib/time'
 import type { IncidentDetail, MaintenanceWindow, ServiceStatus } from '@/lib/types'
+import PageHeader from '@/components/manage/PageHeader'
+import StateBadge from '@/components/StateBadge'
 
 interface DashboardData {
   response_times: { service_id: string; points: HourPoint[] }[]
@@ -120,14 +122,39 @@ export default async function ManageOverviewPage() {
   let statusTitle = 'All systems operational'
   let statusText = services.length + ' services, all online'
   let statusIcon = <Check size={22} />
-  if (down.length > 0) {
-    const downNames: string[] = []
-    for (const service of down) {
-      downNames.push(service.name)
+  const inMaintenance = new Set<string>()
+  for (const item of inProgress) {
+    for (const serviceId of item.affected_services || []) {
+      inMaintenance.add(serviceId)
     }
+  }
+  const realDown: ServiceStatus[] = []
+  const maintenanceDown: ServiceStatus[] = []
+  for (const service of down) {
+    if (inMaintenance.has(service.id)) {
+      maintenanceDown.push(service)
+    } else {
+      realDown.push(service)
+    }
+  }
+  if (maintenanceDown.length > 0) {
+    statusClass = 'dashboard-status maintenance'
+    statusTitle = maintenanceDown.length + ' of ' + services.length + ' services in maintenance'
+    statusText = maintenanceDown
+      .map(function (service) {
+        return service.name
+      })
+      .join(', ')
+    statusIcon = <Tool size={20} />
+  }
+  if (realDown.length > 0) {
     statusClass = 'dashboard-status down'
-    statusTitle = down.length + ' of ' + services.length + ' services down'
-    statusText = downNames.join(', ')
+    statusTitle = realDown.length + ' of ' + services.length + ' services down'
+    statusText = realDown
+      .map(function (service) {
+        return service.name
+      })
+      .join(', ')
     statusIcon = <X size={22} />
   }
 
@@ -138,9 +165,9 @@ export default async function ManageOverviewPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Welcome, {user.username}</h1>
-      </header>
+      <PageHeader
+        title={<>Welcome, {user.username}</>}
+      />
 
       {can(user, 'system.view') && version && version.update_available && (
         <section className="update-notice">
@@ -221,7 +248,7 @@ export default async function ManageOverviewPage() {
                   <div>
                     <strong>{service.name}</strong>
                     <span>
-                      {leftText} · {formatDateTimeShort(service.cert_expires_at || '', timezone)}
+                      {leftText}, {formatDateTimeShort(service.cert_expires_at || '', timezone)}
                     </span>
                   </div>
                   <Arrow />
@@ -261,11 +288,11 @@ export default async function ManageOverviewPage() {
                   <div>
                     <strong>{incident.title}</strong>
                     <span>
-                      {serviceNames.join(', ')} · running for {formatDuration(now - new Date(incident.created_at).getTime())}
+                      {serviceNames.join(', ')}, running for {formatDuration(now - new Date(incident.created_at).getTime())}
                     </span>
                     {latest && <em>{latest}</em>}
                   </div>
-                  <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
+                  <StateBadge tone={incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</StateBadge>
                 </Link>
               )
             })}
@@ -296,7 +323,7 @@ export default async function ManageOverviewPage() {
                     </strong>
                     <span>Ends in {formatDuration(new Date(item.scheduled_end).getTime() - now)}</span>
                   </div>
-                  <span className="state-badge tone-blue">In progress</span>
+                  <StateBadge tone="blue">In progress</StateBadge>
                 </Link>
               )
             })}
@@ -306,11 +333,11 @@ export default async function ManageOverviewPage() {
                   <div>
                     <strong>{item.title}</strong>
                     <span>
-                      Starts in {formatDuration(new Date(item.scheduled_start).getTime() - now)} ·{' '}
+                      Starts in {formatDuration(new Date(item.scheduled_start).getTime() - now)},{' '}
                       {formatDateTimeShort(item.scheduled_start, timezone)}
                     </span>
                   </div>
-                  <span className="state-badge tone-blue">Scheduled</span>
+                  <StateBadge tone="amber">Scheduled</StateBadge>
                 </Link>
               )
             })}

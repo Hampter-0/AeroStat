@@ -1,0 +1,260 @@
+.badge-card {
+    display: grid;
+    gap: 14px;
+}
+
+.badge-card h2 {
+    margin: 0;
+}
+
+.badge-preview {
+    padding: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    background: var(--panel-soft);
+}
+
+.badge-preview img {
+    display: block;
+    height: 20px;
+    align-self: center;
+}
+
+.badge-preview label {
+    width: min(240px, 100%);
+    display: grid;
+    gap: 4px;
+}
+
+.badge-preview label span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.badge-preview input {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel);
+    font: inherit;
+    font-size: 13px;
+}
+
+.copy-fields {
+    display: grid;
+    gap: 10px;
+}
+
+.copy-field {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.copy-field-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.copy-field-row {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    background: var(--panel-soft);
+}
+
+.copy-field-row code {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    overflow-x: auto;
+    color: var(--text);
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.copy-field-button {
+    width: 36px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-left: 1px solid var(--border-soft);
+    color: var(--muted);
+    background: none;
+    cursor: pointer;
+}
+
+.copy-field-button:hover {
+    color: var(--text);
+}
+
+.badge-api-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-self: start;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.help-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+}
+
+.help-link {
+    padding: 12px 14px;
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.help-link:hover {
+    border-color: var(--link);
+}
+
+.help-link strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+}
+
+.help-link strong svg {
+    color: var(--muted);
+}
+
+.help-link small {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.help-guide {
+    border-top: 1px solid var(--border-soft);
+}
+
+.help-guide:first-of-type {
+    border-top: 0;
+}
+
+.help-guide summary {
+    padding: 12px 0;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style-position: inside;
+}
+
+.help-guide-body {
+    padding: 0 0 14px;
+    display: grid;
+    gap: 10px;
+}
+
+.help-guide-body p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.help-guide-body code {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.help-code {
+    margin: 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--panel-soft);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.help-more {
+    margin: 12px 0 0;
+}
+
+.help-more a {
+    color: var(--link);
+}
+
+.restore-warning {
+    padding: 10px 12px;
+    border: 1px solid var(--danger-border);
+    border-radius: 6px;
+    color: var(--danger-text) !important;
+    background: var(--danger-bg);
+}
+
+.restore-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.restore-screen-card {
+    width: min(440px, 100%);
+    padding: 28px 24px;
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    text-align: center;
+}
+
+.restore-screen-card h2 {
+    margin: 4px 0 0;
+    font-size: 17px;
+}
+
+.restore-screen-card p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+}
+
+.restore-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid var(--border);
+    border-top-color: var(--link);
+    border-radius: 50%;
+    animation: restore-spin 0.9s linear infinite;
+}
+
+@keyframes restore-spin {
+    to {
+    transform: rotate(360deg);
+    }
+}

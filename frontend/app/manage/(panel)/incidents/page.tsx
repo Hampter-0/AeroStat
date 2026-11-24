@@ -6,6 +6,8 @@ import { incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import type { Incident } from '@/lib/types'
+import PageHeader from '@/components/manage/PageHeader'
+import StateBadge from '@/components/StateBadge'
 
 export const metadata = {
   title: 'Incidents',
@@ -32,10 +34,10 @@ function IncidentList({
             <div>
               <strong>{incident.title}</strong>
               <span>
-                {names.join(', ')} · {formatDateTime(incident.created_at, timezone)}
+                {names.join(', ')}, {formatDateTime(incident.created_at, timezone)}
               </span>
             </div>
-            <span className={'state-badge tone-' + incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</span>
+            <StateBadge tone={incidentTone(incident.status, incident.severity)}>{formatStatus(incident.status)}</StateBadge>
           </Link>
         )
       })}
@@ -65,17 +67,17 @@ export default async function ManageIncidentsPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header with-action">
-        <div>
-          <h1>Incidents</h1>
-          <p>Report problems and keep visitors posted with updates.</p>
-        </div>
-        {can(user, 'incidents.create') && (
-          <Link href="/manage/incidents/new" className="button-primary">
-            New incident
-          </Link>
-        )}
-      </header>
+      <PageHeader
+        title="Incidents"
+        description="Report problems and keep visitors posted with updates."
+        action={
+          can(user, 'incidents.create') && (
+            <Link href="/manage/incidents/new" className="button-primary">
+              New incident
+            </Link>
+          )
+        }
+      />
 
       <section className="manage-panel">
         <h2>Ongoing</h2>

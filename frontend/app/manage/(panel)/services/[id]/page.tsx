@@ -10,6 +10,7 @@ import { can, manageFetch, requireUser } from '@/lib/manage'
 import { checkTypeLabel, intervalLabel, type ManageServicesResponse } from '@/lib/services'
 import { formatDateTimeShort } from '@/lib/time'
 import { deleteService } from '../actions'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Service',
@@ -75,12 +76,10 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
       <Link href="/manage/services" className="back-button">
         <ChevronLeft /> Services
       </Link>
-      <header className="manage-page-header">
-        <h1>{service.name}</h1>
-        <p>
-          ID <code>{service.id}</code>. Used in links and the API, it doesn&apos;t change when you rename the service.
-        </p>
-      </header>
+      <PageHeader
+        title={service.name}
+        description={<>ID <code>{service.id}</code>. Used in links and the API, it doesn&apos;t change when you rename the service.</>}
+      />
       {can(user, 'services.edit') && (
         <section className="manage-panel">
           <ServiceForm groups={data.groups} service={service} defaultGroupId="" certificateText={certificateText} />

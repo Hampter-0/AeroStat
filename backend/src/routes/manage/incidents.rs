@@ -405,6 +405,7 @@ pub async fn add_update(
             id,
             title: incident.title.clone(),
             status: body.status.clone(),
+            severity: incident.severity.clone(),
             message: message.clone(),
             services: incident.affected_services.clone().unwrap_or_default(),
         },

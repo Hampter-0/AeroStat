@@ -1,0 +1,72 @@
+.confirm-dialog {
+    width: min(420px, calc(100vw - 32px));
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    background: var(--panel);
+    box-shadow: 0 16px 40px var(--shadow);
+}
+
+.confirm-dialog[open] {
+    animation: confirm-in 140ms ease-out;
+}
+
+.confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.confirm-body {
+    padding: 20px;
+    display: grid;
+    gap: 10px;
+}
+
+.confirm-body h2 {
+    margin: 0;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+}
+
+.confirm-body p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: 13px;
+}
+
+.confirm-body .form-actions {
+    margin-top: 8px;
+}
+
+@keyframes confirm-in {
+    from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    }
+    to {
+    opacity: 1;
+    transform: none;
+    }
+}
+
+.login-notice {
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--info-border);
+    border-radius: 6px;
+    color: var(--text);
+    background: var(--info-bg);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.manage-login-heading strong {
+    color: var(--text);
+}
+
+.login-button-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}

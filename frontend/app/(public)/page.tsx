@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import LastChecked from '@/components/status/LastChecked'
+import Notice from '@/components/status/Notice'
 import ServiceSection from '@/components/status/ServiceSection'
 import { AlertSmall, Arrow, Check, Clock, Server, Tool, X } from '@/components/icons'
 import { getIncidents, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
@@ -61,11 +62,25 @@ export default async function Home() {
     groups.get(groupName)!.push(service)
   }
 
+  const maintenanceServiceIds: string[] = []
+  for (const maintenanceWindow of maintenanceWindows) {
+    if (maintenanceWindow.status === 'in_progress') {
+      for (const serviceId of maintenanceWindow.affected_services || []) {
+        maintenanceServiceIds.push(serviceId)
+      }
+    }
+  }
+
   let allOnline = true
+  let downInMaintenance = false
   let lastCheckedAt: string | null = null
   for (const service of services) {
     if (service.status === 'offline') {
-      allOnline = false
+      if (maintenanceServiceIds.includes(service.id)) {
+        downInMaintenance = true
+      } else {
+        allOnline = false
+      }
     }
     if (service.checked_at && (lastCheckedAt === null || service.checked_at > lastCheckedAt)) {
       lastCheckedAt = service.checked_at
@@ -82,6 +97,11 @@ export default async function Home() {
   let heroCheckClassName = 'operational-check'
   let heroText = 'Operational'
   let heroIcon = <Check size={34} />
+  if (downInMaintenance) {
+    heroCheckClassName = 'operational-check maintenance'
+    heroText = 'Maintenance'
+    heroIcon = <Tool size={30} />
+  }
   if (ongoingIncidents.length > 0) {
     heroCheckClassName = 'operational-check degraded'
     heroText = 'Degraded'
@@ -159,67 +179,42 @@ export default async function Home() {
         <Link href="/incidents">Incident history <Arrow /></Link>
       </section>
 
-      {downNoticeText && (
-        <section className="notice tone-red">
-          <span className="notice-icon tone-icon">
-            <AlertSmall />
-          </span>
-          <div className="notice-copy">
-            <h2>Service disruption</h2>
-            <p className="incident-text">{downNoticeText}</p>
-          </div>
-        </section>
-      )}
+      {downNoticeText && <Notice tone="red" icon={<AlertSmall />} title="Service disruption" text={downNoticeText} />}
 
       {ongoingIncidents.map(function (incident) {
         return (
-          <section className={'notice tone-' + incidentTone(incident.status, incident.severity)} key={'incident-' + incident.id}>
-            <span className="notice-icon tone-icon">
-              <AlertSmall />
-            </span>
-            <div className="notice-copy">
-              <h2>Ongoing incident</h2>
-              <p className="incident-text">{incident.title}</p>
-            </div>
-            <a className="text-button" href={'/incidents/' + incident.id}>
-              View details <Arrow />
-            </a>
-          </section>
+          <Notice
+            tone={incidentTone(incident.status, incident.severity)}
+            icon={<AlertSmall />}
+            title="Ongoing incident"
+            text={incident.title}
+            href={'/incidents/' + incident.id}
+            key={'incident-' + incident.id}
+          />
         )
       })}
 
       {ongoingMaintenanceWindows.map(function (maintenanceWindow) {
         return (
-          <section className="notice tone-blue" key={'ongoing-maintenance-' + maintenanceWindow.id}>
-            <span className="notice-icon tone-icon">
-              <Tool />
-            </span>
-            <div className="notice-copy">
-              <h2>Maintenance in progress</h2>
-              <p className="ongoing-text">{maintenanceWindow.title}</p>
-            </div>
-            <a className="text-button" href={'/maintenance/' + maintenanceWindow.id}>
-              View details <Arrow />
-            </a>
-          </section>
+          <Notice
+            tone="blue"
+            icon={<Tool />}
+            title="Maintenance in progress"
+            text={maintenanceWindow.title}
+            href={'/maintenance/' + maintenanceWindow.id}
+            key={'ongoing-maintenance-' + maintenanceWindow.id}
+          />
         )
       })}
 
       {upcomingMaintenanceWindow && (
-        <section className="notice tone-blue">
-          <span className="notice-icon tone-icon">
-            <Clock />
-          </span>
-          <div className="notice-copy">
-            <h2>Scheduled maintenance</h2>
-            <p className="scheduled-text">
-              {upcomingMaintenanceWindow.title} - {formatWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
-            </p>
-          </div>
-          <a className="text-button" href={'/maintenance/' + upcomingMaintenanceWindow.id}>
-            View details <Arrow />
-          </a>
-        </section>
+        <Notice
+          tone="amber"
+          icon={<Clock />}
+          title="Scheduled maintenance"
+          text={upcomingMaintenanceWindow.title + ' - ' + formatWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
+          href={'/maintenance/' + upcomingMaintenanceWindow.id}
+        />
       )}
 
       <section className="live-status">
@@ -241,6 +236,7 @@ export default async function Home() {
                 groupName={groupName}
                 services={groupServices}
                 uptimeByServiceId={uptimeByServiceId}
+                maintenanceServiceIds={maintenanceServiceIds}
                 defaultOpen={isFirst}
                 dayNote={dayNote}
                 key={groupName}

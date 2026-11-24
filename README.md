@@ -40,7 +40,7 @@ Runs with Docker Compose next to Postgres and Redis, and is configured with a si
 - Light and dark mode, visitor-chosen timezone
 - Public JSON status API and SVG status badges
 - Discord and email notifications when a service goes down or comes back, and for incidents and maintenance
-- A notification bell in the panel with unread and important tabs and a mute
+- Notifications that pop up in the panel while you work, and catch you up on what happened while you were away
 - Security emails when someone changes their password, email address, passkeys or two-factor sign-in
 - Link previews for Discord, Slack and social media that show the live status, incident or maintenance
 - Rust backend (Axum, Postgres, Redis) and a Next.js frontend

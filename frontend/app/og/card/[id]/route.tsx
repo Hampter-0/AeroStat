@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     }
   }
   let color = OG_COLORS.grey
-  if (card.color === 'green' || card.color === 'red' || card.color === 'amber' || card.color === 'blue') {
+  if (card.color === 'green' || card.color === 'red' || card.color === 'orange' || card.color === 'amber' || card.color === 'blue') {
     color = OG_COLORS[card.color]
   }
 

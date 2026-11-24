@@ -3,16 +3,13 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
-import { getMaintenance, getServiceNames } from '@/lib/api'
+import { getAffectedLabels, getMaintenance } from '@/lib/api'
 import { maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { formatDateTimeLong, formatWindow } from '@/lib/time'
-
-function formatStatus(status: string) {
-  const text = status.replace('_', ' ')
-  return text.charAt(0).toUpperCase() + text.slice(1)
-}
+import StateBadge from '@/components/StateBadge'
+import { formatStatus } from '@/lib/format'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
@@ -23,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   let description = formatWindow(maintenance.scheduled_start, maintenance.scheduled_end, config.timezone)
   if (maintenance.description) {
-    description = maintenance.description + ' · ' + description
+    description = maintenance.description + ', ' + description
   }
   return {
     title: maintenance.title,
@@ -45,26 +42,12 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
     notFound()
   }
 
-  const tagClassName = 'state-badge tone-' + maintenanceTone(maintenanceWindow.status)
-  let tagLabel = 'Scheduled'
-  let isCompleted = false
-  let isOngoing = false
+  const tagTone = maintenanceTone(maintenanceWindow.status)
+  const tagLabel = formatStatus(maintenanceWindow.status)
+  const isCompleted = maintenanceWindow.status === 'completed'
+  const isOngoing = maintenanceWindow.status === 'in_progress'
 
-  if (maintenanceWindow.status === 'in_progress') {
-    tagLabel = 'In progress'
-    isOngoing = true
-  } else if (maintenanceWindow.status === 'completed') {
-    tagLabel = 'Completed'
-    isCompleted = true
-  } else if (maintenanceWindow.status === 'cancelled') {
-    tagLabel = 'Cancelled'
-  }
-
-  const serviceNames = await getServiceNames()
-  let affectedServices: string[] = []
-  if (maintenanceWindow.affected_services) {
-    affectedServices = maintenanceWindow.affected_services
-  }
+  const affectedServices = await getAffectedLabels(maintenanceWindow.affected_services)
 
   const entries: TimelineEntry[] = []
   if (maintenanceWindow.updates.length > 0) {
@@ -123,7 +106,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
       </Link>
       <article className="detail-card">
         <header className="detail-header">
-          <span className={tagClassName}>{tagLabel}</span>
+          <StateBadge tone={tagTone}>{tagLabel}</StateBadge>
           <h1>{maintenanceWindow.title}</h1>
           <p>
             {formatWindow(maintenanceWindow.scheduled_start, maintenanceWindow.scheduled_end, timezone)}
@@ -133,10 +116,10 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
         <div className="affected-row">
           <span>Affected services</span>
           <div>
-            {affectedServices.map(function (serviceId) {
+            {affectedServices.map(function (label) {
               return (
-                <span className="service-chip" key={serviceId}>
-                  {serviceNames.get(serviceId) || serviceId}
+                <span className="service-chip" key={label}>
+                  {label}
                 </span>
               )
             })}

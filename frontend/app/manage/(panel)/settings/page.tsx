@@ -8,6 +8,7 @@ import { defaultDescription, envDefaults } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { NotificationSettings } from '@/lib/notifications'
 import { formatDateTimeLong } from '@/lib/time'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Settings',
@@ -69,10 +70,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     const onlyNotifications = await manageFetch<NotificationSettings>('/notifications')
     return (
       <div className="manage-page">
-        <header className="manage-page-header">
-          <h1>Settings</h1>
-          <p>Where the status page sends notifications.</p>
-        </header>
+        <PageHeader title="Settings" description="Where the status page sends notifications." />
         <NotificationsTab notifications={onlyNotifications} />
       </div>
     )
@@ -115,10 +113,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header">
-        <h1>Settings</h1>
-        <p>Leave a field empty to use the default from your .env file.</p>
-      </header>
+      <PageHeader title="Settings" description="Leave a field empty to use the default from your .env file." />
 
       <nav className="settings-tabs" aria-label="Settings sections">
         {tabs.map(function (option) {

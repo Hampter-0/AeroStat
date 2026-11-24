@@ -9,6 +9,7 @@ import { getStatus, getUptime } from '@/lib/api'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { intervalLabel, type ManageService, type ManageServicesResponse } from '@/lib/services'
 import { moveService } from './actions'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Services',
@@ -74,7 +75,7 @@ function ServiceRows({
             <Link href={'/manage/services/' + encodeURIComponent(service.id)} className="service-row-main">
               <strong>{service.name}</strong>
               <span>
-                {targetText(service)} · {intervalLabel(service.check_interval_seconds).toLowerCase()}
+                {targetText(service)}, {intervalLabel(service.check_interval_seconds).toLowerCase()}
               </span>
             </Link>
             <ServiceStatsCell stats={stats.get(service.id)} />
@@ -165,20 +166,20 @@ export default async function ManageServicesPage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header with-action">
-        <div>
-          <h1>Services</h1>
-          <p>What AeroStat checks, grouped the way visitors see it on the status page.</p>
-        </div>
-        <div className="header-actions">
-          {can(user, 'services.check') && <CheckNowButton />}
-          {canCreate && (
-            <Link href="/manage/services/new" className="button-primary">
-              Add service
-            </Link>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title="Services"
+        description="What AeroStat checks, grouped the way visitors see it on the status page."
+        action={
+          <div className="header-actions">
+            {can(user, 'services.check') && <CheckNowButton />}
+            {canCreate && (
+              <Link href="/manage/services/new" className="button-primary">
+                Add service
+              </Link>
+            )}
+          </div>
+        }
+      />
 
       {data.groups.map(function (group, index) {
         let services: ManageService[] = []

@@ -17,6 +17,7 @@ import {
 import { getSiteConfig } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import { formatDateTimeShort } from '@/lib/time'
+import PageHeader from '@/components/manage/PageHeader'
 
 export const metadata = {
   title: 'Activity',
@@ -113,18 +114,19 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header activity-header">
-        <div>
-          <h1>Activity</h1>
-          <p>Who changed what in the panel, kept for a year.</p>
-        </div>
-        <form className="activity-search" action="/manage/activity" role="search">
-          {query.category && <input type="hidden" name="category" value={query.category} />}
-          {query.perPage !== DEFAULT_PER_PAGE && <input type="hidden" name="per_page" value={query.perPage} />}
-          <Search />
-          <input type="search" name="q" defaultValue={query.q} key={query.q} placeholder="Search…" aria-label="Search activity" maxLength={100} />
-        </form>
-      </header>
+      <PageHeader
+        title="Activity"
+        description="Who changed what in the panel, kept for a year."
+        variant="activity-header"
+        action={
+          <form className="activity-search" action="/manage/activity" role="search">
+            {query.category && <input type="hidden" name="category" value={query.category} />}
+            {query.perPage !== DEFAULT_PER_PAGE && <input type="hidden" name="per_page" value={query.perPage} />}
+            <Search />
+            <input type="search" name="q" defaultValue={query.q} key={query.q} placeholder="Search…" aria-label="Search activity" maxLength={100} />
+          </form>
+        }
+      />
 
       <nav className="activity-filters" aria-label="Filter activity">
         <Link href={activityHref({ ...query, category: '', page: 1 })} className={allClass} aria-current={allCurrent}>

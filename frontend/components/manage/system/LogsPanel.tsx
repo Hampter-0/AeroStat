@@ -1,53 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { clearLogs, fetchLogs } from '@/app/manage/(panel)/system/logs-actions'
-import { Check, PendingRing, Search } from '@/components/icons'
+import { Check, Search } from '@/components/icons'
 import { useConfirm } from '@/components/manage/confirm/Confirm'
 import { useToast } from '@/components/manage/toast/Toasts'
 import { LOG_LEVELS, logsQuery, type LogLine, type LogsResponse } from '@/lib/logs'
 
 const POLL_MS = 5000
 const SHOWN = 500
-const PAUSE_KEY = 'aerostat-logs-paused'
-const PAUSE_EVENT = 'aerostat-logs-paused'
-
-let memoryPaused = false
-
-function readPaused(): boolean {
-  try {
-    return window.localStorage.getItem(PAUSE_KEY) === '1'
-  } catch {
-    return memoryPaused
-  }
-}
-
-function serverPaused(): boolean {
-  return false
-}
-
-function subscribePaused(onChange: () => void) {
-  window.addEventListener('storage', onChange)
-  window.addEventListener(PAUSE_EVENT, onChange)
-  return function () {
-    window.removeEventListener('storage', onChange)
-    window.removeEventListener(PAUSE_EVENT, onChange)
-  }
-}
-
-function writePaused(paused: boolean) {
-  memoryPaused = paused
-  try {
-    if (paused) {
-      window.localStorage.setItem(PAUSE_KEY, '1')
-    } else {
-      window.localStorage.removeItem(PAUSE_KEY)
-    }
-  } catch {
-    memoryPaused = paused
-  }
-  window.dispatchEvent(new Event(PAUSE_EVENT))
-}
 
 function formatTime(iso: string, timezone: string): string {
   const date = new Date(iso)
@@ -62,7 +23,6 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   const [query, setQuery] = useState('')
   const [lines, setLines] = useState<LogLine[]>(initial.lines)
   const [matched, setMatched] = useState(initial.matched)
-  const paused = useSyncExternalStore(subscribePaused, readPaused, serverPaused)
   const [loading, setLoading] = useState(false)
   const latest = useRef({ level: 'all', query: '', newest: 0 })
   const confirm = useConfirm()
@@ -82,9 +42,6 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
 
   useEffect(
     function () {
-      if (paused) {
-        return
-      }
       const timer = window.setInterval(function () {
         if (document.visibilityState !== 'visible') {
           return
@@ -114,7 +71,7 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
         window.clearInterval(timer)
       }
     },
-    [paused]
+    []
   )
 
   function load(nextLevel: string, nextQuery: string) {
@@ -164,10 +121,6 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
     })
   }
 
-  function togglePause() {
-    writePaused(!paused)
-  }
-
   let countText = 'No log lines yet.'
   if (matched > 0) {
     countText = matched + ' lines'
@@ -183,17 +136,6 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
   }
   if (matched > 0) {
     countText = countText + '.'
-  }
-
-  let pauseText = 'Pause'
-  let liveClass = 'logs-live on'
-  let liveText = 'Live'
-  let liveIcon = <Check size={11} />
-  if (paused) {
-    pauseText = 'Resume'
-    liveClass = 'logs-live'
-    liveText = 'Paused'
-    liveIcon = <PendingRing size={14} />
   }
 
   let emptyText = 'Nothing logged yet since the backend started.'
@@ -220,14 +162,13 @@ export default function LogsPanel({ initial, timezone }: { initial: LogsResponse
             })}
           </select>
         </label>
-        <span className={liveClass}>
-          <span className="logs-live-icon">{liveIcon}</span>
-          {liveText}
+        <span className="logs-live on">
+          <span className="logs-live-icon">
+            <Check size={11} />
+          </span>
+          Live
         </span>
         <div className="logs-actions">
-          <button type="button" className="button-secondary" onClick={togglePause}>
-            {pauseText}
-          </button>
           <a className="button-secondary" href={'/manage/logs/download?' + logsQuery(level, query)}>
             Download
           </a>

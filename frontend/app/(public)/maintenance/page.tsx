@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Check } from '@/components/icons'
+import { MaintenanceMarker } from '@/components/status/EventMarker'
 import RangePicker from '@/components/status/RangePicker'
 import { getAllMaintenance } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
@@ -7,25 +8,20 @@ import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage,
 import { formatWindow } from '@/lib/time'
 import type { MaintenanceWindow } from '@/lib/types'
 import { maintenanceTone } from '@/lib/maintenance'
+import StateBadge from '@/components/StateBadge'
+import { formatStatus } from '@/lib/format'
 
 function MaintenanceEntry({ maintenanceWindow, timezone }: { maintenanceWindow: MaintenanceWindow; timezone: string }) {
-  const tagClassName = 'state-badge tone-' + maintenanceTone(maintenanceWindow.status)
-  let tagLabel = 'Scheduled'
-  if (maintenanceWindow.status === 'in_progress') {
-    tagLabel = 'In progress'
-  } else if (maintenanceWindow.status === 'completed') {
-    tagLabel = 'Completed'
-  } else if (maintenanceWindow.status === 'cancelled') {
-    tagLabel = 'Cancelled'
-  }
+  const tagTone = maintenanceTone(maintenanceWindow.status)
+  const tagLabel = formatStatus(maintenanceWindow.status)
 
   return (
     <Link href={'/maintenance/' + maintenanceWindow.id} className="event-preview-link">
       <div className="event-preview">
-        <span className="event-marker">!</span>
+        <MaintenanceMarker status={maintenanceWindow.status} />
         <span className="event-title-row">
           <strong>{maintenanceWindow.title}</strong>
-          <span className={tagClassName}>{tagLabel}</span>
+          <StateBadge tone={tagTone}>{tagLabel}</StateBadge>
         </span>
         {maintenanceWindow.description && (
           <span className="event-description">{maintenanceWindow.description}</span>

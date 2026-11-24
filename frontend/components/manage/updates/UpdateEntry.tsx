@@ -9,6 +9,7 @@ import { updateTone } from '@/lib/incidents'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
 import type { StatusUpdate } from '@/lib/types'
 import { useFormSubmit } from '@/lib/use-form-submit'
+import StateBadge from '@/components/StateBadge'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -81,7 +82,7 @@ export default function UpdateEntry({
   return (
     <li className={'manage-update status-' + update.status}>
       <div className="manage-update-head">
-        <span className={'state-badge tone-' + updateTone(update.status)}>{formatStatus(update.status)}</span>
+        <StateBadge tone={updateTone(update.status)}>{formatStatus(update.status)}</StateBadge>
         <time>{formatDateTime(update.created_at, timezone)}</time>
         {canEdit && (
           <button type="button" className="link-button" onClick={toggleEditing}>

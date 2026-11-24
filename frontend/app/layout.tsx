@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()
   const metadata: Metadata = {
     metadataBase: await publicBaseUrl(),
-    title: { default: config.siteName, template: '%s · ' + config.siteName },
+    title: { default: config.siteName, template: '%s - ' + config.siteName },
     description: config.description,
     openGraph: {
       type: 'website',

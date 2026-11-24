@@ -6,6 +6,8 @@ import { maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
 import { can, requireUser } from '@/lib/manage'
 import type { MaintenanceWindow } from '@/lib/types'
+import PageHeader from '@/components/manage/PageHeader'
+import StateBadge from '@/components/StateBadge'
 
 export const metadata = {
   title: 'Maintenance',
@@ -32,10 +34,10 @@ function MaintenanceList({
             <div>
               <strong>{item.title}</strong>
               <span>
-                {names.join(', ')} · {formatDateTime(item.scheduled_start, timezone)}
+                {names.join(', ')}, {formatDateTime(item.scheduled_start, timezone)}
               </span>
             </div>
-            <span className={'state-badge tone-' + maintenanceTone(item.status)}>{formatStatus(item.status)}</span>
+            <StateBadge tone={maintenanceTone(item.status)}>{formatStatus(item.status)}</StateBadge>
           </Link>
         )
       })}
@@ -69,17 +71,17 @@ export default async function ManageMaintenancePage() {
 
   return (
     <div className="manage-page">
-      <header className="manage-page-header with-action">
-        <div>
-          <h1>Maintenance</h1>
-          <p>Plan work ahead so visitors know what to expect.</p>
-        </div>
-        {can(user, 'maintenance.create') && (
-          <Link href="/manage/maintenance/new" className="button-primary">
-            Schedule maintenance
-          </Link>
-        )}
-      </header>
+      <PageHeader
+        title="Maintenance"
+        description="Plan work ahead so visitors know what to expect."
+        action={
+          can(user, 'maintenance.create') && (
+            <Link href="/manage/maintenance/new" className="button-primary">
+              Schedule maintenance
+            </Link>
+          )
+        }
+      />
 
       {inProgress.length > 0 && (
         <section className="manage-panel">

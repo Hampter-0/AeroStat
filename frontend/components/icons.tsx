@@ -217,28 +217,6 @@ export function Bell({ size }: { size?: number }) {
   )
 }
 
-export function BellOff({ size }: { size?: number }) {
-  let finalSize = size
-  if (finalSize === undefined) {
-    finalSize = 16
-  }
-  return (
-    <svg width={finalSize} height={finalSize} viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path d="M7.2 4.6A5 5 0 0 1 15 9v3.2M15.8 15H3.5L5 13V9c0-.6.1-1.2.3-1.7M8.5 17.5a1.6 1.6 0 0 0 3 0M3 3l14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-export function MoreHorizontal() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <circle cx="4.5" cy="10" r="1.5" />
-      <circle cx="10" cy="10" r="1.5" />
-      <circle cx="15.5" cy="10" r="1.5" />
-    </svg>
-  )
-}
-
 export function Shield() {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">

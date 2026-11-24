@@ -175,7 +175,7 @@ export default function BackupsPanel({ data, timezone, isAdmin }: { data: Backup
                     by = 'By ' + backup.created_by
                   }
                   if (backup.note) {
-                    by = by + ' · ' + backup.note
+                    by = by + ', ' + backup.note
                   }
                   let chipClass = 'chip'
                   if (backup.kind === 'manual') {

@@ -17,6 +17,8 @@ import {
   editMaintenanceUpdate,
   postMaintenanceUpdate,
 } from '../actions'
+import PageHeader from '@/components/manage/PageHeader'
+import StateBadge from '@/components/StateBadge'
 
 export const metadata = {
   title: 'Maintenance',
@@ -54,18 +56,16 @@ export default async function ManageMaintenanceDetailPage({ params }: { params: 
         <ChevronLeft /> Maintenance
       </Link>
 
-      <header className="manage-page-header with-action">
-        <div>
-          <span className={'state-badge tone-' + maintenanceTone(maintenance.status)}>{formatStatus(maintenance.status)}</span>
-          <h1>{maintenance.title}</h1>
-          <p>
-            {formatDateTime(maintenance.scheduled_start, timezone)} – {formatDateTime(maintenance.scheduled_end, timezone)}
-          </p>
-        </div>
-        <a href={'/maintenance/' + maintenance.id} target="_blank" className="button-secondary">
-          <ExternalLink /> View public page
-        </a>
-      </header>
+      <PageHeader
+        badge={<StateBadge tone={maintenanceTone(maintenance.status)}>{formatStatus(maintenance.status)}</StateBadge>}
+        title={maintenance.title}
+        description={<>{formatDateTime(maintenance.scheduled_start, timezone)} – {formatDateTime(maintenance.scheduled_end, timezone)}</>}
+        action={
+          <a href={'/maintenance/' + maintenance.id} target="_blank" className="button-secondary">
+            <ExternalLink /> View public page
+          </a>
+        }
+      />
 
       {can(user, 'maintenance.update') && !isCancelled && (
         <section className="manage-panel">

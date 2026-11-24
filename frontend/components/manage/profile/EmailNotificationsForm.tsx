@@ -44,16 +44,16 @@ export default function EmailNotificationsForm({ settings }: { settings: MyNotif
   if (!settings.email_configured) {
     emailNote = 'Email is not set up on this server yet, but you can already choose what you want.'
   }
-  const note = 'Panel is the bell at the bottom right of the panel. ' + emailNote
+  const note = 'Panel shows a pop-up at the bottom right while you use the panel. ' + emailNote
 
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       <p className="panel-intro">{note}</p>
-      <label className="check-row hint-row bell-toggle">
+      <label className="check-row hint-row notices-toggle">
         <input type="checkbox" name="panel_enabled" defaultChecked={settings.panel_enabled} />
         <span>
-          <strong>Show the notification bell</strong>
-          <small>When it is off, the bell is hidden and nothing is saved for you. Email keeps working.</small>
+          <strong>Show notifications in the panel</strong>
+          <small>New notifications pop up at the bottom right. When it is off, nothing is saved for you. Email keeps working.</small>
         </span>
       </label>
       {groups.map(function (group) {
