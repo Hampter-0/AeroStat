@@ -4,6 +4,12 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.30.1
+
+### Changes
+
+- When you pick affected services, each group's services sit indented under the group, like the permissions on a role. Ticking the group ticks all of them.
+
 ## 0.30.0
 
 ### New

@@ -181,6 +181,10 @@ a.button-secondary {
     gap: 6px;
 }
 
+.service-picker-children {
+    margin-left: 26px;
+}
+
 .service-picker .picker-whole span {
     color: var(--text);
     font-weight: 600;

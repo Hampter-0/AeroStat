@@ -99,7 +99,7 @@ export default function ServicePicker({
                 setMany(ids, on)
               }}
             />
-            <div className="permission-grid">
+            <div className="permission-grid service-picker-children">
               {group.services.map(function (service) {
                 return (
                   <label className="check-row" key={service.id}>
