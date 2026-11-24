@@ -98,6 +98,11 @@ a.button-secondary {
     stroke-width: 3;
 }
 
+.event-icon.alert svg {
+    width: 20px;
+    height: 20px;
+}
+
 .manage-list-row div {
     min-width: 0;
     display: grid;

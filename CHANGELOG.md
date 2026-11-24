@@ -4,6 +4,28 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.30.0
+
+### New
+
+- The status page shows a **Response time** graph under Live Status: the average response time of all services or one service, for the last day, week or month. Hover or tap the line to see the time and value. Only checks that were up count.
+- **Past incidents** on the status page: the last 7 days, each day with its incidents or "No incidents reported".
+- A page that doesn't exist shows a clear "Page not found" page with a way back, on the status page and in the panel.
+
+### Changes
+
+- Minor and major incidents are both yellow, only critical is red: in the uptime bars, badges, notices, panel notifications, Discord, emails and link previews.
+- Discord and email notifications name the group, or **All**, when a whole group or every service is affected, like the status page.
+- Status icons are a full coloured circle with a white icon everywhere: the timelines, the notices, the panel dashboard and the incident and maintenance lists.
+- The panel's incident and maintenance lists show the same status icons as the timeline, and the dashboard icons are centred in their row.
+- In the uptime bar tooltips an incident day shows an exclamation mark instead of a cross.
+- Cards in the panel no longer get a blue border on hover.
+
+### Fixes
+
+- The exclamation mark in the timeline is centred in Firefox at 100% zoom.
+- The logo and favicon hint reads "Using the default." with a full stop.
+
 ## 0.29.0
 
 ### New

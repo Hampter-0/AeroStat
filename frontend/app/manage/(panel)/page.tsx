@@ -282,7 +282,7 @@ export default async function ManageOverviewPage() {
                 serviceNames.push(names.get(serviceId) || serviceId)
               }
               return (
-                <Link href={'/manage/incidents/' + incident.id} className="manage-list-row dashboard-incident" key={incident.id}>
+                <Link href={'/manage/incidents/' + incident.id} className="manage-list-row" key={incident.id}>
                   <IncidentIcon status={incident.status} severity={incident.severity} />
                   <div>
                     <strong>{incident.title}</strong>

@@ -29,18 +29,16 @@ pub const EVENT_KINDS: [&str; 10] = [
 ];
 
 const RED: u32 = 0xEF4444;
-const ORANGE: u32 = 0xF97316;
 const GREEN: u32 = 0x22C55E;
 const YELLOW: u32 = 0xEAB308;
 const BLUE: u32 = 0x3B82F6;
 const GREY: u32 = 0x8B949E;
 
-/// The same colours as the badges on the site: minor is yellow, major
-/// orange and only critical red.
+/// The same colours as the badges on the site: only critical is red,
+/// minor and major are yellow.
 fn severity_color(severity: &str) -> u32 {
     match severity {
         "critical" => RED,
-        "major" => ORANGE,
         _ => YELLOW,
     }
 }
@@ -48,7 +46,6 @@ fn severity_color(severity: &str) -> u32 {
 fn severity_card(severity: &str) -> &'static str {
     match severity {
         "critical" => "red",
-        "major" => "orange",
         _ => "amber",
     }
 }
@@ -281,7 +278,6 @@ struct PanelItem {
 fn tone_name(color: u32) -> &'static str {
     match color {
         RED => "red",
-        ORANGE => "orange",
         GREEN => "green",
         YELLOW => "amber",
         BLUE => "blue",
@@ -398,6 +394,52 @@ async fn service_names(db: &PgPool, ids: &[String]) -> Vec<String> {
                 .unwrap_or_else(|| id.clone())
         })
         .collect()
+}
+
+/// The affected services as people read them on the status page: "All" when
+/// every service is picked, a group's name when the whole group is picked,
+/// and otherwise the services one by one.
+async fn affected_labels(db: &PgPool, ids: &[String]) -> Vec<String> {
+    if ids.is_empty() {
+        return Vec::new();
+    }
+    let rows: Vec<(String, String, Option<String>)> = sqlx::query_as(
+        "SELECT s.id, s.name, g.name FROM services s LEFT JOIN groups g ON g.id = s.group_id ORDER BY g.sort_order, s.sort_order",
+    )
+    .fetch_all(db)
+    .await
+    .unwrap_or_default();
+    if rows.is_empty() {
+        return service_names(db, ids).await;
+    }
+
+    let picked = |id: &String| ids.contains(id);
+    if rows.len() > 1 && rows.iter().all(|(id, _, _)| picked(id)) {
+        return vec!["All".to_string()];
+    }
+
+    let mut groups: Vec<(String, Vec<(&String, &String)>)> = Vec::new();
+    for (id, name, group) in &rows {
+        let group = group.clone().unwrap_or_else(|| "Other".to_string());
+        match groups.iter_mut().find(|(existing, _)| *existing == group) {
+            Some((_, members)) => members.push((id, name)),
+            None => groups.push((group, vec![(id, name)])),
+        }
+    }
+
+    let mut labels = Vec::new();
+    for (group, members) in &groups {
+        let hit: Vec<&String> = members.iter().filter(|(id, _)| picked(id)).map(|(_, name)| *name).collect();
+        if hit.is_empty() {
+            continue;
+        }
+        if members.len() > 1 && hit.len() == members.len() {
+            labels.push(group.clone());
+        } else {
+            labels.extend(hit.into_iter().cloned());
+        }
+    }
+    labels
 }
 
 fn link(settings: &NotificationSettings, path: &str) -> Option<String> {
@@ -718,7 +760,7 @@ async fn content(
         ),
     };
 
-    let names = service_names(db, &services).await;
+    let names = affected_labels(db, &services).await;
     if !names.is_empty() {
         fields.push(field("Affected services", names.join(", "), false));
     }

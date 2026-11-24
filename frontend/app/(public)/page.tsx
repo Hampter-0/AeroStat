@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import LastChecked from '@/components/status/LastChecked'
 import Notice from '@/components/status/Notice'
+import PastIncidents, { PAST_DAYS } from '@/components/status/PastIncidents'
+import ResponseChart from '@/components/status/ResponseChart'
 import ServiceSection from '@/components/status/ServiceSection'
 import { AlertSmall, Arrow, Check, Clock, Server, Tool, X } from '@/components/icons'
-import { getIncidents, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
+import { getIncidents, getIncidentsBetween, getResponseTimes, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { currentTimeMs, formatWindow, zoneAbbreviation } from '@/lib/time'
-import type { Incident, MaintenanceWindow, ServiceStatus, UptimeStats } from '@/lib/types'
+import type { Incident, MaintenanceWindow, ResponseTimes, ServiceStatus, UptimeStats } from '@/lib/types'
 import { incidentTone } from '@/lib/incidents'
 
 export default async function Home() {
@@ -19,7 +21,10 @@ export default async function Home() {
   let maintenanceWindows: MaintenanceWindow[] = []
   let incidents: Incident[] = []
   let uptimeResults: UptimeStats[] = []
+  let pastIncidents: Incident[] = []
+  let responseTimes: ResponseTimes | null = null
   let backendIsDown = false
+  const renderedAt = currentTimeMs()
 
   try {
     services = await getStatus()
@@ -30,6 +35,9 @@ export default async function Home() {
         return getUptime(service.id)
       })
     )
+    const pastFrom = new Date(renderedAt - (PAST_DAYS + 1) * 24 * 60 * 60 * 1000).toISOString()
+    pastIncidents = await getIncidentsBetween(pastFrom, new Date(renderedAt + 60 * 1000).toISOString())
+    responseTimes = await getResponseTimes('day', '')
   } catch {
     backendIsDown = true
   }
@@ -175,7 +183,7 @@ export default async function Home() {
           {heroIcon}
         </span>
         <h1>{heroText}</h1>
-        {lastCheckedAt && <LastChecked checkedAt={lastCheckedAt} renderedAt={currentTimeMs()} />}
+        {lastCheckedAt && <LastChecked checkedAt={lastCheckedAt} renderedAt={renderedAt} />}
         <Link href="/incidents">Incident history <Arrow /></Link>
       </section>
 
@@ -245,6 +253,18 @@ export default async function Home() {
           })}
         </div>
       </section>
+
+      {responseTimes && services.length > 0 && (
+        <ResponseChart
+          initial={responseTimes}
+          services={services.map(function (service) {
+            return { id: service.id, name: service.name }
+          })}
+          timezone={timezone}
+        />
+      )}
+
+      <PastIncidents incidents={pastIncidents} timezone={timezone} now={renderedAt} />
     </>
   )
 }

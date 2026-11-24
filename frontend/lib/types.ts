@@ -43,6 +43,19 @@ export interface DayHistory {
   events: DayEvent[]
 }
 
+export interface ResponsePoint {
+  t: string
+  ms: number
+}
+
+export interface ResponseTimes {
+  range: string
+  bucket_seconds: number
+  from: string
+  to: string
+  points: ResponsePoint[]
+}
+
 export interface Incident {
   id: number
   title: string

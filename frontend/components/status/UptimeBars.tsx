@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { DayHistory } from '@/lib/types'
-import { Check, Tool, X } from '@/components/icons'
+import { AlertSmall, Check, Tool, X } from '@/components/icons'
 
 const HISTORY_DAYS = 60
 const MOBILE_DAYS = 30
@@ -67,10 +67,13 @@ export default function UptimeBars({ days, dayNote }: { days: DayHistory[]; dayN
             stateClassName = ' event'
             href = '/incidents/' + firstEvent.id
             label = 'Incident'
-            icon = <X size={11} />
-            if (firstEvent.kind === 'maintenance') {
+            icon = <AlertSmall size={17} />
+            const maintenanceEvent = day.events.find(function (event) {
+              return event.kind === 'maintenance'
+            })
+            if (maintenanceEvent) {
               stateClassName = ' maintenance'
-              href = '/maintenance/' + firstEvent.id
+              href = '/maintenance/' + maintenanceEvent.id
               label = 'Maintenance'
               icon = <Tool size={11} />
             }

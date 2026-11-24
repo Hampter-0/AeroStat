@@ -141,11 +141,6 @@ body {
     --tone-text: #dc2626;
 }
 
-.tone-orange {
-    --tone: #f97316;
-    --tone-text: #c2410c;
-}
-
 .tone-amber {
     --tone: #eab308;
     --tone-text: #a16207;
@@ -168,10 +163,6 @@ body {
 
 :root[data-theme="dark"] .tone-red {
     --tone-text: #f87171;
-}
-
-:root[data-theme="dark"] .tone-orange {
-    --tone-text: #fb923c;
 }
 
 :root[data-theme="dark"] .tone-amber {

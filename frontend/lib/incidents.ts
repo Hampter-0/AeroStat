@@ -16,9 +16,6 @@ export function incidentTone(status: string, severity: string): string {
   if (severity === 'critical') {
     return 'red'
   }
-  if (severity === 'major') {
-    return 'orange'
-  }
   return 'amber'
 }
 

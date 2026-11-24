@@ -1,34 +1,11 @@
-import Link from 'next/link'
 import { Check } from '@/components/icons'
-import { IncidentMarker } from '@/components/status/EventMarker'
+import IncidentEntry from '@/components/status/IncidentEntry'
 import RangePicker from '@/components/status/RangePicker'
 import { getIncidentsBetween, hasIncidentsBefore } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
 import { currentMonth, isInMonth, monthStartIso, pageHref, rangeLabel, readPage, shiftMonth, type CalendarMonth } from '@/lib/months'
 import { formatDayLong } from '@/lib/time'
-import { incidentTone } from '@/lib/incidents'
 import type { Incident } from '@/lib/types'
-import StateBadge from '@/components/StateBadge'
-import { formatStatus } from '@/lib/format'
-
-function IncidentEntry({ incident, timezone }: { incident: Incident; timezone: string }) {
-  const tagTone = incidentTone(incident.status, incident.severity)
-  const tagLabel = formatStatus(incident.status)
-
-  return (
-    <Link href={'/incidents/' + incident.id} className="event-preview-link">
-      <div className="event-preview">
-        <IncidentMarker status={incident.status} severity={incident.severity} />
-        <span className="event-title-row">
-          <strong>{incident.title}</strong>
-          <StateBadge tone={tagTone}>{tagLabel}</StateBadge>
-        </span>
-        {incident.description && <span className="event-description">{incident.description}</span>}
-        <span className="event-meta">Reported on {formatDayLong(incident.created_at, timezone)}</span>
-      </div>
-    </Link>
-  )
-}
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { timezone } = await getDisplayTime()
@@ -103,7 +80,9 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
                 </div>
               )}
               {monthIncidents.map(function (incident) {
-                return <IncidentEntry incident={incident} timezone={timezone} key={incident.id} />
+                return (
+                  <IncidentEntry incident={incident} meta={'Reported on ' + formatDayLong(incident.created_at, timezone)} key={incident.id} />
+                )
               })}
             </section>
           )

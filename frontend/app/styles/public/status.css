@@ -27,7 +27,7 @@ main {
 }
 
 .operational-check.degraded {
-    background: var(--amber);
+    background: #eab308;
 }
 
 .operational-check.maintenance {
@@ -325,7 +325,7 @@ main {
 }
 
 .bar.event {
-    background: var(--amber);
+    background: #eab308;
 }
 
 .bar.maintenance {
@@ -403,7 +403,11 @@ a.bar {
 }
 
 .event .tooltip-check {
-    background: var(--amber);
+    background: #eab308;
+}
+
+.event .tooltip-check svg {
+    stroke-width: 3.5;
 }
 
 .maintenance .tooltip-check {

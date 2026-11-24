@@ -6,19 +6,15 @@ export type OgIcon = 'check' | 'cross' | 'alert' | 'wrench' | 'server'
 
 const GREEN = '#22c55e'
 const RED = '#ef4444'
-const ORANGE = '#f97316'
 const AMBER = '#eab308'
 const BLUE = '#3b82f6'
 const GREY = '#8b949e'
 
-export const OG_COLORS = { green: GREEN, red: RED, orange: ORANGE, amber: AMBER, blue: BLUE, grey: GREY }
+export const OG_COLORS = { green: GREEN, red: RED, orange: AMBER, amber: AMBER, blue: BLUE, grey: GREY }
 
 export function severityColor(severity: string): string {
   if (severity === 'critical') {
     return RED
-  }
-  if (severity === 'major') {
-    return ORANGE
   }
   return AMBER
 }

@@ -1,4 +1,4 @@
-import { AlertSmall, Check, Clock, Tool, X } from '@/components/icons'
+import { AlertMark, Check, Clock, Tool, X } from '@/components/icons'
 import { incidentTone } from '@/lib/incidents'
 import { maintenanceTone } from '@/lib/maintenance'
 
@@ -6,7 +6,14 @@ function incidentIcon(status: string) {
   if (status === 'resolved') {
     return <Check size={10} />
   }
-  return <AlertSmall size={12} />
+  return <AlertMark />
+}
+
+function alertClass(status: string): string {
+  if (status === 'resolved') {
+    return ''
+  }
+  return ' alert'
 }
 
 function maintenanceIcon(status: string) {
@@ -21,7 +28,7 @@ function maintenanceIcon(status: string) {
 }
 
 export function IncidentMarker({ status, severity }: { status: string; severity: string }) {
-  return <span className={'event-marker tone-' + incidentTone(status, severity)}>{incidentIcon(status)}</span>
+  return <span className={'event-marker tone-' + incidentTone(status, severity) + alertClass(status)}>{incidentIcon(status)}</span>
 }
 
 export function MaintenanceMarker({ status }: { status: string }) {
@@ -29,7 +36,7 @@ export function MaintenanceMarker({ status }: { status: string }) {
 }
 
 export function IncidentIcon({ status, severity }: { status: string; severity: string }) {
-  return <span className={'event-icon tone-' + incidentTone(status, severity)}>{incidentIcon(status)}</span>
+  return <span className={'event-icon tone-' + incidentTone(status, severity) + alertClass(status)}>{incidentIcon(status)}</span>
 }
 
 export function MaintenanceIcon({ status }: { status: string }) {
