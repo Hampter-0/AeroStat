@@ -8,6 +8,7 @@ import { can, requireUser } from '@/lib/manage'
 import type { Incident } from '@/lib/types'
 import PageHeader from '@/components/manage/PageHeader'
 import StateBadge from '@/components/StateBadge'
+import { IncidentIcon } from '@/components/status/EventMarker'
 
 export const metadata = {
   title: 'Incidents',
@@ -31,6 +32,7 @@ function IncidentList({
         }
         return (
           <Link href={'/manage/incidents/' + incident.id} className="manage-list-row" key={incident.id}>
+            <IncidentIcon status={incident.status} severity={incident.severity} />
             <div>
               <strong>{incident.title}</strong>
               <span>

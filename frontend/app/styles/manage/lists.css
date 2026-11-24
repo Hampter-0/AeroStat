@@ -81,8 +81,21 @@ a.button-secondary {
     text-decoration: none;
 }
 
-.manage-list-row:hover {
-    border-color: var(--link);
+.event-icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--tone);
+}
+
+.event-icon svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 3;
 }
 
 .manage-list-row div {

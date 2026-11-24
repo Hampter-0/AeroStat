@@ -205,7 +205,10 @@ body {
 }
 
 .tone-icon {
-    color: var(--tone-text);
-    background: color-mix(in srgb, var(--tone) 14%, transparent);
-    border: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+    color: #fff;
+    background: var(--tone);
+}
+
+.tone-icon svg {
+    stroke-width: 3;
 }

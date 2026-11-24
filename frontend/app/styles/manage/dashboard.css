@@ -14,7 +14,6 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    text-decoration: none;
 }
 
 .dashboard-status {
@@ -94,15 +93,6 @@
     align-items: flex-start;
 }
 
-.dashboard-incident-icon {
-    width: 22px;
-    height: 22px;
-    flex: 0 0 22px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-}
-
 .manage-list-row div em {
     overflow: hidden;
     color: var(--text-soft);
@@ -114,10 +104,6 @@
 
 .manage-list-row div {
     flex: 1;
-}
-
-.manage-list-row strong svg {
-    vertical-align: -2px;
 }
 
 .dashboard-stats {

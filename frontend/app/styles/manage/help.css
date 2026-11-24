@@ -127,10 +127,6 @@
     text-decoration: none;
 }
 
-.help-link:hover {
-    border-color: var(--link);
-}
-
 .help-link strong {
     display: inline-flex;
     align-items: center;

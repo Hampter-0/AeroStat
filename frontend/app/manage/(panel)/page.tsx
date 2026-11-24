@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AlertSmall, AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '@/components/icons'
+import { AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '@/components/icons'
 import ActivityList from '@/components/manage/ActivityList'
 import CopyButton from '@/components/manage/CopyButton'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
@@ -15,6 +15,7 @@ import { currentTimeMs, formatDateTimeShort, formatDuration } from '@/lib/time'
 import type { IncidentDetail, MaintenanceWindow, ServiceStatus } from '@/lib/types'
 import PageHeader from '@/components/manage/PageHeader'
 import StateBadge from '@/components/StateBadge'
+import { IncidentIcon, MaintenanceIcon } from '@/components/status/EventMarker'
 
 interface DashboardData {
   response_times: { service_id: string; points: HourPoint[] }[]
@@ -282,9 +283,7 @@ export default async function ManageOverviewPage() {
               }
               return (
                 <Link href={'/manage/incidents/' + incident.id} className="manage-list-row dashboard-incident" key={incident.id}>
-                  <span className={'dashboard-incident-icon tone-icon tone-' + incidentTone(incident.status, incident.severity)}>
-                    <AlertSmall size={14} />
-                  </span>
+                  <IncidentIcon status={incident.status} severity={incident.severity} />
                   <div>
                     <strong>{incident.title}</strong>
                     <span>
@@ -317,10 +316,9 @@ export default async function ManageOverviewPage() {
             {inProgress.map(function (item) {
               return (
                 <Link href={'/manage/maintenance/' + item.id} className="manage-list-row" key={item.id}>
+                  <MaintenanceIcon status="in_progress" />
                   <div>
-                    <strong>
-                      <Tool size={13} /> {item.title}
-                    </strong>
+                    <strong>{item.title}</strong>
                     <span>Ends in {formatDuration(new Date(item.scheduled_end).getTime() - now)}</span>
                   </div>
                   <StateBadge tone="blue">In progress</StateBadge>
@@ -330,6 +328,7 @@ export default async function ManageOverviewPage() {
             {upcoming.map(function (item) {
               return (
                 <Link href={'/manage/maintenance/' + item.id} className="manage-list-row" key={item.id}>
+                  <MaintenanceIcon status="scheduled" />
                   <div>
                     <strong>{item.title}</strong>
                     <span>

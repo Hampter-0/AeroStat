@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Arrow } from '@/components/icons'
 
 const HEX = /^#[0-9a-fA-F]{6}$/
 
@@ -44,7 +45,9 @@ export default function ColorField({ value, fallback }: { value: string; fallbac
         </button>
       </div>
       <div className="color-preview" style={previewStyle}>
-        <span className="color-preview-link">View details →</span>
+        <span className="color-preview-link">
+          View details <Arrow />
+        </span>
         <span className="color-preview-button">Button</span>
         <span className="color-preview-chip">Active</span>
       </div>

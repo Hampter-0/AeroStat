@@ -111,10 +111,6 @@
     padding: 10px 12px;
 }
 
-.service-row:hover {
-    border-color: var(--border-soft);
-}
-
 .service-row-main {
     min-width: 0;
     display: grid;

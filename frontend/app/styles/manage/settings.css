@@ -67,7 +67,11 @@
 }
 
 .color-preview-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     color: var(--preview);
+    font-weight: 600;
 }
 
 .color-preview-button {
@@ -79,12 +83,13 @@
 
 .color-preview-chip {
     padding: 3px 8px;
-    border: 1px solid color-mix(in srgb, var(--preview) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--preview) 30%, transparent);
     border-radius: 6px;
     color: var(--preview);
-    background: color-mix(in srgb, var(--preview) 14%, transparent);
+    background: color-mix(in srgb, var(--preview) 12%, transparent);
     font-size: 12px;
     font-weight: 600;
+    line-height: 1.4;
 }
 
 .asset-list {

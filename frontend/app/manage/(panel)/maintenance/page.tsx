@@ -8,6 +8,7 @@ import { can, requireUser } from '@/lib/manage'
 import type { MaintenanceWindow } from '@/lib/types'
 import PageHeader from '@/components/manage/PageHeader'
 import StateBadge from '@/components/StateBadge'
+import { MaintenanceIcon } from '@/components/status/EventMarker'
 
 export const metadata = {
   title: 'Maintenance',
@@ -31,6 +32,7 @@ function MaintenanceList({
         }
         return (
           <Link href={'/manage/maintenance/' + item.id} className="manage-list-row" key={item.id}>
+            <MaintenanceIcon status={item.status} />
             <div>
               <strong>{item.title}</strong>
               <span>
