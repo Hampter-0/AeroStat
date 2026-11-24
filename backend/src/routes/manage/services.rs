@@ -38,6 +38,7 @@ pub struct ServiceRow {
     cert_expires_at: Option<chrono::DateTime<chrono::Utc>>,
     check_interval_seconds: i32,
     sort_order: i32,
+    docker_host_id: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -65,6 +66,8 @@ pub struct ServiceBody {
     dns_expected: Option<String>,
     #[serde(default)]
     cert_warn_days: Option<i32>,
+    #[serde(default)]
+    docker_host_id: Option<i64>,
     check_interval_seconds: i32,
 }
 
@@ -83,6 +86,7 @@ struct CleanService {
     dns_record_type: Option<String>,
     dns_expected: Option<String>,
     cert_warn_days: Option<i32>,
+    docker_host_id: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -135,6 +139,55 @@ fn clean_tcp_target(target: &str) -> Result<String, ApiError> {
     Ok(target.to_string())
 }
 
+/// A host to reach: a domain name, an IP address or a single name like "db"
+/// inside a Docker network, without a port.
+fn clean_host(host: &str) -> Result<String, ApiError> {
+    let host = host.trim().trim_matches(['[', ']']).trim_end_matches('.').to_lowercase();
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return Ok(host);
+    }
+    let valid = !host.is_empty()
+        && host.len() <= 253
+        && host.chars().all(|c| c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_')
+        && host.split('.').all(|label| !label.is_empty() && label.len() <= 63);
+    if !valid {
+        return Err(ApiError::BadRequest("Enter a host name or IP address, like example.com".into()));
+    }
+    Ok(host)
+}
+
+/// A Docker container name or id.
+fn clean_container(name: &str) -> Result<String, ApiError> {
+    let name = name.trim().trim_start_matches('/');
+    let valid = !name.is_empty()
+        && name.len() <= 128
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' || c == '-');
+    if !valid {
+        return Err(ApiError::BadRequest("Enter the container name, like my-app".into()));
+    }
+    Ok(name.to_string())
+}
+
+/// "host:port" for a database or game server; the usual port is added when
+/// only a host is given.
+fn clean_server(target: &str, default_port: u16) -> Result<String, ApiError> {
+    let target = target.trim();
+    let has_port = match target.rsplit_once(':') {
+        Some((host, port)) => port.parse::<u16>().is_ok() && (!host.contains(':') || host.ends_with(']')),
+        None => false,
+    };
+    if has_port {
+        return clean_tcp_target(target);
+    }
+    let host = clean_host(target).map_err(|_| {
+        ApiError::BadRequest("Enter a host, or a host and port, like db.example.com:5432".into())
+    })?;
+    if host.contains(':') {
+        return clean_tcp_target(&format!("[{host}]:{default_port}"));
+    }
+    clean_tcp_target(&format!("{host}:{default_port}"))
+}
+
 /// A domain name for a DNS check, without http:// or a path.
 fn clean_dns_name(name: &str) -> Result<String, ApiError> {
     let name = name.trim().trim_end_matches('.').to_lowercase();
@@ -163,7 +216,7 @@ fn clean_service(body: ServiceBody) -> Result<CleanService, ApiError> {
     let name = clean_name(&body.name)?;
     let check_type = body.check_type.trim().to_lowercase();
     if !CHECK_TYPES.contains(&check_type.as_str()) {
-        return Err(ApiError::BadRequest("Pick HTTP, TCP or DNS as the check type".into()));
+        return Err(ApiError::BadRequest("Pick one of the listed check types".into()));
     }
     check_interval(body.check_interval_seconds)?;
 
@@ -177,9 +230,17 @@ fn clean_service(body: ServiceBody) -> Result<CleanService, ApiError> {
         dns_record_type: None,
         dns_expected: None,
         cert_warn_days: None,
+        docker_host_id: None,
     };
     if check_type == "tcp" {
         clean.url = clean_tcp_target(&body.url)?;
+    } else if check_type == "ping" {
+        clean.url = clean_host(&body.url)?;
+    } else if check_type == "docker" {
+        clean.url = clean_container(&body.url)?;
+        clean.docker_host_id = body.docker_host_id;
+    } else if let Some(port) = crate::services::probes::default_port(&check_type) {
+        clean.url = clean_server(&body.url, port)?;
     } else if check_type == "dns" {
         clean.url = clean_dns_name(&body.url)?;
         let record = body.dns_record_type.unwrap_or_else(|| "A".to_string()).trim().to_uppercase();
@@ -272,6 +333,20 @@ async fn unique_id(db: &PgPool, table: &str, name: &str, fallback: &str) -> Resu
     }
 }
 
+async fn check_docker_host(db: &PgPool, host_id: Option<i64>) -> Result<(), ApiError> {
+    let Some(host_id) = host_id else {
+        return Ok(());
+    };
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM docker_hosts WHERE id = $1)")
+        .bind(host_id)
+        .fetch_one(db)
+        .await?;
+    if !exists {
+        return Err(ApiError::BadRequest("That Docker host does not exist anymore".into()));
+    }
+    Ok(())
+}
+
 async fn check_group(db: &PgPool, group_id: &Option<String>) -> Result<(), ApiError> {
     if let Some(id) = group_id {
         let (exists,): (bool,) = sqlx::query_as("SELECT EXISTS(SELECT 1 FROM groups WHERE id = $1)")
@@ -293,7 +368,7 @@ pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Js
     let services: Vec<ServiceRow> = sqlx::query_as(
         r#"
         SELECT id, name, check_type, url, group_id, expected_status, keyword, keyword_absent, dns_record_type,
-               dns_expected, cert_warn_days, cert_expires_at, check_interval_seconds, sort_order
+               dns_expected, cert_warn_days, cert_expires_at, check_interval_seconds, sort_order, docker_host_id
         FROM services ORDER BY sort_order, name
         "#,
     )
@@ -312,14 +387,15 @@ pub async fn create(
     let interval = body.check_interval_seconds;
     let service = clean_service(body)?;
     check_group(&state.db, &group_id).await?;
+    check_docker_host(&state.db, service.docker_host_id).await?;
     let name = service.name.clone();
 
     let id = unique_id(&state.db, "services", &name, "service").await?;
     sqlx::query(
         r#"
         INSERT INTO services (id, name, check_type, url, group_id, expected_status, keyword, keyword_absent,
-            dns_record_type, dns_expected, cert_warn_days, check_interval_seconds, sort_order)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,
+            dns_record_type, dns_expected, cert_warn_days, check_interval_seconds, docker_host_id, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
             (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM services WHERE group_id IS NOT DISTINCT FROM $5))
         "#,
     )
@@ -335,6 +411,7 @@ pub async fn create(
     .bind(&service.dns_expected)
     .bind(service.cert_warn_days)
     .bind(interval)
+    .bind(service.docker_host_id)
     .execute(&state.db)
     .await?;
 
@@ -354,6 +431,7 @@ pub async fn update(
     let interval = body.check_interval_seconds;
     let service = clean_service(body)?;
     check_group(&state.db, &group_id).await?;
+    check_docker_host(&state.db, service.docker_host_id).await?;
     let name = service.name.clone();
     let before = activity::snapshot(&state.db, "services", &id).await;
 
@@ -364,7 +442,7 @@ pub async fn update(
         UPDATE services
         SET name = $1, check_type = $2, url = $3, group_id = $4, expected_status = $5, keyword = $6,
             keyword_absent = $7, dns_record_type = $8, dns_expected = $9, cert_warn_days = $10,
-            check_interval_seconds = $11, next_check_at = now(),
+            check_interval_seconds = $11, docker_host_id = $13, next_check_at = now(),
             cert_checked_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_checked_at END,
             cert_expires_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_expires_at END,
             cert_warned_for = CASE WHEN url = $3 AND check_type = $2 THEN cert_warned_for END
@@ -383,6 +461,7 @@ pub async fn update(
     .bind(service.cert_warn_days)
     .bind(interval)
     .bind(&id)
+    .bind(service.docker_host_id)
     .execute(&state.db)
     .await?
     .rows_affected();
@@ -450,8 +529,42 @@ pub async fn move_service(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// How often "Check all now" may run, for everyone together.
+const CHECK_ALL_COOLDOWN_SECONDS: i64 = 30;
+
+/// Seconds left before "Check all now" may run again, or None when it may run
+/// now (and the cooldown starts). If Redis is down the button keeps working.
+async fn check_all_wait(state: &AppState) -> Option<i64> {
+    let result: anyhow::Result<Option<i64>> = async {
+        let mut conn = state.redis.get().await?;
+        let set: Option<String> = deadpool_redis::redis::cmd("SET")
+            .arg("check-all:cooldown")
+            .arg("1")
+            .arg("NX")
+            .arg("EX")
+            .arg(CHECK_ALL_COOLDOWN_SECONDS)
+            .query_async(&mut conn)
+            .await?;
+        if set.is_some() {
+            return Ok(None);
+        }
+        let ttl: i64 = deadpool_redis::redis::cmd("TTL").arg("check-all:cooldown").query_async(&mut conn).await?;
+        Ok(Some(ttl.max(1)))
+    }
+    .await;
+    result.unwrap_or_else(|e| {
+        tracing::warn!("Could not read the Check all cooldown: {e}");
+        None
+    })
+}
+
 pub async fn check_now(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
     user.require("services.check")?;
+    if let Some(wait) = check_all_wait(&state).await {
+        return Err(ApiError::TooManyRequests(format!(
+            "All services were just checked. Try again in {wait} seconds."
+        )));
+    }
     let result = sqlx::query("UPDATE services SET next_check_at = now()")
         .execute(&state.db)
         .await?;

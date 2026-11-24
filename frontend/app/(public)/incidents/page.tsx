@@ -1,4 +1,5 @@
 import { Check } from '@/components/icons'
+import HistoryTabs from '@/components/status/HistoryTabs'
 import IncidentEntry from '@/components/status/IncidentEntry'
 import RangePicker from '@/components/status/RangePicker'
 import { getIncidentsBetween, hasIncidentsBefore } from '@/lib/api'
@@ -59,6 +60,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <div className="archive-heading">
+        <HistoryTabs active="incidents" />
         <h1>Previous incidents</h1>
         <RangePicker label={rangeLabel(windowMonths)} previousHref={previousHref} nextHref={nextHref} />
       </div>

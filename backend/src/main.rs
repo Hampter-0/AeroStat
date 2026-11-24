@@ -5,6 +5,7 @@ mod cli;
 mod config;
 mod console;
 mod db;
+mod docker;
 mod error;
 mod log_buffer;
 mod login_guard;
@@ -109,6 +110,9 @@ async fn main() -> anyhow::Result<()> {
 
     services::spawn_rollup(pool.clone(), redis_pool.clone());
     tracing::info!("Daily rollup scheduled");
+
+    services::slow_checker::spawn(pool.clone());
+    tracing::info!("Slow response check scheduled");
 
     if settings.secret_key.is_none() {
         tracing::info!("SECRET_KEY is not set, so the authenticator app option for two-factor sign-in is off");

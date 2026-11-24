@@ -6,6 +6,8 @@ export interface ServiceStatus {
   status: 'online' | 'offline' | null
   response_time_ms: number | null
   checked_at: string | null
+  slow_ms: number | null
+  slow_usual_ms: number | null
 }
 
 export interface MaintenanceWindow {
@@ -41,6 +43,19 @@ export interface DayHistory {
   uptime_percent?: number | null
   avg_response_time_ms?: number | null
   events: DayEvent[]
+}
+
+export interface MonthHistory {
+  year: number
+  month: number
+  uptime_percent: number | null
+  days: DayHistory[]
+}
+
+export interface UptimeHistory {
+  service_id: string
+  months: MonthHistory[]
+  has_older: boolean
 }
 
 export interface ResponsePoint {

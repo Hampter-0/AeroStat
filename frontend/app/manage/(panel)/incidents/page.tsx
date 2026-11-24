@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getIncidents, getServiceNames } from '@/lib/api'
+import { getAffectedLabeler, getIncidents } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import { incidentTone } from '@/lib/incidents'
 import { getSiteConfig } from '@/lib/branding'
@@ -16,20 +16,17 @@ export const metadata = {
 
 function IncidentList({
   incidents,
-  serviceNames,
+  labelsOf,
   timezone,
 }: {
   incidents: Incident[]
-  serviceNames: Map<string, string>
+  labelsOf: (affected: string[] | null) => string[]
   timezone: string
 }) {
   return (
     <div className="manage-list">
       {incidents.map(function (incident) {
-        const names: string[] = []
-        for (const serviceId of incident.affected_services || []) {
-          names.push(serviceNames.get(serviceId) || serviceId)
-        }
+        const names = labelsOf(incident.affected_services)
         return (
           <Link href={'/manage/incidents/' + incident.id} className="manage-list-row" key={incident.id}>
             <IncidentIcon status={incident.status} severity={incident.severity} />
@@ -55,7 +52,7 @@ export default async function ManageIncidentsPage() {
 
   const incidents = await getIncidents()
   const { timezone } = await getSiteConfig()
-  const serviceNames = await getServiceNames()
+  const labelsOf = await getAffectedLabeler()
 
   const ongoing: Incident[] = []
   const resolved: Incident[] = []
@@ -84,13 +81,13 @@ export default async function ManageIncidentsPage() {
       <section className="manage-panel">
         <h2>Ongoing</h2>
         {ongoing.length === 0 && <p className="manage-empty">No ongoing incidents. All good!</p>}
-        {ongoing.length > 0 && <IncidentList incidents={ongoing} serviceNames={serviceNames} timezone={timezone} />}
+        {ongoing.length > 0 && <IncidentList incidents={ongoing} labelsOf={labelsOf} timezone={timezone} />}
       </section>
 
       <section className="manage-panel">
         <h2>Resolved</h2>
         {resolved.length === 0 && <p className="manage-empty">Nothing resolved yet.</p>}
-        {resolved.length > 0 && <IncidentList incidents={resolved} serviceNames={serviceNames} timezone={timezone} />}
+        {resolved.length > 0 && <IncidentList incidents={resolved} labelsOf={labelsOf} timezone={timezone} />}
       </section>
     </div>
   )

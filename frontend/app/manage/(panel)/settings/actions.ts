@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
 
-const KEYS = ['site_name', 'site_description', 'contact_url', 'public_url', 'primary_color', 'timezone', 'metrics_retention_days', 'down_after_checks', 'backup_schedule', 'backup_keep', 'backup_before_update']
+const KEYS = ['site_name', 'site_description', 'contact_url', 'public_url', 'primary_color', 'timezone', 'metrics_retention_days', 'down_after_checks', 'slow_alert_percent', 'backup_schedule', 'backup_keep', 'backup_before_update']
 const ASSETS = ['logo', 'favicon']
 
 function refreshEverything() {

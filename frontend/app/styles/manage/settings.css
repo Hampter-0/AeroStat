@@ -171,3 +171,41 @@
     white-space: nowrap;
     border: 0;
 }
+
+.docker-host-row {
+    flex-wrap: wrap;
+}
+
+.docker-test {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.docker-test .button-secondary {
+    height: 32px;
+    padding: 0 12px;
+}
+
+.docker-test-result {
+    font-size: 13px;
+}
+
+.docker-test-result.ok {
+    color: var(--success-text);
+}
+
+.docker-test-result.failed {
+    max-width: 360px;
+    color: var(--danger-text);
+}
+
+.docker-host-form {
+    margin-top: 18px;
+}
+
+.docker-type-name {
+    font-size: inherit;
+}

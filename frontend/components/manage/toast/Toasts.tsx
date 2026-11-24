@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { X } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 
 const SHOW_MS = 4500
 const ERROR_SHOW_MS = 8000
@@ -18,6 +19,7 @@ export interface Notice {
   title: string
   body: string
   tone: string
+  kind: GlyphKind
   href: string | null
 }
 
@@ -197,7 +199,9 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
             }
             return (
               <div className={className + ' tone-' + notice.tone} key={toast.id} role={role}>
-                <span className="toast-bar" aria-hidden="true" />
+                <span className="toast-icon">
+                  <StatusGlyph kind={notice.kind} />
+                </span>
                 {content}
                 <button type="button" className="toast-close" onClick={close} aria-label="Close">
                   <X size={14} />
@@ -205,9 +209,17 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
               </div>
             )
           }
+          let toneClass = ' tone-green'
+          let glyph: GlyphKind = 'check'
+          if (toast.tone === 'error') {
+            toneClass = ' tone-red'
+            glyph = 'x'
+          }
           return (
-            <div className={className} key={toast.id} role={role}>
-              <span className="toast-bar" aria-hidden="true" />
+            <div className={className + toneClass} key={toast.id} role={role}>
+              <span className="toast-icon">
+                <StatusGlyph kind={glyph} />
+              </span>
               <span className="toast-message">{toast.message}</span>
               <button type="button" className="toast-close" onClick={close} aria-label="Close">
                 <X size={14} />

@@ -12,7 +12,7 @@ use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
 use crate::site_settings::{
-    self, BACKUP_BEFORE_UPDATE, BACKUP_KEEP, BACKUP_SCHEDULE, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, TIMEZONE,
+    self, BACKUP_BEFORE_UPDATE, BACKUP_KEEP, BACKUP_SCHEDULE, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, SLOW_ALERT_PERCENT, TIMEZONE,
 };
 use crate::state::AppState;
 
@@ -32,6 +32,7 @@ pub struct Defaults {
     timezone: &'static str,
     metrics_retention_days: i32,
     down_after_checks: i64,
+    slow_alert_percent: i64,
 }
 
 #[derive(Serialize)]
@@ -104,6 +105,17 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 return Err(ApiError::BadRequest("Failed checks must be between 1 and 10".into()));
             }
         }
+        SLOW_ALERT_PERCENT => {
+            if value == "off" {
+                return Ok(value.to_string());
+            }
+            let percent: i64 = value
+                .parse()
+                .map_err(|_| ApiError::BadRequest("The slow warning must be a whole percentage or off".into()))?;
+            if !(25..=1000).contains(&percent) {
+                return Err(ApiError::BadRequest("Warn between 25% and 1000% slower than usual".into()));
+            }
+        }
         BACKUP_SCHEDULE => {
             if !matches!(value, "off" | "daily" | "weekly") {
                 return Err(ApiError::BadRequest("The schedule must be off, daily or weekly".into()));
@@ -144,6 +156,7 @@ pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Jso
             timezone: "UTC",
             metrics_retention_days: state.default_retention_days,
             down_after_checks: site_settings::DEFAULT_DOWN_AFTER_CHECKS,
+            slow_alert_percent: site_settings::DEFAULT_SLOW_ALERT_PERCENT,
         },
         logo_version,
         favicon_version,

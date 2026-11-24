@@ -81,28 +81,6 @@ a.button-secondary {
     text-decoration: none;
 }
 
-.event-icon {
-    width: 28px;
-    height: 28px;
-    flex: 0 0 28px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    color: #fff;
-    background: var(--tone);
-}
-
-.event-icon svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 3;
-}
-
-.event-icon.alert svg {
-    width: 20px;
-    height: 20px;
-}
-
 .manage-list-row div {
     min-width: 0;
     display: grid;

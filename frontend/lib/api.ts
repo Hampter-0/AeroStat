@@ -1,4 +1,4 @@
-import type { Incident, IncidentDetail, MaintenanceDetail, MaintenanceWindow, ResponseTimes, ServiceStatus, UptimeStats } from './types'
+import type { Incident, IncidentDetail, MaintenanceDetail, MaintenanceWindow, ResponseTimes, ServiceStatus, UptimeHistory, UptimeStats } from './types'
 import { affectedLabels } from './affected'
 
 const API_URL = process.env.API_URL
@@ -24,6 +24,18 @@ export async function getServiceNames(): Promise<Map<string, string>> {
   return names
 }
 
+export async function getUptimeHistory(serviceId: string, page: number): Promise<UptimeHistory | null> {
+  try {
+    const res = await fetch(`${API_URL}/api/uptime/${encodeURIComponent(serviceId)}/history?page=${page}`, { cache: 'no-store' })
+    if (!res.ok) {
+      return null
+    }
+    return res.json()
+  } catch {
+    return null
+  }
+}
+
 export async function getResponseTimes(range: string, service: string): Promise<ResponseTimes | null> {
   const params = new URLSearchParams({ range: range })
   if (service) {
@@ -37,6 +49,21 @@ export async function getResponseTimes(range: string, service: string): Promise<
     return res.json()
   } catch {
     return null
+  }
+}
+
+export async function getAffectedLabeler(): Promise<(affected: string[] | null) => string[]> {
+  let services: ServiceStatus[] = []
+  try {
+    services = await getStatus()
+  } catch {
+    services = []
+  }
+  return function (affected: string[] | null) {
+    if (!affected || affected.length === 0) {
+      return []
+    }
+    return affectedLabels(affected, services)
   }
 }
 

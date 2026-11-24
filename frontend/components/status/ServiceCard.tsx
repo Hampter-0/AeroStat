@@ -1,5 +1,5 @@
 import type { DayHistory, ServiceStatus } from '@/lib/types'
-import { Check, PendingRing, Tool, X } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 import UptimeBars from './UptimeBars'
 
 export default function ServiceCard({
@@ -18,22 +18,22 @@ export default function ServiceCard({
   let checkClassName = 'live-check'
   let labelClassName = ''
   let statusText = 'Operational'
-  let icon = <Check size={15} />
+  let kind: GlyphKind = 'check'
   if (service.status === 'offline' && inMaintenance) {
     checkClassName = 'live-check maintenance'
     labelClassName = 'maintenance'
     statusText = 'Maintenance'
-    icon = <Tool size={14} />
+    kind = 'wrench'
   } else if (service.status === 'offline') {
     checkClassName = 'live-check down'
     labelClassName = 'down'
     statusText = 'Down'
-    icon = <X size={15} />
+    kind = 'x'
   } else if (service.status === null) {
     checkClassName = 'live-check pending'
     labelClassName = 'pending'
     statusText = 'Not checked yet'
-    icon = <PendingRing />
+    kind = 'pending'
   }
 
   let responseText = ''
@@ -41,28 +41,23 @@ export default function ServiceCard({
     responseText = service.response_time_ms + ' ms'
   }
 
-  let uptimeText = '-'
+  let uptimeText = 'No data yet'
   if (uptimePercent !== null) {
-    uptimeText = uptimePercent + '%'
+    uptimeText = uptimePercent + '% uptime'
   }
 
   return (
     <article className="live-service-card">
       <div className="live-service-heading">
         <div className="live-service-name">
-          <span className={checkClassName}>{icon}</span>
-          <div>
-            <strong>{service.name}</strong>
-            <span className={labelClassName}>
-              {statusText}
-              {responseText && <small className="live-response">, {responseText}</small>}
-            </span>
-          </div>
+          <span className={checkClassName} title={statusText}>
+            <StatusGlyph kind={kind} size={20} />
+          </span>
+          <strong>{service.name}</strong>
+          <span className="sr-only">{statusText}</span>
+          {responseText && <small className="live-response">{responseText}</small>}
         </div>
-        <div className="live-uptime">
-          <strong>{uptimeText}</strong>
-          <span>Uptime</span>
-        </div>
+        <span className={'live-uptime ' + labelClassName}>{uptimeText}</span>
       </div>
       <UptimeBars days={days} dayNote={dayNote} />
     </article>

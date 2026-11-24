@@ -30,6 +30,7 @@ pub fn build(state: AppState) -> Router {
         .route("/api/maintenance", get(maintenance::list))
         .route("/api/maintenance/:id", get(maintenance::get))
         .route("/api/uptime/:service_id", get(uptime::get))
+        .route("/api/uptime/:service_id/history", get(uptime::history))
         .route("/api/response-times", get(response_times::get))
         .route("/api/settings", get(settings::get))
         .route("/api/brand/:name", get(settings::brand_asset))

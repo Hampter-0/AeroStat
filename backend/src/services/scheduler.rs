@@ -49,7 +49,8 @@ async fn claim_due(pool: &PgPool) -> anyhow::Result<Vec<CheckableService>> {
         SET next_check_at = now() + make_interval(secs => GREATEST(check_interval_seconds, 1))
         WHERE next_check_at <= now()
         RETURNING id, check_type, url, expected_status, keyword, keyword_absent, dns_record_type, dns_expected,
-                  cert_warn_days, cert_checked_at
+                  cert_warn_days, cert_checked_at,
+                  (SELECT address FROM docker_hosts WHERE docker_hosts.id = services.docker_host_id) AS docker_address
         "#,
     )
     .fetch_all(pool)

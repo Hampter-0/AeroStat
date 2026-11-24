@@ -12,6 +12,9 @@ pub struct ServiceStatus {
     status: Option<String>,
     response_time_ms: Option<i32>,
     checked_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Set while the service answers much slower than usual.
+    slow_ms: Option<i32>,
+    slow_usual_ms: Option<i32>,
 }
 
 pub async fn get(State(state): State<AppState>) -> Json<Vec<ServiceStatus>> {
@@ -24,7 +27,9 @@ pub async fn get(State(state): State<AppState>) -> Json<Vec<ServiceStatus>> {
             g.name AS group_name,
             m.status,
             m.response_time AS response_time_ms,
-            m.checked_at
+            m.checked_at,
+            s.slow_ms,
+            s.slow_usual_ms
         FROM services s
         LEFT JOIN groups g ON g.id = s.group_id
         LEFT JOIN LATERAL (

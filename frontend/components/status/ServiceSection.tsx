@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import type { DayHistory, ServiceStatus, UptimeStats } from '@/lib/types'
-import { Check, Chevron, Tool, X } from '@/components/icons'
+import { Chevron } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 import ServiceCard from './ServiceCard'
 
 export default function ServiceSection({
@@ -36,36 +37,37 @@ export default function ServiceSection({
 
   let statusClassName = 'live-section-status'
   let statusText = 'Operational'
-  let statusIcon = <Check size={12} />
+  let dotClassName = 'live-check'
+  let statusKind: GlyphKind = 'check'
   if (inMaintenance) {
     statusClassName = 'live-section-status maintenance'
     statusText = 'Maintenance'
-    statusIcon = <Tool size={12} />
+    dotClassName = 'live-check maintenance'
+    statusKind = 'wrench'
   }
   if (!allOnline) {
     statusClassName = 'live-section-status down'
     statusText = 'Degraded'
-    statusIcon = <X size={12} />
+    dotClassName = 'live-check down'
+    statusKind = 'x'
   }
 
   function toggleOpen() {
     setOpen(!open)
   }
 
-  let serviceCountLabel = services.length + ' services'
-  if (services.length === 1) {
-    serviceCountLabel = '1 service'
-  }
-
   return (
     <section className="live-service-section">
       <button className="live-section-heading" onClick={toggleOpen} aria-expanded={open}>
-        <span>
-          <strong>{groupName}</strong>
-          <small>{serviceCountLabel}</small>
-        </span>
-        <span className={statusClassName}>
-          {statusIcon} {statusText} <Chevron open={open} />
+        <strong>{groupName}</strong>
+        <span className="live-section-right">
+          <span className={statusClassName}>
+            <span className={dotClassName}>
+              <StatusGlyph kind={statusKind} size={20} />
+            </span>
+            {statusText}
+          </span>
+          <Chevron open={open} />
         </span>
       </button>
       {open && (

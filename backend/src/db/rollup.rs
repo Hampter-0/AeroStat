@@ -112,9 +112,31 @@ pub async fn rollup_day(db: &PgPool, redis: &RedisPool, date: NaiveDate, tz: Tz)
     for (service_id,) in service_ids {
         if let Some(rollup) = day_status(db, &service_id, date, tz).await? {
             set_daily_status(redis, &service_id, &date_text, &rollup.to_redis_value()).await?;
+            save_day(db, &service_id, date, &rollup).await?;
         }
     }
 
+    Ok(())
+}
+
+/// Keeps the day in Postgres too, where it stays after the checks are cleaned
+/// up, for the uptime history.
+async fn save_day(db: &PgPool, service_id: &str, date: NaiveDate, rollup: &DayRollup) -> anyhow::Result<()> {
+    sqlx::query(
+        r#"
+        INSERT INTO daily_uptime (service_id, day, status, downtime_minutes, avg_response_ms)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (service_id, day) DO UPDATE
+        SET status = EXCLUDED.status, downtime_minutes = EXCLUDED.downtime_minutes, avg_response_ms = EXCLUDED.avg_response_ms
+        "#,
+    )
+    .bind(service_id)
+    .bind(date)
+    .bind(rollup.status)
+    .bind(rollup.downtime_minutes as i32)
+    .bind(rollup.avg_response_ms.map(|ms| ms as i32))
+    .execute(db)
+    .await?;
     Ok(())
 }
 
@@ -122,7 +144,7 @@ pub async fn rollup_yesterday(db: &PgPool, redis: &RedisPool) -> anyhow::Result<
     let tz = site_settings::timezone(db).await;
     let yesterday = site_settings::today(tz) - Duration::days(1);
     rollup_day(db, redis, yesterday, tz).await?;
-    tracing::info!("Rolled up {yesterday} status into Redis");
+    tracing::info!("Rolled up the uptime of {yesterday}");
     Ok(())
 }
 
@@ -134,6 +156,6 @@ pub async fn backfill(db: &PgPool, redis: &RedisPool) -> anyhow::Result<()> {
         rollup_day(db, redis, today - Duration::days(days_back), tz).await?;
         days_back += 1;
     }
-    tracing::info!("Backfilled {} days of uptime history into Redis", HISTORY_DAYS - 1);
+    tracing::info!("Backfilled {} days of uptime history", HISTORY_DAYS - 1);
     Ok(())
 }

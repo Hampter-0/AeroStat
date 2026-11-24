@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Check, PendingRing, X } from '@/components/icons'
+import StatusGlyph from '@/components/StatusGlyph'
 import AddGroupForm from '@/components/manage/services/AddGroupForm'
 import CheckNowButton from '@/components/manage/services/CheckNowButton'
 import GroupHeader from '@/components/manage/services/GroupHeader'
 import MoveButtons from '@/components/manage/services/MoveButtons'
 import { getStatus, getUptime } from '@/lib/api'
 import { can, manageFetch, requireUser } from '@/lib/manage'
-import { intervalLabel, type ManageService, type ManageServicesResponse } from '@/lib/services'
+import { checkTypeInfo, intervalLabel, type ManageService, type ManageServicesResponse } from '@/lib/services'
 import { moveService } from './actions'
 import PageHeader from '@/components/manage/PageHeader'
 
@@ -17,9 +17,11 @@ export const metadata = {
 
 function targetText(service: ManageService): string {
   let text = service.url
-  if (service.check_type === 'tcp') {
-    text = 'TCP ' + service.url
-  } else if (service.check_type === 'dns') {
+  const short = checkTypeInfo(service.check_type).short
+  if (short) {
+    text = short + ' ' + service.url
+  }
+  if (service.check_type === 'dns') {
     let record = 'A'
     if (service.dns_record_type) {
       record = service.dns_record_type
@@ -53,18 +55,18 @@ function ServiceRows({
   return (
     <div className="manage-list">
       {services.map(function (service, index) {
-        let statusClass = 'service-status unknown'
+        let statusClass = 'event-icon tone-gray'
         let statusLabel = 'Not checked yet'
-        let statusIcon = <PendingRing size={16} />
+        let statusIcon = <StatusGlyph kind="pending" />
         const status = liveStatus.get(service.id)
         if (status === 'online') {
-          statusClass = 'service-status online'
+          statusClass = 'event-icon tone-green'
           statusLabel = 'Online'
-          statusIcon = <Check size={13} />
+          statusIcon = <StatusGlyph kind="check" />
         } else if (status === 'offline') {
-          statusClass = 'service-status offline'
+          statusClass = 'event-icon tone-red'
           statusLabel = 'Down'
-          statusIcon = <X size={12} />
+          statusIcon = <StatusGlyph kind="x" />
         }
 
         return (

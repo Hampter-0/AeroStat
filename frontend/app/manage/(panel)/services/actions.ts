@@ -50,6 +50,11 @@ function serviceBody(formData: FormData) {
   if (checkType === 'http') {
     statuses = parseStatuses(text(formData, 'expected_status'))
   }
+  let dockerHostId: number | null = null
+  const dockerText = text(formData, 'docker_host_id')
+  if (checkType === 'docker' && dockerText !== '') {
+    dockerHostId = Number(dockerText)
+  }
   let certDays: number | null = null
   const certText = text(formData, 'cert_warn_days').trim()
   if (certText !== '') {
@@ -66,6 +71,7 @@ function serviceBody(formData: FormData) {
     dns_record_type: text(formData, 'dns_record_type'),
     dns_expected: text(formData, 'dns_expected'),
     cert_warn_days: certDays,
+    docker_host_id: dockerHostId,
     check_interval_seconds: intervalSeconds(formData),
   }
 }

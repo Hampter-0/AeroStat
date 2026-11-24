@@ -15,6 +15,10 @@ pub const PUBLIC_URL: &str = "public_url";
 /// Failed checks in a row before a service counts as down and people get a message.
 pub const DOWN_AFTER_CHECKS: &str = "down_after_checks";
 pub const DEFAULT_DOWN_AFTER_CHECKS: i64 = 2;
+/// How much slower than usual a service must answer before people are warned,
+/// in percent, or "off".
+pub const SLOW_ALERT_PERCENT: &str = "slow_alert_percent";
+pub const DEFAULT_SLOW_ALERT_PERCENT: i64 = 100;
 /// "off", "daily" or "weekly". Scheduled backups run after 03:00 in the site's timezone.
 pub const BACKUP_SCHEDULE: &str = "backup_schedule";
 pub const DEFAULT_BACKUP_SCHEDULE: &str = "daily";
@@ -24,7 +28,7 @@ pub const DEFAULT_BACKUP_KEEP: i64 = 7;
 /// "true" or "false": make a backup on start when a new version is about to change the database.
 pub const BACKUP_BEFORE_UPDATE: &str = "backup_before_update";
 
-pub const KEYS: [&str; 11] = [
+pub const KEYS: [&str; 12] = [
     SITE_NAME,
     SITE_DESCRIPTION,
     CONTACT_URL,
@@ -33,6 +37,7 @@ pub const KEYS: [&str; 11] = [
     TIMEZONE,
     METRICS_RETENTION_DAYS,
     DOWN_AFTER_CHECKS,
+    SLOW_ALERT_PERCENT,
     BACKUP_SCHEDULE,
     BACKUP_KEEP,
     BACKUP_BEFORE_UPDATE,
@@ -43,7 +48,7 @@ pub fn permission_for(key: &str) -> &'static str {
     match key {
         PRIMARY_COLOR => "settings.appearance",
         TIMEZONE => "settings.time",
-        METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS => "settings.monitoring",
+        METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS | SLOW_ALERT_PERCENT => "settings.monitoring",
         BACKUP_SCHEDULE | BACKUP_KEEP | BACKUP_BEFORE_UPDATE => "system.backups",
         _ => "settings.general",
     }
@@ -92,6 +97,15 @@ pub async fn down_after_checks(db: &PgPool) -> i64 {
     match get(db, DOWN_AFTER_CHECKS).await {
         Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_DOWN_AFTER_CHECKS),
         _ => DEFAULT_DOWN_AFTER_CHECKS,
+    }
+}
+
+/// The slow-response threshold in percent, or None when the warning is off.
+pub async fn slow_alert_percent(db: &PgPool) -> Option<i64> {
+    match get(db, SLOW_ALERT_PERCENT).await {
+        Ok(Some(value)) if value == "off" => None,
+        Ok(Some(value)) => Some(value.parse().unwrap_or(DEFAULT_SLOW_ALERT_PERCENT)),
+        _ => Some(DEFAULT_SLOW_ALERT_PERCENT),
     }
 }
 

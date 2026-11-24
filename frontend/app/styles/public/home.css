@@ -330,3 +330,148 @@
     width: 30px;
     height: 30px;
 }
+
+.history-tabs {
+    width: fit-content;
+    margin-bottom: 24px;
+    padding: 3px;
+    display: flex;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+}
+
+.history-tab {
+    padding: 6px 14px;
+    border-radius: 7px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.history-tab:hover {
+    color: var(--text);
+}
+
+.history-tab.active {
+    color: var(--text);
+    background: var(--nav-active);
+}
+
+.uptime-controls {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.uptime-controls .range-picker {
+    margin-top: 0;
+}
+
+.uptime-select {
+    width: 240px;
+    max-width: 100%;
+}
+
+.uptime-months {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.uptime-months .live-status-empty {
+    grid-column: 1 / -1;
+}
+
+.calendar-month {
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.calendar-month header {
+    margin-bottom: 14px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.calendar-month h2 {
+    margin: 0;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.calendar-month header span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.calendar-weekdays {
+    margin-bottom: 6px;
+}
+
+.calendar-weekdays span {
+    color: var(--subtle);
+    font-size: 10px;
+    text-align: center;
+}
+
+.calendar-day {
+    position: relative;
+    min-width: 0;
+    aspect-ratio: 1;
+    border-radius: 4px;
+}
+
+.calendar-day.future {
+    border: 1px dashed var(--border);
+}
+
+.calendar-day .bar-tooltip {
+    left: 50%;
+}
+
+.calendar-day.edge-left .bar-tooltip {
+    left: 0;
+    transform: translate(0, 4px);
+}
+
+.calendar-day.edge-right .bar-tooltip {
+    left: auto;
+    right: 0;
+    transform: translate(0, 4px);
+}
+
+.calendar-day.edge-left:hover .bar-tooltip,
+.calendar-day.edge-left:focus-visible .bar-tooltip,
+.calendar-day.edge-right:hover .bar-tooltip,
+.calendar-day.edge-right:focus-visible .bar-tooltip {
+    transform: translate(0, 0);
+}
+
+@media (max-width: 560px) {
+    .history-tabs {
+        margin-bottom: 18px;
+    }
+
+    .uptime-select {
+        width: 100%;
+        max-width: 100%;
+    }
+}

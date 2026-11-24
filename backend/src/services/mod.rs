@@ -1,7 +1,9 @@
 pub mod checker;
+pub mod probes;
 mod cleanup_scheduler;
 mod rollup_scheduler;
 mod scheduler;
+pub mod slow_checker;
 pub mod update_checker;
 
 pub use cleanup_scheduler::spawn as spawn_cleanup;

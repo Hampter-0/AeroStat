@@ -4,6 +4,32 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.31.0
+
+### New
+
+- **Docker container checks** without fiddling: start the read-only Docker proxy with `docker compose --profile docker up -d` and pick the container from a list. Add other servers under **Settings → Docker** and test them there. The proxy is in the new `docker-compose.yml`, so download that again to use it.
+- More check types: **Ping**, **Docker container**, **PostgreSQL**, **MySQL or MariaDB**, **Redis**, **Minecraft Java**, **Minecraft Bedrock** and **Source games** (CS2, Rust, Garry's Mod and more). The database checks speak a little of the real protocol without a password, so a database that hangs is down even when its port is open. Leave out the port and the usual one is used.
+- **Slow response warnings**: when a service answers much slower than usual (100% by default, change it under **Settings → Monitoring**), you get one message on Discord, by email and in the panel, and the status page shows a notice. Services that turn slow at the same moment share one message, named by group or **All**. A second message follows when they are back to normal.
+- **Uptime history** under **Incidents → Uptime**, also linked above Live Status: a calendar per month for each service, with the same colours and details as the bars, going back further than 60 days.
+- The panel dashboard has a status card and four tiles: services up, average response time, incidents and downtime.
+
+### Changes
+
+- Live Status on the status page is one card with a row per group, like other status pages: open a group to see its services with their uptime and bars.
+- Status icons are outline icons in the status colour everywhere: timelines, notices, toasts, the panel lists and the uptime tooltips. Notices on the status page lead with the incident or maintenance title.
+- The panel lists of incidents and maintenance name the group, or **All**, instead of every service.
+- **Check all now** can be used once every 30 seconds.
+- The response time graphs in the panel use the accent colour, like the status page.
+- **Powered by** always shows the AeroStat logo, and sits a little further from the time zone picker.
+- Borders of cards inside panels are easier to see, in light and dark mode. Rows, cards and the account button no longer get a blue border on hover.
+- Links on the status page and the "Back to overview" links use the same style as in the panel.
+- The incident, maintenance and uptime history pages have a centred heading with a shorter month range.
+
+### Fixes
+
+- Scrolling past the top of a page no longer drags the whole page and top bar along.
+
 ## 0.30.1
 
 ### Changes

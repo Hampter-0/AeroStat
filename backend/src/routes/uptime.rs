@@ -1,5 +1,6 @@
-use axum::{extract::Path, extract::State, Json};
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use axum::{extract::Path, extract::Query, extract::State, Json};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
+use serde::Deserialize;
 use chrono_tz::Tz;
 use serde::Serialize;
 
@@ -109,7 +110,8 @@ pub async fn get(
         0.0
     };
 
-    let days = day_history(&state, &service_id).await.unwrap_or_else(|e| {
+    let today = site_settings::today(tz);
+    let days = day_history(&state, &service_id, first_day, today).await.unwrap_or_else(|e| {
         tracing::error!("Uptime history for {service_id} failed: {e}");
         Vec::new()
     });
@@ -124,17 +126,27 @@ pub async fn get(
     })
 }
 
-/// Past days come from Redis, today is computed live, events come straight from Postgres.
-async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<DayHistory>> {
+/// Past days come from Postgres, or Redis for days not saved there yet; today
+/// is computed live. Events come straight from Postgres. `last_day` is at most
+/// today.
+async fn day_history(
+    state: &AppState,
+    service_id: &str,
+    first_day: NaiveDate,
+    last_day: NaiveDate,
+) -> anyhow::Result<Vec<DayHistory>> {
     let tz = site_settings::timezone(&state.db).await;
     let today = site_settings::today(tz);
-    let first_day = today - Duration::days(HISTORY_DAYS - 1);
+    let last_day = last_day.min(today);
 
     let mut dates: Vec<NaiveDate> = Vec::new();
     let mut date = first_day;
-    while date <= today {
+    while date <= last_day {
         dates.push(date);
         date += Duration::days(1);
+    }
+    if dates.is_empty() {
+        return Ok(Vec::new());
     }
 
     let date_texts: Vec<String> = dates
@@ -142,13 +154,30 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         .map(|d| d.format("%Y-%m-%d").to_string())
         .collect();
 
+    let saved: Vec<(NaiveDate, String, i32, Option<i32>)> = sqlx::query_as(
+        "SELECT day, status, downtime_minutes, avg_response_ms FROM daily_uptime WHERE service_id = $1 AND day BETWEEN $2 AND $3",
+    )
+    .bind(service_id)
+    .bind(first_day)
+    .bind(last_day)
+    .fetch_all(&state.db)
+    .await?;
     let mut statuses = get_daily_statuses(&state.redis, service_id, &date_texts).await?;
-    let today_status = day_status(&state.db, service_id, today, tz).await?;
-    if let Some(last) = statuses.last_mut() {
-        *last = today_status.map(|rollup| rollup.to_redis_value());
+    for (i, date) in dates.iter().enumerate() {
+        if let Some((_, status, minutes, avg)) = saved.iter().find(|row| row.0 == *date) {
+            let avg = avg.map(|ms| ms.to_string()).unwrap_or_default();
+            statuses[i] = Some(format!("{status}:{minutes}:{avg}"));
+        }
+    }
+    if last_day == today {
+        let today_status = day_status(&state.db, service_id, today, tz).await?;
+        if let Some(last) = statuses.last_mut() {
+            *last = today_status.map(|rollup| rollup.to_redis_value());
+        }
     }
 
     let window_start = site_settings::start_of_day(first_day, tz);
+    let window_end = site_settings::start_of_day(last_day + Duration::days(1), tz);
 
     let incidents: Vec<EventRow> = sqlx::query_as(
         r#"
@@ -156,11 +185,13 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         FROM incidents
         WHERE $1 = ANY(affected_services)
         AND COALESCE(resolved_at, now()) >= $2
+        AND created_at < $3
         ORDER BY created_at DESC
         "#,
     )
     .bind(service_id)
     .bind(window_start)
+    .bind(window_end)
     .fetch_all(&state.db)
     .await?;
 
@@ -173,11 +204,13 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
         AND status <> 'cancelled'
         AND scheduled_start <= now()
         AND scheduled_end >= $2
+        AND scheduled_start < $3
         ORDER BY scheduled_start DESC
         "#,
     )
     .bind(service_id)
     .bind(window_start)
+    .bind(window_end)
     .fetch_all(&state.db)
     .await?;
 
@@ -238,6 +271,109 @@ async fn day_history(state: &AppState, service_id: &str) -> anyhow::Result<Vec<D
     }
 
     Ok(history)
+}
+
+#[derive(Deserialize)]
+pub struct HistoryQuery {
+    /// 0 is the three months up to now, -1 the three before, and so on.
+    page: Option<i32>,
+}
+
+#[derive(Serialize)]
+pub struct MonthHistory {
+    year: i32,
+    month: u32,
+    /// Share of the checked time the service was up. None without checks.
+    uptime_percent: Option<f64>,
+    days: Vec<DayHistory>,
+}
+
+#[derive(Serialize)]
+pub struct UptimeHistory {
+    service_id: String,
+    months: Vec<MonthHistory>,
+    has_older: bool,
+}
+
+fn month_start(year: i32, month: u32) -> NaiveDate {
+    NaiveDate::from_ymd_opt(year, month, 1).unwrap_or(NaiveDate::MIN)
+}
+
+fn shift_month(year: i32, month: u32, by: i32) -> (i32, u32) {
+    let index = year * 12 + month as i32 - 1 + by;
+    (index.div_euclid(12), (index.rem_euclid(12) + 1) as u32)
+}
+
+/// Uptime per day for three calendar months, oldest first, for the history
+/// page. Days keep their colours and events like the bars.
+pub async fn history(
+    State(state): State<AppState>,
+    Path(service_id): Path<String>,
+    Query(query): Query<HistoryQuery>,
+) -> Json<UptimeHistory> {
+    let tz = site_settings::timezone(&state.db).await;
+    let today = site_settings::today(tz);
+    let page = query.page.unwrap_or(0).clamp(-120, 0);
+
+    let mut months = Vec::new();
+    let mut offset = -2;
+    while offset <= 0 {
+        let (year, month) = shift_month(today.year(), today.month(), page * 3 + offset);
+        let first = month_start(year, month);
+        let (next_year, next_month) = shift_month(year, month, 1);
+        let last = month_start(next_year, next_month) - Duration::days(1);
+        let days = day_history(&state, &service_id, first, last).await.unwrap_or_else(|e| {
+            tracing::error!("Uptime history for {service_id} failed: {e}");
+            Vec::new()
+        });
+        months.push(MonthHistory {
+            year,
+            month,
+            uptime_percent: month_uptime(&days, tz),
+            days,
+        });
+        offset += 1;
+    }
+
+    let (first_year, first_month) = shift_month(today.year(), today.month(), page * 3 - 2);
+    let range_start = month_start(first_year, first_month);
+    let has_older: bool = sqlx::query_scalar(
+        r#"
+        SELECT EXISTS (SELECT 1 FROM daily_uptime WHERE service_id = $1 AND day < $2)
+            OR EXISTS (SELECT 1 FROM metrics WHERE service_id = $1 AND checked_at < $3)
+        "#,
+    )
+    .bind(&service_id)
+    .bind(range_start)
+    .bind(site_settings::start_of_day(range_start, tz))
+    .fetch_one(&state.db)
+    .await
+    .unwrap_or(false);
+
+    Json(UptimeHistory { service_id, months, has_older })
+}
+
+/// Uptime over the checked days, weighted by how long each day was.
+fn month_uptime(days: &[DayHistory], tz: Tz) -> Option<f64> {
+    let mut total = 0i64;
+    let mut down = 0i64;
+    for day in days {
+        if day.uptime_percent.is_none() {
+            continue;
+        }
+        let Ok(date) = NaiveDate::parse_from_str(&day.date, "%Y-%m-%d") else {
+            continue;
+        };
+        let (start, end) = site_settings::day_bounds(date, tz);
+        let minutes = (end.min(Utc::now()) - start).num_minutes().max(1);
+        total += minutes;
+        down += day.downtime_minutes.min(minutes);
+    }
+    if total == 0 {
+        return None;
+    }
+    let share = 1.0 - down as f64 / total as f64;
+    Some((share.clamp(0.0, 1.0) * 100_000.0).round() / 1000.0)
 }
 
 /// Reads "status:minutes:avg_ms". Older values have only "status:minutes",

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { getAllMaintenance, getServiceNames } from '@/lib/api'
+import { getAffectedLabeler, getAllMaintenance } from '@/lib/api'
 import { formatDateTime, formatStatus } from '@/lib/format'
 import { maintenanceTone } from '@/lib/maintenance'
 import { getSiteConfig } from '@/lib/branding'
@@ -16,20 +16,17 @@ export const metadata = {
 
 function MaintenanceList({
   items,
-  serviceNames,
+  labelsOf,
   timezone,
 }: {
   items: MaintenanceWindow[]
-  serviceNames: Map<string, string>
+  labelsOf: (affected: string[] | null) => string[]
   timezone: string
 }) {
   return (
     <div className="manage-list">
       {items.map(function (item) {
-        const names: string[] = []
-        for (const serviceId of item.affected_services || []) {
-          names.push(serviceNames.get(serviceId) || serviceId)
-        }
+        const names = labelsOf(item.affected_services)
         return (
           <Link href={'/manage/maintenance/' + item.id} className="manage-list-row" key={item.id}>
             <MaintenanceIcon status={item.status} />
@@ -55,7 +52,7 @@ export default async function ManageMaintenancePage() {
 
   const items = await getAllMaintenance()
   const { timezone } = await getSiteConfig()
-  const serviceNames = await getServiceNames()
+  const labelsOf = await getAffectedLabeler()
 
   const inProgress: MaintenanceWindow[] = []
   const upcoming: MaintenanceWindow[] = []
@@ -88,20 +85,20 @@ export default async function ManageMaintenancePage() {
       {inProgress.length > 0 && (
         <section className="manage-panel">
           <h2>In progress</h2>
-          <MaintenanceList items={inProgress} serviceNames={serviceNames} timezone={timezone} />
+          <MaintenanceList items={inProgress} labelsOf={labelsOf} timezone={timezone} />
         </section>
       )}
 
       <section className="manage-panel">
         <h2>Upcoming</h2>
         {upcoming.length === 0 && <p className="manage-empty">Nothing planned.</p>}
-        {upcoming.length > 0 && <MaintenanceList items={upcoming} serviceNames={serviceNames} timezone={timezone} />}
+        {upcoming.length > 0 && <MaintenanceList items={upcoming} labelsOf={labelsOf} timezone={timezone} />}
       </section>
 
       <section className="manage-panel">
         <h2>Past & cancelled</h2>
         {past.length === 0 && <p className="manage-empty">Nothing here yet.</p>}
-        {past.length > 0 && <MaintenanceList items={past} serviceNames={serviceNames} timezone={timezone} />}
+        {past.length > 0 && <MaintenanceList items={past} labelsOf={labelsOf} timezone={timezone} />}
       </section>
     </div>
   )

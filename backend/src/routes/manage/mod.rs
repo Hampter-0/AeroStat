@@ -1,6 +1,7 @@
 mod activity;
 mod backups;
 mod dashboard;
+mod docker;
 mod email;
 mod help;
 mod logs;
@@ -107,6 +108,9 @@ pub fn router() -> Router<AppState> {
         .route("/email", get(email::get))
         .route("/email/test", post(email::test))
         .route("/brand/:name", put(settings::upload_asset).delete(settings::delete_asset))
+        .route("/docker-hosts", get(docker::list).post(docker::create))
+        .route("/docker-hosts/:id", patch(docker::update).delete(docker::delete))
+        .route("/docker/containers", get(docker::containers))
         .route("/groups", post(services::create_group))
         .route("/groups/:id", patch(services::update_group).delete(services::delete_group))
         .route("/groups/:id/move", post(services::move_group))

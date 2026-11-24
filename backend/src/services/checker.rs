@@ -16,7 +16,9 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 /// download can't tie up the checker.
 const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
 
-pub const CHECK_TYPES: [&str; 3] = ["http", "tcp", "dns"];
+pub const CHECK_TYPES: [&str; 11] = [
+    "http", "tcp", "dns", "ping", "docker", "postgres", "mysql", "redis", "minecraft", "bedrock", "source",
+];
 pub const DNS_RECORD_TYPES: [&str; 5] = ["A", "AAAA", "CNAME", "MX", "TXT"];
 
 /// A service as read from the database
@@ -32,6 +34,8 @@ pub struct CheckableService {
     pub dns_expected: Option<String>,
     pub cert_warn_days: Option<i32>,
     pub cert_checked_at: Option<DateTime<Utc>>,
+    /// The address of the chosen Docker host; None means the default one.
+    pub docker_address: Option<String>,
 }
 
 /// Performs a single check against one service and returns the result
@@ -40,7 +44,12 @@ pub async fn check_service(client: &reqwest::Client, service: &CheckableService)
     let outcome = match service.check_type.as_str() {
         "tcp" => check_tcp(&service.url).await,
         "dns" => check_dns(service).await,
-        _ => check_http(client, service).await,
+        "http" => check_http(client, service).await,
+        "docker" => {
+            let address = service.docker_address.clone().unwrap_or_else(crate::docker::default_address);
+            crate::docker::container_status(&address, &service.url).await.map(|_| None).map_err(failed)
+        }
+        other => super::probes::run(other, &service.url).await.map(|_| None).map_err(failed),
     };
     let response_time_ms = start.elapsed().as_millis() as i32;
 

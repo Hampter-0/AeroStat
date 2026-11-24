@@ -17,6 +17,11 @@ export const EVENT_GROUPS: { title: string; events: { id: string; label: string;
         label: 'A certificate runs out soon',
         hint: 'Days before an HTTPS certificate expires',
       },
+      {
+        id: 'service_slow',
+        label: 'Response times rise',
+        hint: 'Much slower than usual, and when they are back to normal',
+      },
     ],
   },
   {

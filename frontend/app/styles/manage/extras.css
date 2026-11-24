@@ -252,5 +252,4 @@ button.chip.more {
 
 button.chip.more:hover {
     color: var(--text);
-    border-color: var(--link);
 }

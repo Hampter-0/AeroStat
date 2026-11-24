@@ -5,9 +5,10 @@ import { ChevronLeft } from '@/components/icons'
 import DeleteForm from '@/components/manage/DeleteForm'
 import BadgeCard from '@/components/manage/services/BadgeCard'
 import ServiceForm from '@/components/manage/services/ServiceForm'
+import type { DockerHostsResponse } from '@/lib/docker'
 import { getSiteConfig } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
-import { checkTypeLabel, intervalLabel, type ManageServicesResponse } from '@/lib/services'
+import { checkTypeInfo, checkTypeLabel, intervalLabel, type ManageServicesResponse } from '@/lib/services'
 import { formatDateTimeShort } from '@/lib/time'
 import { deleteService } from '../actions'
 import PageHeader from '@/components/manage/PageHeader'
@@ -25,6 +26,12 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   const { id } = await params
   const serviceId = decodeURIComponent(id)
   const data = await manageFetch<ManageServicesResponse>('/services')
+  let dockerHosts: DockerHostsResponse | null = null
+  try {
+    dockerHosts = await manageFetch<DockerHostsResponse>('/docker-hosts')
+  } catch {
+    dockerHosts = null
+  }
 
   let service = null
   for (const candidate of data.services) {
@@ -42,11 +49,14 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
     certificateText = formatDateTimeShort(service.cert_expires_at, timezone)
   }
 
-  let targetLabel = 'URL to check'
-  if (service.check_type === 'tcp') {
-    targetLabel = 'Host and port'
-  } else if (service.check_type === 'dns') {
-    targetLabel = 'Domain name'
+  const targetLabel = checkTypeInfo(service.check_type).target
+  let dockerHostName = 'This server'
+  if (dockerHosts && service.docker_host_id !== null) {
+    for (const host of dockerHosts.hosts) {
+      if (host.id === service.docker_host_id) {
+        dockerHostName = host.name
+      }
+    }
   }
 
   let keywordText = ''
@@ -82,7 +92,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
       />
       {can(user, 'services.edit') && (
         <section className="manage-panel">
-          <ServiceForm groups={data.groups} service={service} defaultGroupId="" certificateText={certificateText} />
+          <ServiceForm groups={data.groups} service={service} defaultGroupId="" certificateText={certificateText} dockerHosts={dockerHosts} />
         </section>
       )}
       {!can(user, 'services.edit') && (
@@ -106,6 +116,12 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
               <div className="config-row">
                 <dt>Keyword</dt>
                 <dd>{keywordText}</dd>
+              </div>
+            )}
+            {service.check_type === 'docker' && (
+              <div className="config-row">
+                <dt>Docker host</dt>
+                <dd>{dockerHostName}</dd>
               </div>
             )}
             {service.check_type === 'dns' && (

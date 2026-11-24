@@ -1,4 +1,5 @@
 :root {
+    overscroll-behavior-y: none;
     font-family: 'Inter', sans-serif;
     color: var(--text);
     background: var(--panel-soft);
@@ -11,8 +12,8 @@
     --field: #fff;
     --table-head: #fafafa;
     --chip-bg: #eceef5;
-    --border: #e4e4e7;
-    --border-soft: #ececef;
+    --border: #dcdee6;
+    --border-soft: #e2e4eb;
     --nav-active: #e8eaf3;
 
     --text: #18181b;
@@ -57,7 +58,7 @@
     --table-head: #222432;
     --chip-bg: #222432;
     --border: #2e303d;
-    --border-soft: #262836;
+    --border-soft: #2c2e3b;
     --nav-active: #222432;
 
     --text: #e4e4e7;
@@ -128,6 +129,11 @@ html {
     scrollbar-gutter: stable;
 }
 
+a {
+    color: var(--link);
+    text-underline-offset: 3px;
+}
+
 body {
     --link: var(--blue);
 }
@@ -181,6 +187,14 @@ body {
     --tone-text: #a1a1aa;
 }
 
+[class*="tone-"] {
+    --tone-icon: var(--tone);
+}
+
+:root[data-theme="dark"] [class*="tone-"] {
+    --tone-icon: var(--tone-text);
+}
+
 .state-badge {
     padding: 3px 8px;
     display: inline-flex;
@@ -202,4 +216,15 @@ body {
 
 .tone-icon svg {
     stroke-width: 3;
+}
+
+.event-icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    color: var(--tone-icon, var(--muted));
+}
+
+.status-glyph {
+    display: block;
 }

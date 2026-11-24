@@ -4,6 +4,8 @@ import AssetUploader from '@/components/manage/settings/AssetUploader'
 import ColorField from '@/components/manage/settings/ColorField'
 import NotificationsForm from '@/components/manage/settings/NotificationsForm'
 import SettingsForm from '@/components/manage/settings/SettingsForm'
+import DockerHosts from '@/components/manage/settings/DockerHosts'
+import type { DockerHostsResponse } from '@/lib/docker'
 import { defaultDescription, envDefaults } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
 import type { NotificationSettings } from '@/lib/notifications'
@@ -16,7 +18,7 @@ export const metadata = {
 
 interface ManageSettings {
   values: Record<string, string | null>
-  defaults: { timezone: string; metrics_retention_days: number; down_after_checks: number }
+  defaults: { timezone: string; metrics_retention_days: number; down_after_checks: number; slow_alert_percent: number }
   logo_version: number | null
   favicon_version: number | null
 }
@@ -25,6 +27,7 @@ const TABS = [
   { id: 'general', label: 'General', permission: 'settings.general' },
   { id: 'appearance', label: 'Appearance', permission: 'settings.appearance' },
   { id: 'monitoring', label: 'Monitoring', permission: 'settings.monitoring' },
+  { id: 'docker', label: 'Docker', permission: 'settings.monitoring' },
   { id: 'time', label: 'Time & region', permission: 'settings.time' },
   { id: 'notifications', label: 'Notifications', permission: 'settings.notifications' },
 ]
@@ -56,6 +59,23 @@ function NotificationsTab({ notifications }: { notifications: NotificationSettin
   )
 }
 
+function slowOptions(current: string): { value: string; label: string }[] {
+  const options = [
+    { value: 'off', label: 'Off' },
+    { value: '50', label: '50% slower' },
+    { value: '200', label: '200% slower' },
+    { value: '300', label: '300% slower' },
+    { value: '500', label: '500% slower' },
+  ]
+  const known = options.some(function (option) {
+    return option.value === current
+  })
+  if (current && !known) {
+    options.push({ value: current, label: current + '% slower' })
+  }
+  return options
+}
+
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const user = await requireUser()
   const tabs = TABS.filter(function (option) {
@@ -83,6 +103,15 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   for (const option of tabs) {
     if (option.id === tab) {
       activeTab = option.id
+    }
+  }
+
+  let dockerHosts: DockerHostsResponse | null = null
+  if (activeTab === 'docker') {
+    try {
+      dockerHosts = await manageFetch<DockerHostsResponse>('/docker-hosts')
+    } catch {
+      dockerHosts = null
     }
   }
 
@@ -219,6 +248,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         </>
       )}
 
+      {activeTab === 'docker' && dockerHosts && (
+        <DockerHosts data={dockerHosts} canEdit={can(user, 'settings.monitoring')} />
+      )}
+
       {activeTab === 'monitoring' && (
         <section className="manage-panel">
           <h2>Monitoring</h2>
@@ -252,6 +285,24 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <small className="field-hint">
                 Discord and email messages go out after this many failed checks in a row. 1 sends one right away, 2 keeps a
                 single hiccup quiet.
+              </small>
+            </label>
+            <label>
+              <span>Warn when a service answers slower than usual</span>
+              <select key={'slow_alert_percent-' + value(settings, 'slow_alert_percent')} name="slow_alert_percent" defaultValue={value(settings, 'slow_alert_percent')}>
+                <option value="">{settings.defaults.slow_alert_percent}% slower (default)</option>
+                {slowOptions(value(settings, 'slow_alert_percent')).map(function (option) {
+                  return (
+                    <option value={option.value} key={option.value}>
+                      {option.label}
+                    </option>
+                  )
+                })}
+              </select>
+              <small className="field-hint">
+                Compares the last few minutes with the usual response time of the past week, and only for at least 100 ms
+                extra. Goes to Discord, email, the panel and a notice on the status page, with one message for everything that
+                turns slow at the same time.
               </small>
             </label>
           </SettingsForm>

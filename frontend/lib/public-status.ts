@@ -9,6 +9,7 @@ export interface PublicService {
   name: string
   group: string | null
   status: PublicServiceStatus
+  slow: boolean
   last_checked: string | null
 }
 
@@ -64,6 +65,7 @@ export async function getPublicStatus(): Promise<PublicStatus> {
       name: service.name,
       group: service.group_name,
       status: status,
+      slow: typeof service.slow_ms === 'number',
       last_checked: service.checked_at,
     })
   }

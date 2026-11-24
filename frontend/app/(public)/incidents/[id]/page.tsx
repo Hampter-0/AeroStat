@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Check, ChevronLeft, PendingRing } from '@/components/icons'
+import { ChevronLeft } from '@/components/icons'
+import type { GlyphKind } from '@/components/StatusGlyph'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getAffectedLabels, getIncident } from '@/lib/api'
 import { incidentTone } from '@/lib/incidents'
@@ -56,19 +57,19 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   const entries: TimelineEntry[] = []
   if (incident.updates.length > 0) {
     incident.updates.forEach(function (update) {
-      let markerClassName = 'update-marker pending'
-      let icon = <PendingRing />
+      let tone = incidentTone('open', incident.severity)
+      let kind: GlyphKind = 'alert'
       if (update.status === 'resolved') {
-        markerClassName = 'update-marker done'
-        icon = <Check size={11} />
+        tone = 'green'
+        kind = 'check'
       }
       entries.push({
         key: 'update-' + update.id,
         label: formatStatus(update.status),
         time: formatDateTime(update.created_at),
         message: update.message,
-        markerClassName: markerClassName,
-        icon: icon,
+        tone: tone,
+        kind: kind,
       })
     })
   } else {
@@ -78,8 +79,8 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
         label: 'Resolved',
         time: formatDateTime(incident.resolved_at),
         message: null,
-        markerClassName: 'update-marker done',
-        icon: <Check size={11} />,
+        tone: 'green',
+        kind: 'check',
       })
     }
     entries.push({
@@ -87,8 +88,8 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       label: 'Reported',
       time: formatDateTime(incident.created_at),
       message: incident.description,
-      markerClassName: 'update-marker pending',
-      icon: <PendingRing />,
+      tone: incidentTone('open', incident.severity),
+      kind: 'alert',
     })
   }
 

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Check, ChevronLeft, PendingRing, Tool } from '@/components/icons'
+import { ChevronLeft } from '@/components/icons'
+import { maintenanceGlyph } from '@/components/status/EventMarker'
 import Timeline, { type TimelineEntry } from '@/components/detail/Timeline'
 import { getAffectedLabels, getMaintenance } from '@/lib/api'
 import { maintenanceTone } from '@/lib/maintenance'
@@ -44,58 +45,37 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
 
   const tagTone = maintenanceTone(maintenanceWindow.status)
   const tagLabel = formatStatus(maintenanceWindow.status)
-  const isCompleted = maintenanceWindow.status === 'completed'
-  const isOngoing = maintenanceWindow.status === 'in_progress'
 
   const affectedServices = await getAffectedLabels(maintenanceWindow.affected_services)
 
   const entries: TimelineEntry[] = []
   if (maintenanceWindow.updates.length > 0) {
     maintenanceWindow.updates.forEach(function (update) {
-      let markerClassName = 'update-marker pending'
-      let icon = <PendingRing />
-      if (update.status === 'completed') {
-        markerClassName = 'update-marker done'
-        icon = <Check size={11} />
-      } else if (update.status === 'in_progress') {
-        markerClassName = 'update-marker ongoing-maintenance'
-        icon = <Tool size={11} />
-      }
       entries.push({
         key: 'update-' + update.id,
         label: formatStatus(update.status),
         time: formatDateTime(update.created_at),
         message: update.message,
-        markerClassName: markerClassName,
-        icon: icon,
+        tone: maintenanceTone(update.status),
+        kind: maintenanceGlyph(update.status),
       })
     })
   } else {
-    let topMarkerClassName = 'update-marker pending'
-    let topIcon = <PendingRing />
-    if (isCompleted) {
-      topMarkerClassName = 'update-marker done'
-      topIcon = <Check size={11} />
-    }
-    if (isOngoing) {
-      topMarkerClassName = 'update-marker ongoing-maintenance'
-      topIcon = <Tool size={11} />
-    }
     entries.push({
       key: 'status',
       label: tagLabel,
       time: formatDateTime(maintenanceWindow.scheduled_start),
       message: maintenanceWindow.description,
-      markerClassName: topMarkerClassName,
-      icon: topIcon,
+      tone: maintenanceTone(maintenanceWindow.status),
+      kind: maintenanceGlyph(maintenanceWindow.status),
     })
     entries.push({
       key: 'created',
       label: 'Created',
       time: formatDateTime(maintenanceWindow.created_at),
       message: null,
-      markerClassName: 'update-marker pending',
-      icon: <PendingRing />,
+      tone: 'gray',
+      kind: 'clock',
     })
   }
 

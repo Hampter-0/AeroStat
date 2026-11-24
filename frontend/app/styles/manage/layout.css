@@ -91,11 +91,6 @@
     background: none;
 }
 
-.account-trigger:hover,
-.account-trigger[aria-expanded="true"] {
-    border-color: var(--link);
-}
-
 .account-dropdown {
     min-width: 220px;
     padding: 6px;

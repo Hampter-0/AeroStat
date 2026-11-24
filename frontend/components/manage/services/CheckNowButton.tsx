@@ -39,7 +39,7 @@ export default function CheckNowButton() {
   if (pending) {
     label = 'Checking…'
   } else if (showFeedback && state.error) {
-    label = 'Couldn’t start checks'
+    label = 'Not started'
     className = 'button-secondary check-now-button failed'
   }
 

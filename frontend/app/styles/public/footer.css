@@ -21,24 +21,25 @@
 }
 
 .powered-by {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     padding: 24px 0;
-    color: var(--muted);
-    font-size: 11px;
+    display: flex;
+    justify-content: center;
 }
 
 .powered-by a {
-    color: var(--text);
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--subtle);
+    font-size: 13px;
     text-decoration: none;
 }
 
-.powered-by a:hover {
-    text-decoration: underline;
+.powered-by-name {
+    color: var(--muted);
+    font-weight: 600;
 }
+
 .public-footer {
     padding-top: 28px;
 }
@@ -67,5 +68,6 @@
 }
 
 .public-footer .powered-by {
-    padding-top: 12px;
+    padding-top: 90px;
+    padding-bottom: 45px;
 }

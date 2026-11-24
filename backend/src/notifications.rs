@@ -15,10 +15,11 @@ use crate::site_settings;
 
 const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
 
-pub const EVENT_KINDS: [&str; 10] = [
+pub const EVENT_KINDS: [&str; 11] = [
     "service_down",
     "service_up",
     "service_certificate",
+    "service_slow",
     "incident_created",
     "incident_updated",
     "incident_resolved",
@@ -66,6 +67,14 @@ pub enum Event {
         service_id: String,
         down_since: DateTime<Utc>,
     },
+    /// Services that started answering much slower than usual. One event for
+    /// all of them, so a slow network sends one message instead of many.
+    ResponseSlow {
+        services: Vec<SlowService>,
+    },
+    ResponseNormal {
+        services: Vec<String>,
+    },
     IncidentCreated {
         id: i64,
         title: String,
@@ -108,10 +117,17 @@ pub enum Event {
     },
 }
 
+pub struct SlowService {
+    pub id: String,
+    pub ms: i32,
+    pub usual_ms: i32,
+}
+
 impl Event {
     pub fn kind(&self) -> &'static str {
         match self {
             Event::ServiceDown { .. } => "service_down",
+            Event::ResponseSlow { .. } | Event::ResponseNormal { .. } => "service_slow",
             Event::ServiceUp { .. } => "service_up",
             Event::CertificateExpiring { .. } => "service_certificate",
             Event::IncidentCreated { .. } => "incident_created",
@@ -290,6 +306,9 @@ fn panel_path(event: &Event) -> String {
         Event::ServiceDown { service_id, .. }
         | Event::ServiceUp { service_id, .. }
         | Event::CertificateExpiring { service_id, .. } => format!("/manage/services/{service_id}"),
+        Event::ResponseSlow { services } if services.len() == 1 => format!("/manage/services/{}", services[0].id),
+        Event::ResponseNormal { services } if services.len() == 1 => format!("/manage/services/{}", services[0]),
+        Event::ResponseSlow { .. } | Event::ResponseNormal { .. } => "/manage/services".to_string(),
         Event::IncidentCreated { id, .. } | Event::IncidentUpdated { id, .. } => format!("/manage/incidents/{id}"),
         Event::MaintenanceScheduled { id, .. }
         | Event::MaintenanceStarted { id, .. }
@@ -510,6 +529,26 @@ async fn event_card(db: &PgPool, event: &Event) -> Card {
                 subline: format!("Valid until {}", times.format(*expires_at)),
             }
         }
+        Event::ResponseSlow { services } => {
+            let ids: Vec<String> = services.iter().map(|service| service.id.clone()).collect();
+            let labels = affected_labels(db, &ids).await;
+            let subline = match services.as_slice() {
+                [only] => format!("{} ms, usually {} ms", only.ms, only.usual_ms),
+                _ => format!("{} services, up to {} ms", services.len(), services.iter().map(|s| s.ms).max().unwrap_or(0)),
+            };
+            Card {
+                icon: "alert",
+                color: "amber",
+                headline: slow_headline(&labels, services.len()),
+                subline,
+            }
+        }
+        Event::ResponseNormal { services } => Card {
+            icon: "check",
+            color: "green",
+            headline: "Response times are back to normal".to_string(),
+            subline: affected_labels(db, services).await.join(", "),
+        },
         Event::IncidentCreated { title, status, severity, .. } => Card {
             icon: "alert",
             color: severity_card(severity),
@@ -591,6 +630,18 @@ fn duration_text(seconds: i64) -> String {
         return format!("{hours} h {rest} min");
     }
     format!("{} d {} h", hours / 24, hours % 24)
+}
+
+/// "API responds slower than usual", "Websites respond …" for a whole group,
+/// "API and Websites respond …".
+fn slow_headline(labels: &[String], services: usize) -> String {
+    match labels {
+        [] => "Response times are higher than usual".to_string(),
+        [one] if one == "All" => "All services respond slower than usual".to_string(),
+        [one] if services > 1 => format!("{one} respond slower than usual"),
+        [one] => format!("{one} responds slower than usual"),
+        [rest @ .., last] => format!("{} and {last} respond slower than usual", rest.join(", ")),
+    }
 }
 
 fn capitalize(text: &str) -> String {
@@ -699,6 +750,31 @@ async fn content(
                 Vec::new(),
             )
         }
+        Event::ResponseSlow { services } => {
+            let ids: Vec<String> = services.iter().map(|service| service.id.clone()).collect();
+            let names = service_names(db, &ids).await;
+            let mut lines: Vec<String> = Vec::new();
+            for (service, name) in services.iter().zip(names.iter()).take(10) {
+                lines.push(format!("{name}: {} ms, usually {} ms.", service.ms, service.usual_ms));
+            }
+            if services.len() > 10 {
+                lines.push(format!("And {} more.", services.len() - 10));
+            }
+            (
+                slow_headline(&affected_labels(db, &ids).await, ids.len()),
+                lines.join("\n"),
+                YELLOW,
+                link(settings, "/"),
+                ids,
+            )
+        }
+        Event::ResponseNormal { services } => (
+            "Response times are back to normal".to_string(),
+            "They answer about as fast as usual again.".to_string(),
+            GREEN,
+            link(settings, "/"),
+            services.clone(),
+        ),
         Event::IncidentCreated { id, title, status, severity, message, services } => {
             fields.push(field("Status", capitalize(status), true));
             fields.push(field("Severity", capitalize(severity), true));

@@ -493,11 +493,3 @@ export function HelpCircle() {
     </svg>
   )
 }
-export function AlertMark() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-      <rect x="9" y="5" width="2" height="6" rx="1" />
-      <rect x="9" y="13" width="2" height="2" rx="1" />
-    </svg>
-  )
-}

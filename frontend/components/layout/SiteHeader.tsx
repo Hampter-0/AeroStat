@@ -50,6 +50,9 @@ export default function SiteHeader({ siteName, contactUrl }: { siteName: string;
     if (path !== '/' && pathname.startsWith(path + '/')) {
       return 'active'
     }
+    if (path === '/incidents' && pathname === '/uptime') {
+      return 'active'
+    }
     return ''
   }
 

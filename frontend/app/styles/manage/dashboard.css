@@ -21,38 +21,20 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    border: 1px solid var(--success-border);
-    border-radius: 8px;
-    background: var(--success-bg);
-}
-
-.dashboard-status.down {
-    border-color: var(--danger-border);
-    background: var(--danger-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
 }
 
 .dashboard-status-icon {
-    width: 40px;
-    height: 40px;
-    flex: 0 0 40px;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
     display: grid;
     place-items: center;
     border-radius: 50%;
     color: #fff;
-    background: var(--green);
-}
-
-.dashboard-status.down .dashboard-status-icon {
-    background: var(--red);
-}
-
-.dashboard-status.maintenance {
-    border-color: var(--info-border);
-    background: var(--info-bg);
-}
-
-.dashboard-status.maintenance .dashboard-status-icon {
-    background: var(--blue);
+    background: var(--tone, var(--green));
 }
 
 .dashboard-status div {
@@ -64,11 +46,11 @@
 
 .dashboard-status strong {
     color: var(--text);
-    font-size: 15px;
+    font-size: 16px;
 }
 
 .dashboard-status div span {
-    color: var(--text-soft);
+    color: var(--muted);
     font-size: 14px;
 }
 
@@ -104,8 +86,50 @@
 
 .dashboard-stats {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 14px;
+}
+
+.kpi-tile {
+    padding: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.kpi-tile > div {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+}
+
+.kpi-tile > div > span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.kpi-tile strong {
+    color: var(--text);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.02em;
+}
+
+.kpi-tile strong small {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.kpi-tile > div > small {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
 }
 
 .stat-tile {
@@ -192,7 +216,7 @@
 
 .sparkline-line {
     fill: none;
-    stroke: var(--info);
+    stroke: var(--link);
     stroke-width: 2px;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -245,10 +269,6 @@
 }
 
 @media (max-width: 760px) {
-    .dashboard-stats {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
     .dashboard-status {
         flex-wrap: wrap;
     }
@@ -256,7 +276,7 @@
 
 .sparkline-dot {
     fill: none;
-    stroke: var(--info);
+    stroke: var(--link);
     stroke-width: 5px;
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;

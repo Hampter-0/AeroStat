@@ -1,31 +1,40 @@
-import type { ReactNode } from 'react'
-import { Arrow } from '@/components/icons'
+import Link from 'next/link'
+import { ChevronRight } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 
 export default function Notice({
   tone,
-  icon,
+  kind,
   title,
   text,
   href,
 }: {
   tone: string
-  icon: ReactNode
+  kind: GlyphKind
   title: string
-  text: ReactNode
+  text: string
   href?: string
 }) {
-  return (
-    <section className={'notice tone-' + tone}>
-      <span className="notice-icon tone-icon">{icon}</span>
-      <div className="notice-copy">
-        <h2>{title}</h2>
-        <p>{text}</p>
-      </div>
-      {href && (
-        <a className="text-button" href={href}>
-          View details <Arrow />
-        </a>
-      )}
-    </section>
+  const inner = (
+    <>
+      <span className="notice-icon">
+        <StatusGlyph kind={kind} size={22} />
+      </span>
+      <span className="notice-copy">
+        <strong>{title}</strong>
+        <span>{text}</span>
+      </span>
+    </>
   )
+  if (href) {
+    return (
+      <Link href={href} className={'notice tone-' + tone}>
+        {inner}
+        <span className="notice-arrow" aria-hidden="true">
+          <ChevronRight />
+        </span>
+      </Link>
+    )
+  }
+  return <section className={'notice tone-' + tone}>{inner}</section>
 }

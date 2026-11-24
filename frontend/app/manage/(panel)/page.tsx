@@ -1,11 +1,13 @@
 import Link from 'next/link'
-import { AlertTriangle, Arrow, Check, ExternalLink, Tool, X } from '@/components/icons'
+import { AlertTriangle, Arrow, Check, ExternalLink, Server, Tool, X } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 import ActivityList from '@/components/manage/ActivityList'
 import CopyButton from '@/components/manage/CopyButton'
 import ResponseSparkline, { type HourPoint } from '@/components/manage/dashboard/ResponseSparkline'
 import type { ActivityResponse } from '@/lib/activity'
 import type { ManageService, ManageServicesResponse } from '@/lib/services'
 import { UPDATE_COMMAND, getVersionInfo } from '@/lib/version'
+import { affectedLabels } from '@/lib/affected'
 import { getAllMaintenance, getIncident, getIncidents, getStatus } from '@/lib/api'
 import { getSiteConfig } from '@/lib/branding'
 import { formatStatus } from '@/lib/format'
@@ -119,10 +121,10 @@ export default async function ManageOverviewPage() {
     })
   }
 
-  let statusClass = 'dashboard-status ok'
+  let statusTone = 'green'
+  let statusIcon = <Check size={22} />
   let statusTitle = 'All systems operational'
   let statusText = services.length + ' services, all online'
-  let statusIcon = <Check size={22} />
   const inMaintenance = new Set<string>()
   for (const item of inProgress) {
     for (const serviceId of item.affected_services || []) {
@@ -139,24 +141,63 @@ export default async function ManageOverviewPage() {
     }
   }
   if (maintenanceDown.length > 0) {
-    statusClass = 'dashboard-status maintenance'
+    statusTone = 'blue'
+    statusIcon = <Tool size={20} />
     statusTitle = maintenanceDown.length + ' of ' + services.length + ' services in maintenance'
     statusText = maintenanceDown
       .map(function (service) {
         return service.name
       })
       .join(', ')
-    statusIcon = <Tool size={20} />
   }
   if (realDown.length > 0) {
-    statusClass = 'dashboard-status down'
+    statusTone = 'red'
+    statusIcon = <X size={22} />
     statusTitle = realDown.length + ' of ' + services.length + ' services down'
     statusText = realDown
       .map(function (service) {
         return service.name
       })
       .join(', ')
-    statusIcon = <X size={22} />
+  }
+  if (services.length === 0) {
+    statusTone = 'gray'
+    statusIcon = <Server size={20} />
+    statusTitle = 'No services yet'
+    statusText = 'Add a service to start monitoring'
+  }
+
+  let onlineCount = 0
+  for (const service of services) {
+    if (service.status === 'online') {
+      onlineCount = onlineCount + 1
+    }
+  }
+  let upTone = 'green'
+  let upKind: GlyphKind = 'check'
+  if (realDown.length > 0) {
+    upTone = 'red'
+    upKind = 'x'
+  }
+
+  let responseTotal = 0
+  let responseCount = 0
+  for (const series of dashboard.response_times) {
+    for (const point of series.points) {
+      if (point.avg_ms !== null) {
+        responseTotal = responseTotal + point.avg_ms
+        responseCount = responseCount + 1
+      }
+    }
+  }
+  let responseText = '–'
+  if (responseCount > 0) {
+    responseText = Math.round(responseTotal / responseCount) + ' ms'
+  }
+
+  let resolveText = 'none resolved yet'
+  if (dashboard.stats.mean_minutes_to_resolve !== null) {
+    resolveText = 'resolved in ' + minutesText(dashboard.stats.mean_minutes_to_resolve) + ' on average'
   }
 
   const names = new Map<string, string>()
@@ -166,9 +207,7 @@ export default async function ManageOverviewPage() {
 
   return (
     <div className="manage-page">
-      <PageHeader
-        title={<>Welcome, {user.username}</>}
-      />
+      <PageHeader title={<>Welcome, {user.username}</>} description="How your services are doing right now." />
 
       {can(user, 'system.view') && version && version.update_available && (
         <section className="update-notice">
@@ -192,7 +231,7 @@ export default async function ManageOverviewPage() {
         </section>
       )}
 
-      <section className={statusClass}>
+      <section className={'dashboard-status tone-' + statusTone}>
         <span className="dashboard-status-icon">{statusIcon}</span>
         <div>
           <strong>{statusTitle}</strong>
@@ -201,6 +240,58 @@ export default async function ManageOverviewPage() {
         <a href="/" target="_blank" className="dashboard-status-link">
           View status page <ExternalLink />
         </a>
+      </section>
+
+      <section className="dashboard-stats" aria-label="Key numbers">
+        <div className="kpi-tile">
+          <span className={'event-icon tone-' + upTone}>
+            <StatusGlyph kind={upKind} />
+          </span>
+          <div>
+            <span>Services up</span>
+            <strong>
+              {onlineCount}
+              <small> / {services.length}</small>
+            </strong>
+            <small>online right now</small>
+          </div>
+        </div>
+        <div className="kpi-tile">
+          <span className="event-icon tone-blue">
+            <StatusGlyph kind="gauge" />
+          </span>
+          <div>
+            <span>Avg. response</span>
+            <strong>{responseText}</strong>
+            <small>all services, last 24 hours</small>
+          </div>
+        </div>
+        {canIncidents && (
+          <div className="kpi-tile">
+            <span className="event-icon tone-amber">
+              <StatusGlyph kind="alert" />
+            </span>
+            <div>
+              <span>Incidents</span>
+              <strong>{dashboard.stats.incidents}</strong>
+              <small>
+                last {dashboard.stats.days} days, {resolveText}
+              </small>
+            </div>
+          </div>
+        )}
+        {canIncidents && (
+          <div className="kpi-tile">
+            <span className="event-icon tone-gray">
+              <StatusGlyph kind="clock" />
+            </span>
+            <div>
+              <span>Downtime</span>
+              <strong>{minutesText(dashboard.stats.downtime_minutes)}</strong>
+              <small>all services, last {dashboard.stats.days} days</small>
+            </div>
+          </div>
+        )}
       </section>
 
       {can(user, 'incidents.create') && unexplained.length > 0 && (
@@ -277,10 +368,7 @@ export default async function ManageOverviewPage() {
               if (incident.updates.length > 0) {
                 latest = incident.updates[0].message
               }
-              const serviceNames: string[] = []
-              for (const serviceId of incident.affected_services || []) {
-                serviceNames.push(names.get(serviceId) || serviceId)
-              }
+              const serviceNames = affectedLabels(incident.affected_services || [], services)
               return (
                 <Link href={'/manage/incidents/' + incident.id} className="manage-list-row" key={incident.id}>
                   <IncidentIcon status={incident.status} severity={incident.severity} />
@@ -340,26 +428,6 @@ export default async function ManageOverviewPage() {
                 </Link>
               )
             })}
-          </div>
-        </section>
-      )}
-
-      {canIncidents && (
-        <section className="dashboard-stats" aria-label={'Last ' + dashboard.stats.days + ' days'}>
-          <div className="stat-tile">
-            <span>Incidents</span>
-            <strong>{dashboard.stats.incidents}</strong>
-            <small>last {dashboard.stats.days} days</small>
-          </div>
-          <div className="stat-tile">
-            <span>Avg. time to resolve</span>
-            <strong>{minutesText(dashboard.stats.mean_minutes_to_resolve)}</strong>
-            <small>resolved incidents, last {dashboard.stats.days} days</small>
-          </div>
-          <div className="stat-tile">
-            <span>Downtime</span>
-            <strong>{minutesText(dashboard.stats.downtime_minutes)}</strong>
-            <small>all services, last {dashboard.stats.days} days</small>
           </div>
         </section>
       )}

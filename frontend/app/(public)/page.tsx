@@ -4,11 +4,13 @@ import Notice from '@/components/status/Notice'
 import PastIncidents, { PAST_DAYS } from '@/components/status/PastIncidents'
 import ResponseChart from '@/components/status/ResponseChart'
 import ServiceSection from '@/components/status/ServiceSection'
-import { AlertSmall, Arrow, Check, Clock, Server, Tool, X } from '@/components/icons'
+import { AlertSmall, Arrow, Check, Server, Tool, X } from '@/components/icons'
 import { getIncidents, getIncidentsBetween, getResponseTimes, getStatus, getAllMaintenance, getUptime } from '@/lib/api'
 import { getDisplayTime } from '@/lib/visitor-time'
-import { currentTimeMs, formatWindow, zoneAbbreviation } from '@/lib/time'
+import { currentTimeMs, formatDateTimeShort, formatWindow, zoneAbbreviation } from '@/lib/time'
+import { formatStatus } from '@/lib/format'
 import type { Incident, MaintenanceWindow, ResponseTimes, ServiceStatus, UptimeStats } from '@/lib/types'
+import { affectedLabels } from '@/lib/affected'
 import { incidentTone } from '@/lib/incidents'
 
 export default async function Home() {
@@ -159,6 +161,26 @@ export default async function Home() {
     downNoticeText = unexplainedDownNames.join(', ') + ' are not responding'
   }
 
+  const slowServices = services.filter(function (service) {
+    return typeof service.slow_ms === 'number' && service.status === 'online'
+  })
+  let slowNoticeText = ''
+  if (slowServices.length === 1) {
+    slowNoticeText = slowServices[0].name + ' responds slower than usual, ' + slowServices[0].slow_ms + ' ms instead of about ' + slowServices[0].slow_usual_ms + ' ms'
+  } else if (slowServices.length > 1) {
+    const labels = affectedLabels(
+      slowServices.map(function (service) {
+        return service.id
+      }),
+      services
+    )
+    if (labels.length === 1 && labels[0] === 'All') {
+      slowNoticeText = 'All services respond slower than usual'
+    } else {
+      slowNoticeText = labels.join(', ') + ' respond slower than usual'
+    }
+  }
+
   let upcomingMaintenanceWindow: MaintenanceWindow | null = null
   for (const maintenanceWindow of maintenanceWindows) {
     if (maintenanceWindow.status === 'scheduled') {
@@ -187,15 +209,17 @@ export default async function Home() {
         <Link href="/incidents">Incident history <Arrow /></Link>
       </section>
 
-      {downNoticeText && <Notice tone="red" icon={<AlertSmall />} title="Service disruption" text={downNoticeText} />}
+      {downNoticeText && <Notice tone="red" kind="x" title="Service disruption" text={downNoticeText} />}
+
+      {slowNoticeText && <Notice tone="amber" kind="gauge" title="Slower than usual" text={slowNoticeText} />}
 
       {ongoingIncidents.map(function (incident) {
         return (
           <Notice
             tone={incidentTone(incident.status, incident.severity)}
-            icon={<AlertSmall />}
-            title="Ongoing incident"
-            text={incident.title}
+            kind="alert"
+            title={incident.title}
+            text={'Ongoing incident, ' + formatStatus(incident.status).toLowerCase()}
             href={'/incidents/' + incident.id}
             key={'incident-' + incident.id}
           />
@@ -206,9 +230,9 @@ export default async function Home() {
         return (
           <Notice
             tone="blue"
-            icon={<Tool />}
-            title="Maintenance in progress"
-            text={maintenanceWindow.title}
+            kind="wrench"
+            title={maintenanceWindow.title}
+            text={'Maintenance in progress, until ' + formatDateTimeShort(maintenanceWindow.scheduled_end, timezone)}
             href={'/maintenance/' + maintenanceWindow.id}
             key={'ongoing-maintenance-' + maintenanceWindow.id}
           />
@@ -218,15 +242,22 @@ export default async function Home() {
       {upcomingMaintenanceWindow && (
         <Notice
           tone="amber"
-          icon={<Clock />}
-          title="Scheduled maintenance"
-          text={upcomingMaintenanceWindow.title + ' - ' + formatWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
+          kind="clock"
+          title={upcomingMaintenanceWindow.title}
+          text={'Scheduled maintenance, ' + formatWindow(upcomingMaintenanceWindow.scheduled_start, upcomingMaintenanceWindow.scheduled_end, timezone)}
           href={'/maintenance/' + upcomingMaintenanceWindow.id}
         />
       )}
 
       <section className="live-status">
-        <h2>Live Status</h2>
+        <div className="live-status-head">
+          <h2>Live Status</h2>
+          {services.length > 0 && (
+            <p>
+              Uptime over the past 60 days. <Link href="/uptime">View historical uptime</Link>
+            </p>
+          )}
+        </div>
         {services.length === 0 && (
           <p className="live-status-empty">Nothing is being monitored yet. Services show up here as soon as they are added.</p>
         )}

@@ -1,24 +1,29 @@
 .archive-heading {
     width: min(860px, calc(100% - 44px));
     margin: 0 auto;
-    padding: 62px 0 42px;
+    padding: 56px 0 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .archive-heading h1 {
-    margin: 0 0 18px;
+    margin: 0;
     color: var(--text);
-    font-size: 30px;
-    font-weight: 500;
+    font-size: 34px;
+    font-weight: 700;
     letter-spacing: -.035em;
 }
 
 .range-picker {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    gap: 14px;
     margin-top: 18px;
-    color: var(--text-soft);
-    font-size: 12px;
+    color: var(--muted);
+    font-size: 14px;
 }
 
 .range-picker .range-button {
@@ -27,15 +32,15 @@
     padding: 0;
     display: grid;
     place-items: center;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--text-soft);
-    background: var(--panel-soft);
+    border: 0;
+    border-radius: 8px;
+    color: var(--muted);
+    background: var(--chip-bg);
 }
 
 a.range-button:hover {
-    border-color: var(--link);
     color: var(--text);
+    background: var(--panel-hover);
 }
 
 .range-picker .range-button.disabled {
@@ -83,33 +88,25 @@ a.range-button:hover {
 
 .event-marker {
     position: absolute;
-    top: 25px;
+    top: 23px;
     left: -1px;
-    margin-left: -10px;
-    width: 20px;
-    height: 20px;
+    margin-left: -12px;
+    width: 24px;
+    height: 24px;
     display: grid;
     place-items: center;
     border-radius: 50%;
+    color: var(--muted);
+    background: var(--panel-soft);
     box-shadow: 0 0 0 4px var(--panel-soft);
-    color: var(--text-soft);
-    background: var(--chip-bg);
 }
 
 .event-marker[class*="tone-"] {
-    color: #fff;
-    background: var(--tone);
+    color: var(--tone-icon);
 }
 
 .event-marker svg {
-    width: 14px;
-    height: 14px;
-    stroke-width: 3;
-}
-
-.event-marker.alert svg {
-    width: 20px;
-    height: 20px;
+    display: block;
 }
 
 .event-title-row {

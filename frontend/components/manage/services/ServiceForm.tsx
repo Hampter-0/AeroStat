@@ -4,8 +4,11 @@ import { useActionState, useState } from 'react'
 import type { FormState } from '@/app/manage/actions'
 import { createService, updateService } from '@/app/manage/(panel)/services/actions'
 import { useResultToast } from '@/components/manage/toast/Toasts'
+import DockerTarget from '@/components/manage/services/DockerTarget'
+import type { DockerHostsResponse } from '@/lib/docker'
 import {
-  CHECK_TYPES,
+  checkTypeGroups,
+  checkTypeInfo,
   DNS_RECORD_TYPES,
   INTERVAL_UNITS,
   splitInterval,
@@ -21,11 +24,13 @@ export default function ServiceForm({
   service,
   defaultGroupId,
   certificateText,
+  dockerHosts,
 }: {
   groups: ManageGroup[]
   service: ManageService | null
   defaultGroupId: string
   certificateText: string | null
+  dockerHosts: DockerHostsResponse | null
 }) {
   let action = createService
   if (service) {
@@ -90,21 +95,15 @@ export default function ServiceForm({
     buttonText = 'Saving…'
   }
 
-  let targetLabel = 'URL to check'
-  let targetPlaceholder = 'https://example.com/health'
-  let targetHint = 'Up when it answers with one of the expected status codes.'
-  let targetType = 'url'
+  const typeInfo = checkTypeInfo(checkType)
+  let targetType = 'text'
+  if (checkType === 'http') {
+    targetType = 'url'
+  }
   let targetValue = url
-  if (checkType === 'tcp') {
-    targetLabel = 'Host and port'
-    targetPlaceholder = 'db.example.com:5432'
-    targetHint = 'Up when a connection opens. For databases, mail servers, game servers and other non-web services.'
-    targetType = 'text'
-  } else if (checkType === 'dns') {
-    targetLabel = 'Domain name'
-    targetPlaceholder = 'example.com'
-    targetHint = 'Up when the name has records of the chosen type.'
-    targetType = 'text'
+  let dockerHostId: number | null = null
+  if (service && service.check_type === 'docker') {
+    dockerHostId = service.docker_host_id
   }
   if (service && service.check_type !== checkType) {
     targetValue = ''
@@ -168,11 +167,17 @@ export default function ServiceForm({
         <label>
           <span>Check type</span>
           <select name="check_type" value={checkType} onChange={changeType}>
-            {CHECK_TYPES.map(function (type) {
+            {checkTypeGroups().map(function (group) {
               return (
-                <option value={type.value} key={type.value}>
-                  {type.label}
-                </option>
+                <optgroup label={group.name} key={group.name}>
+                  {group.types.map(function (type) {
+                    return (
+                      <option value={type.value} key={type.value}>
+                        {type.label}
+                      </option>
+                    )
+                  })}
+                </optgroup>
               )
             })}
           </select>
@@ -193,18 +198,28 @@ export default function ServiceForm({
         )}
         {checkType !== 'dns' && intervalField}
       </div>
-      <label>
-        <span>{targetLabel}</span>
-        <input
-          key={'target-' + checkType}
-          name="url"
-          type={targetType}
-          defaultValue={targetValue}
-          required
-          placeholder={targetPlaceholder}
+      {checkType === 'docker' && (
+        <DockerTarget
+          key={'docker-' + checkType}
+          hosts={dockerHosts}
+          hostId={dockerHostId}
+          container={targetValue}
         />
-        <small className="field-hint">{targetHint}</small>
-      </label>
+      )}
+      {checkType !== 'docker' && (
+        <label>
+          <span>{typeInfo.target}</span>
+          <input
+            key={'target-' + checkType}
+            name="url"
+            type={targetType}
+            defaultValue={targetValue}
+            required
+            placeholder={typeInfo.placeholder}
+          />
+          <small className="field-hint">{typeInfo.hint}</small>
+        </label>
+      )}
       {checkType === 'http' && (
         <>
           <div className="form-row">

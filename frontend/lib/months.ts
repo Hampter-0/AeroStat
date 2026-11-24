@@ -43,9 +43,13 @@ export function pageHref(path: string, page: number): string {
   return path + '?page=' + page
 }
 
+export function shortMonthLabel(year: number, month: number): string {
+  return new Date(Date.UTC(year, month - 1, 15)).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+}
+
 export function rangeLabel(months: CalendarMonth[]): string {
-  const first = months[0].label
-  const last = months[months.length - 1].label
+  const first = shortMonthLabel(months[0].year, months[0].month)
+  const last = shortMonthLabel(months[months.length - 1].year, months[months.length - 1].month)
   if (first === last) {
     return first
   }

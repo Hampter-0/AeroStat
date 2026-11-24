@@ -1,12 +1,12 @@
-import type { ReactNode } from 'react'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 
 export interface TimelineEntry {
   key: string
   label: string
   time: string
   message: string | null
-  markerClassName: string
-  icon: ReactNode
+  tone: string
+  kind: GlyphKind
 }
 
 export default function Timeline({ entries }: { entries: TimelineEntry[] }) {
@@ -15,7 +15,9 @@ export default function Timeline({ entries }: { entries: TimelineEntry[] }) {
       {entries.map(function (entry) {
         return (
           <div className="detail-update" key={entry.key}>
-            <span className={entry.markerClassName}>{entry.icon}</span>
+            <span className={'update-marker tone-' + entry.tone}>
+              <StatusGlyph kind={entry.kind} size={22} />
+            </span>
             <div className="update-card">
               <div>
                 <strong>{entry.label}</strong>

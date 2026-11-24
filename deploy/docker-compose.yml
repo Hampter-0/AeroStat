@@ -38,6 +38,7 @@ services:
       LOGIN_MAX_FAILURES_PER_ACCOUNT: ${LOGIN_MAX_FAILURES_PER_ACCOUNT:-30}
       LOGIN_LOCKOUT_MINUTES: ${LOGIN_LOCKOUT_MINUTES:-15}
       UPDATE_CHECK: ${UPDATE_CHECK:-true}
+      DOCKER_HOST: ${DOCKER_HOST:-http://docker-proxy:2375}
       SECRET_KEY: ${SECRET_KEY:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
@@ -47,6 +48,17 @@ services:
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
       RUST_LOG: ${RUST_LOG:-info}
+
+  # Lets Docker container checks read which containers run, and nothing
+  # else. Start it with: docker compose --profile docker up -d
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:v0.5.0
+    restart: unless-stopped
+    profiles: ["docker"]
+    environment:
+      CONTAINERS: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   redis:
     image: redis:7-alpine

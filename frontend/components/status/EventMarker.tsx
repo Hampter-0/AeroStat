@@ -1,44 +1,53 @@
-import { AlertMark, Check, Clock, Tool, X } from '@/components/icons'
+import StatusGlyph, { type GlyphKind } from '@/components/StatusGlyph'
 import { incidentTone } from '@/lib/incidents'
 import { maintenanceTone } from '@/lib/maintenance'
 
-function incidentIcon(status: string) {
+export function incidentGlyph(status: string): GlyphKind {
   if (status === 'resolved') {
-    return <Check size={10} />
+    return 'check'
   }
-  return <AlertMark />
+  return 'alert'
 }
 
-function alertClass(status: string): string {
-  if (status === 'resolved') {
-    return ''
-  }
-  return ' alert'
-}
-
-function maintenanceIcon(status: string) {
+export function maintenanceGlyph(status: string): GlyphKind {
   if (status === 'in_progress') {
-    return <Tool size={10} />
+    return 'wrench'
   } else if (status === 'completed') {
-    return <Check size={10} />
+    return 'check'
   } else if (status === 'cancelled') {
-    return <X size={10} />
+    return 'x'
   }
-  return <Clock />
+  return 'clock'
 }
 
 export function IncidentMarker({ status, severity }: { status: string; severity: string }) {
-  return <span className={'event-marker tone-' + incidentTone(status, severity) + alertClass(status)}>{incidentIcon(status)}</span>
+  return (
+    <span className={'event-marker tone-' + incidentTone(status, severity)}>
+      <StatusGlyph kind={incidentGlyph(status)} size={24} />
+    </span>
+  )
 }
 
 export function MaintenanceMarker({ status }: { status: string }) {
-  return <span className={'event-marker tone-' + maintenanceTone(status)}>{maintenanceIcon(status)}</span>
+  return (
+    <span className={'event-marker tone-' + maintenanceTone(status)}>
+      <StatusGlyph kind={maintenanceGlyph(status)} size={24} />
+    </span>
+  )
 }
 
 export function IncidentIcon({ status, severity }: { status: string; severity: string }) {
-  return <span className={'event-icon tone-' + incidentTone(status, severity) + alertClass(status)}>{incidentIcon(status)}</span>
+  return (
+    <span className={'event-icon tone-' + incidentTone(status, severity)}>
+      <StatusGlyph kind={incidentGlyph(status)} />
+    </span>
+  )
 }
 
 export function MaintenanceIcon({ status }: { status: string }) {
-  return <span className={'event-icon tone-' + maintenanceTone(status)}>{maintenanceIcon(status)}</span>
+  return (
+    <span className={'event-icon tone-' + maintenanceTone(status)}>
+      <StatusGlyph kind={maintenanceGlyph(status)} />
+    </span>
+  )
 }
