@@ -38,8 +38,9 @@ pub struct CheckableService {
     pub docker_address: Option<String>,
 }
 
-/// Performs a single check against one service and returns the result
-pub async fn check_service(client: &reqwest::Client, service: &CheckableService) -> CheckResult {
+/// Performs a single check against one service and returns the result. None
+/// when there is no answer yet, like a container that is still starting.
+pub async fn check_service(client: &reqwest::Client, service: &CheckableService) -> Option<CheckResult> {
     let start = Instant::now();
     let outcome = match service.check_type.as_str() {
         "tcp" => check_tcp(&service.url).await,
@@ -47,7 +48,11 @@ pub async fn check_service(client: &reqwest::Client, service: &CheckableService)
         "http" => check_http(client, service).await,
         "docker" => {
             let address = service.docker_address.clone().unwrap_or_else(crate::docker::default_address);
-            crate::docker::container_status(&address, &service.url).await.map(|_| None).map_err(failed)
+            match crate::docker::container_status(&address, &service.url).await {
+                Ok(true) => Ok(None),
+                Ok(false) => return None,
+                Err(reason) => Err(failed(reason)),
+            }
         }
         other => super::probes::run(other, &service.url).await.map(|_| None).map_err(failed),
     };
@@ -57,13 +62,13 @@ pub async fn check_service(client: &reqwest::Client, service: &CheckableService)
         Ok(code) => ("online", code, None),
         Err(failure) => ("offline", failure.status_code, Some(failure.reason)),
     };
-    CheckResult {
+    Some(CheckResult {
         service_id: service.id.clone(),
         status: status.into(),
         response_time_ms,
         status_code,
         error,
-    }
+    })
 }
 
 struct Failure {

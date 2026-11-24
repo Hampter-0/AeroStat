@@ -59,7 +59,10 @@ async fn claim_due(pool: &PgPool) -> anyhow::Result<Vec<CheckableService>> {
 }
 
 async fn run_check(pool: PgPool, client: reqwest::Client, service: CheckableService) {
-    let result = check_service(&client, &service).await;
+    let Some(result) = check_service(&client, &service).await else {
+        tracing::info!("Checked {} -> still starting, no result yet", service.id);
+        return;
+    };
 
     if let Err(e) = db::record(&pool, &result).await {
         tracing::warn!("Could not record check for {} (deleted meanwhile?): {e}", result.service_id);

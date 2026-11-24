@@ -69,8 +69,9 @@ pub async fn list(address: &str) -> Result<Vec<Container>, String> {
     Ok(containers)
 }
 
-/// Up when the container runs and is not unhealthy.
-pub async fn container_status(address: &str, name: &str) -> Result<(), String> {
+/// Up when the container runs and is not unhealthy. Ok(false) while its
+/// health check is still starting: no result yet, Docker decides soon.
+pub async fn container_status(address: &str, name: &str) -> Result<bool, String> {
     let (status, body) = get(address, &format!("/containers/{name}/json")).await?;
     if status == 404 {
         return Err(format!("There is no container called {name}."));
@@ -95,10 +96,11 @@ pub async fn container_status(address: &str, name: &str) -> Result<(), String> {
     if state["Paused"].as_bool() == Some(true) {
         return Err("The container is paused.".to_string());
     }
-    if state["Health"]["Status"].as_str() == Some("unhealthy") {
-        return Err("The container is running but unhealthy.".to_string());
+    match state["Health"]["Status"].as_str() {
+        Some("unhealthy") => Err("The container is running but unhealthy.".to_string()),
+        Some("starting") => Ok(false),
+        _ => Ok(true),
     }
-    Ok(())
 }
 
 async fn get(address: &str, path: &str) -> Result<(u16, String), String> {

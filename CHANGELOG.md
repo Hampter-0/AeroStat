@@ -4,6 +4,12 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.31.1
+
+### Changes
+
+- A Docker container whose health check is still starting is waited for instead of counted as down: no result, no downtime and no message until Docker calls it healthy or unhealthy.
+
 ## 0.31.0
 
 ### New
