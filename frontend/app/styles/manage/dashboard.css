@@ -37,10 +37,20 @@
     background: var(--tone, var(--green));
 }
 
-.dashboard-status div {
+.dashboard-status-body {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 14px;
+}
+
+.dashboard-status-text {
     min-width: 0;
     display: grid;
-    flex: 1;
+    flex: 1 1 180px;
     gap: 3px;
 }
 
@@ -49,7 +59,7 @@
     font-size: 16px;
 }
 
-.dashboard-status div span {
+.dashboard-status-text span {
     color: var(--muted);
     font-size: 14px;
 }
@@ -268,11 +278,6 @@
     font-size: 12px;
 }
 
-@media (max-width: 760px) {
-    .dashboard-status {
-        flex-wrap: wrap;
-    }
-}
 
 .sparkline-dot {
     fill: none;

@@ -125,6 +125,9 @@ export default async function ManageOverviewPage() {
   let statusIcon = <Check size={22} />
   let statusTitle = 'All systems operational'
   let statusText = services.length + ' services, all online'
+  if (services.length === 1) {
+    statusText = 'Your service is online'
+  }
   const inMaintenance = new Set<string>()
   for (const item of inProgress) {
     for (const serviceId of item.affected_services || []) {
@@ -233,13 +236,15 @@ export default async function ManageOverviewPage() {
 
       <section className={'dashboard-status tone-' + statusTone}>
         <span className="dashboard-status-icon">{statusIcon}</span>
-        <div>
-          <strong>{statusTitle}</strong>
-          <span>{statusText}</span>
+        <div className="dashboard-status-body">
+          <div className="dashboard-status-text">
+            <strong>{statusTitle}</strong>
+            <span>{statusText}</span>
+          </div>
+          <a href="/" target="_blank" className="dashboard-status-link">
+            View status page <ExternalLink />
+          </a>
         </div>
-        <a href="/" target="_blank" className="dashboard-status-link">
-          View status page <ExternalLink />
-        </a>
       </section>
 
       <section className="dashboard-stats" aria-label="Key numbers">

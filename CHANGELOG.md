@@ -4,6 +4,14 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.32.1
+
+### Fixes
+
+- The menu button of the status page on phones keeps its size when it turns into a cross.
+- The status card on the panel dashboard no longer squeezes its text on narrow screens: **View status page** moves under the text instead.
+- The status card says "Your service is online" instead of "1 services, all online".
+
 ## 0.32.0
 
 ### New

@@ -158,6 +158,12 @@
     display: none;
 }
 
+.mobile-menu .dropdown-trigger {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+}
+
 @media (max-width: 560px) {
     .status-nav-inner {
         width: calc(100% - 28px);
