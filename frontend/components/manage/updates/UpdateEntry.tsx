@@ -1,6 +1,7 @@
 'use client'
 
 import { startTransition, useActionState, useState } from 'react'
+import DateTimeField from '@/components/manage/DateTimeField'
 import type { FormState } from '@/app/manage/actions'
 import { useConfirm } from '@/components/manage/confirm/Confirm'
 import { useResultToast } from '@/components/manage/toast/Toasts'
@@ -118,7 +119,7 @@ export default function UpdateEntry({
               <label>
                 <span>Time ({zoneAbbreviation(timezone, update.created_at)})</span>
                 <input type="hidden" name="created_at_before" value={toInputValue(update.created_at, timezone)} />
-                <input name="created_at" type="datetime-local" required defaultValue={toInputValue(update.created_at, timezone)} />
+                <DateTimeField name="created_at" required defaultValue={toInputValue(update.created_at, timezone)} timezone={timezone} />
                 <small className="field-hint">When this update shows as posted on the status page.</small>
               </label>
             )}

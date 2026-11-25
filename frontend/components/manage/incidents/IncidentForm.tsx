@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import DateTimeField from '@/components/manage/DateTimeField'
 import type { FormState } from '@/app/manage/actions'
 import { createIncident, updateIncident } from '@/app/manage/(panel)/incidents/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
@@ -8,7 +9,7 @@ import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatStatus } from '@/lib/format'
 import { INCIDENT_SEVERITIES, INCIDENT_STATUSES, STATUS_HINTS } from '@/lib/incidents'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
-import { useFormSubmit } from '@/lib/use-form-submit'
+import { useFormSubmit, useKeepValuesSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -40,16 +41,19 @@ export default function IncidentForm({
   }
   const [state, formAction, pending] = useActionState(action, initialState)
   useResultToast(state)
-  const { formRef, onSubmit } = useFormSubmit(formAction, state)
+  const { formRef, onSubmit: submitAndReset } = useFormSubmit(formAction, state)
+  const submitAndKeep = useKeepValuesSubmit(formAction)
+  let onSubmit = submitAndReset
+  let resetRef: typeof formRef | null = formRef
+  if (incident) {
+    onSubmit = submitAndKeep
+    resetRef = null
+  }
   const [status, setStatus] = useState('investigating')
   const [endedAt, setEndedAt] = useState('')
 
   function changeStatus(event: React.ChangeEvent<HTMLSelectElement>) {
     setStatus(event.target.value)
-  }
-
-  function changeEndedAt(event: React.ChangeEvent<HTMLInputElement>) {
-    setEndedAt(event.target.value)
   }
 
   let title = ''
@@ -104,7 +108,7 @@ export default function IncidentForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
+    <form ref={resetRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {incident && <input type="hidden" name="id" value={incident.id} />}
       {incident && <input type="hidden" name="started_at_before" value={startedAt} />}
       {incidentResolved && <input type="hidden" name="resolved_at_before" value={resolvedAt} />}
@@ -148,20 +152,20 @@ export default function IncidentForm({
       <div className="form-row">
         <label>
           <span>Started at ({zone})</span>
-          <input name="started_at" type="datetime-local" defaultValue={startedAt} required={Boolean(incident)} />
+          <DateTimeField name="started_at" defaultValue={startedAt} required={Boolean(incident)} placeholder="Now" timezone={timezone} />
           <small className="field-hint">{startHint}</small>
         </label>
         {!incident && (
           <label>
             <span>Ended at ({zone})</span>
-            <input name="resolved_at" type="datetime-local" value={endedAt} onChange={changeEndedAt} />
+            <DateTimeField name="resolved_at" value={endedAt} onChange={setEndedAt} placeholder="Still going on" timezone={timezone} />
             <small className="field-hint">Leave empty if it is still going on.</small>
           </label>
         )}
         {incidentResolved && (
           <label>
             <span>Ended at ({zone})</span>
-            <input name="resolved_at" type="datetime-local" defaultValue={resolvedAt} required />
+            <DateTimeField name="resolved_at" defaultValue={resolvedAt} required timezone={timezone} />
             <small className="field-hint">Moves the Resolved update in the timeline.</small>
           </label>
         )}

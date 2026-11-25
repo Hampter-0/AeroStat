@@ -1,4 +1,5 @@
 import { Check } from '@/components/icons'
+import RetryButton from '@/components/status/RetryButton'
 import HistoryTabs from '@/components/status/HistoryTabs'
 import IncidentEntry from '@/components/status/IncidentEntry'
 import RangePicker from '@/components/status/RangePicker'
@@ -42,6 +43,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
       <section className="status-unavailable">
         <h2>Status temporarily unavailable</h2>
         <p>We can&apos;t load incident history right now. Please check back in a moment.</p>
+        <RetryButton />
       </section>
     )
   }

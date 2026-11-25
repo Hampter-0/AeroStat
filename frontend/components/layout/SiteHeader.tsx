@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Menu } from '@/components/icons'
+import { Menu, X } from '@/components/icons'
 import Logo from './Logo'
 import ThemeSwitcher from './ThemeSwitcher'
 
@@ -60,6 +60,11 @@ export default function SiteHeader({ siteName, contactUrl }: { siteName: string;
     setMenuOpen(false)
   }
 
+  let menuIcon = <Menu />
+  if (menuOpen) {
+    menuIcon = <X size={18} />
+  }
+
   function toggleMenu() {
     setMenuOpen(!menuOpen)
   }
@@ -96,7 +101,7 @@ export default function SiteHeader({ siteName, contactUrl }: { siteName: string;
               aria-label={menuLabel}
               onClick={toggleMenu}
             >
-              <Menu />
+              {menuIcon}
             </button>
             {menuOpen && (
               <nav className="dropdown-menu" aria-label="Status navigation">

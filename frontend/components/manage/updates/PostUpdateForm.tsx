@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
+import DateTimeField from '@/components/manage/DateTimeField'
 import type { FormState } from '@/app/manage/actions'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { formatStatus } from '@/lib/format'
@@ -33,27 +34,28 @@ export default function PostUpdateForm({
     buttonText = 'Posting…'
   }
 
-  let columnsClass = 'status-options'
-  if (statuses.length === 3) {
-    columnsClass = 'status-options three'
+  const [status, setStatus] = useState(currentStatus)
+
+  function changeStatus(event: React.ChangeEvent<HTMLSelectElement>) {
+    setStatus(event.target.value)
   }
 
   return (
     <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form" key={currentStatus}>
       <input type="hidden" name="id" value={parentId} />
-      <div className={columnsClass} role="radiogroup" aria-label="Status">
-        {statuses.map(function (value) {
-          return (
-            <label className={'status-option status-' + value} key={value}>
-              <input type="radio" name="status" value={value} defaultChecked={value === currentStatus} required />
-              <span>
-                <strong>{formatStatus(value)}</strong>
-                <small>{hints[value]}</small>
-              </span>
-            </label>
-          )
-        })}
-      </div>
+      <label>
+        <span>Status</span>
+        <select name="status" value={status} onChange={changeStatus} required>
+          {statuses.map(function (value) {
+            return (
+              <option value={value} key={value}>
+                {formatStatus(value)}
+              </option>
+            )
+          })}
+        </select>
+        {hints[status] && <small className="field-hint">{hints[status]}</small>}
+      </label>
       <label>
         <span>Message</span>
         <textarea name="message" rows={3} required placeholder="What changed? This is shown on the status page." />
@@ -61,7 +63,7 @@ export default function PostUpdateForm({
       {timezone && (
         <label className="update-time">
           <span>Time ({zoneAbbreviation(timezone)})</span>
-          <input name="created_at" type="datetime-local" />
+          <DateTimeField name="created_at" placeholder="Now" timezone={timezone} />
           <small className="field-hint">Leave empty for now. An earlier time adds it to the timeline without a notification.</small>
         </label>
       )}

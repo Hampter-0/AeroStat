@@ -7,6 +7,9 @@ use sqlx::PgPool;
 pub const SITE_NAME: &str = "site_name";
 pub const SITE_DESCRIPTION: &str = "site_description";
 pub const CONTACT_URL: &str = "contact_url";
+/// Who the site belongs to and their website, for the copyright line.
+pub const COMPANY_NAME: &str = "company_name";
+pub const COMPANY_URL: &str = "company_url";
 pub const PRIMARY_COLOR: &str = "primary_color";
 pub const TIMEZONE: &str = "timezone";
 pub const METRICS_RETENTION_DAYS: &str = "metrics_retention_days";
@@ -19,6 +22,12 @@ pub const DEFAULT_DOWN_AFTER_CHECKS: i64 = 2;
 /// in percent, or "off".
 pub const SLOW_ALERT_PERCENT: &str = "slow_alert_percent";
 pub const DEFAULT_SLOW_ALERT_PERCENT: i64 = 100;
+/// A service counts as slow when this many of the last SLOW_WINDOW checks
+/// were slow. The default of 3 of 5 keeps one hiccup quiet.
+pub const SLOW_CHECKS: &str = "slow_checks";
+pub const DEFAULT_SLOW_CHECKS: i64 = 3;
+pub const SLOW_WINDOW: &str = "slow_window";
+pub const DEFAULT_SLOW_WINDOW: i64 = 5;
 /// "off", "daily" or "weekly". Scheduled backups run after 03:00 in the site's timezone.
 pub const BACKUP_SCHEDULE: &str = "backup_schedule";
 pub const DEFAULT_BACKUP_SCHEDULE: &str = "daily";
@@ -28,16 +37,20 @@ pub const DEFAULT_BACKUP_KEEP: i64 = 7;
 /// "true" or "false": make a backup on start when a new version is about to change the database.
 pub const BACKUP_BEFORE_UPDATE: &str = "backup_before_update";
 
-pub const KEYS: [&str; 12] = [
+pub const KEYS: [&str; 16] = [
     SITE_NAME,
     SITE_DESCRIPTION,
     CONTACT_URL,
+    COMPANY_NAME,
+    COMPANY_URL,
     PUBLIC_URL,
     PRIMARY_COLOR,
     TIMEZONE,
     METRICS_RETENTION_DAYS,
     DOWN_AFTER_CHECKS,
     SLOW_ALERT_PERCENT,
+    SLOW_CHECKS,
+    SLOW_WINDOW,
     BACKUP_SCHEDULE,
     BACKUP_KEEP,
     BACKUP_BEFORE_UPDATE,
@@ -48,14 +61,14 @@ pub fn permission_for(key: &str) -> &'static str {
     match key {
         PRIMARY_COLOR => "settings.appearance",
         TIMEZONE => "settings.time",
-        METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS | SLOW_ALERT_PERCENT => "settings.monitoring",
+        METRICS_RETENTION_DAYS | DOWN_AFTER_CHECKS | SLOW_ALERT_PERCENT | SLOW_CHECKS | SLOW_WINDOW => "settings.monitoring",
         BACKUP_SCHEDULE | BACKUP_KEEP | BACKUP_BEFORE_UPDATE => "system.backups",
         _ => "settings.general",
     }
 }
 
 /// Every permission that opens a part of the settings page except notifications.
-pub const PAGE_PERMISSIONS: [&str; 4] = ["settings.general", "settings.appearance", "settings.monitoring", "settings.time"];
+pub const PAGE_PERMISSIONS: [&str; 5] = ["settings.general", "settings.appearance", "settings.monitoring", "settings.docker", "settings.time"];
 
 pub async fn all(db: &PgPool) -> anyhow::Result<HashMap<String, String>> {
     let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value FROM settings")
@@ -107,6 +120,20 @@ pub async fn slow_alert_percent(db: &PgPool) -> Option<i64> {
         Ok(Some(value)) => Some(value.parse().unwrap_or(DEFAULT_SLOW_ALERT_PERCENT)),
         _ => Some(DEFAULT_SLOW_ALERT_PERCENT),
     }
+}
+
+/// (slow checks, out of the last checks), with the slow count never above the window.
+pub async fn slow_rule(db: &PgPool) -> (i64, i64) {
+    let window = match get(db, SLOW_WINDOW).await {
+        Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_SLOW_WINDOW),
+        _ => DEFAULT_SLOW_WINDOW,
+    };
+    let checks = match get(db, SLOW_CHECKS).await {
+        Ok(Some(value)) => value.parse().unwrap_or(DEFAULT_SLOW_CHECKS),
+        _ => DEFAULT_SLOW_CHECKS,
+    };
+    let window = window.max(1);
+    (checks.clamp(1, window), window)
 }
 
 pub async fn backup_schedule(db: &PgPool) -> String {

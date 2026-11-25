@@ -8,4 +8,7 @@ pub struct CheckResult {
     pub status_code: Option<i32>,
     /// Why the check failed, empty when it was fine.
     pub error: Option<String>,
+    /// What a failed check got back, for the check log: headers and the start
+    /// of the answer, or the technical error.
+    pub details: Option<String>,
 }

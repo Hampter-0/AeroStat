@@ -27,7 +27,7 @@ export const ACTIVITY_CATEGORIES: { value: string; label: string; anyOf: string[
   {
     value: 'settings',
     label: 'Settings',
-    anyOf: ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.time', 'settings.notifications'],
+    anyOf: ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.docker', 'settings.time', 'settings.notifications'],
   },
   { value: 'system', label: 'System', anyOf: ['system.view'] },
   { value: 'users', label: 'Users', anyOf: ['users.view'] },

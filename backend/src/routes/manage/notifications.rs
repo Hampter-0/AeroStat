@@ -95,6 +95,45 @@ pub async fn update(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[derive(Serialize)]
+pub struct TestSent {
+    sent: Vec<&'static str>,
+}
+
+/// A sample "slower than usual" message for the first service, so you see
+/// how it looks on Discord, by email and in the panel.
+pub async fn test_slow(State(state): State<AppState>, user: CurrentUser) -> Result<Json<TestSent>, ApiError> {
+    user.require("settings.notifications")?;
+    let service: Option<(String, Option<f64>)> = sqlx::query_as(
+        r#"
+        SELECT s.id, (
+            SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY response_time)::float8 FROM metrics
+            WHERE service_id = s.id AND status = 'online' AND checked_at >= now() - interval '7 days'
+        )
+        FROM services s LEFT JOIN groups g ON g.id = s.group_id
+        ORDER BY g.sort_order, s.sort_order LIMIT 1
+        "#,
+    )
+    .fetch_optional(&state.db)
+    .await?;
+    let Some((id, usual)) = service else {
+        return Err(ApiError::BadRequest("Add a service first".into()));
+    };
+    let usual = usual.map(|ms| ms.round() as i32).unwrap_or(120).max(1);
+    let event = notifications::Event::ResponseSlow {
+        services: vec![notifications::SlowService {
+            id,
+            ms: usual * 3 + 100,
+            usual_ms: Some(usual),
+            limit_ms: None,
+        }],
+    };
+    let sent = notifications::send_test_event(&state.db, user.id, user.email.clone(), &event)
+        .await
+        .map_err(|e| ApiError::BadRequest(format!("The test could not be sent: {e}")))?;
+    Ok(Json(TestSent { sent }))
+}
+
 /// Sends a sample message right away, so a wrong webhook shows up as an error.
 pub async fn test(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
     user.require("settings.notifications")?;

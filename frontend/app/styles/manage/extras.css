@@ -253,3 +253,163 @@ button.chip.more {
 button.chip.more:hover {
     color: var(--text);
 }
+
+.date-field {
+    position: relative;
+}
+
+.date-field-button {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    background: var(--field);
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.date-field-button[aria-expanded="true"],
+.date-field-button:focus-visible {
+    border-color: var(--link);
+    outline: 2px solid var(--accent-bg);
+}
+
+.date-field-button svg {
+    flex: 0 0 auto;
+    color: var(--muted);
+}
+
+.date-field-value.placeholder {
+    color: var(--subtle);
+}
+
+.manage-form .date-field input.date-field-input {
+    position: absolute;
+    bottom: 0;
+    left: 12px;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.date-popover {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 300px;
+    padding: 14px;
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    box-shadow: 0 12px 32px var(--tooltip-shadow);
+}
+
+.date-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.date-head strong {
+    color: var(--text);
+    font-size: 14px;
+}
+
+.date-nav {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 8px;
+    color: var(--muted);
+    background: var(--chip-bg);
+    cursor: pointer;
+}
+
+.date-nav:hover {
+    color: var(--text);
+}
+
+.date-weekdays,
+.date-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+}
+
+.date-weekdays span {
+    color: var(--subtle);
+    font-size: 11px;
+    text-align: center;
+}
+
+.date-day {
+    height: 34px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--text-soft);
+    background: transparent;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.date-day:hover {
+    color: var(--text);
+    background: var(--panel-hover);
+}
+
+.date-day.today {
+    box-shadow: inset 0 0 0 1px var(--accent-border);
+}
+
+.date-day.selected {
+    color: #fff;
+    background: var(--link);
+}
+
+.date-time {
+    padding-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--border-soft);
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.date-time span {
+    margin-right: auto;
+}
+
+.date-time select {
+    width: 68px;
+    height: 34px;
+}
+
+.date-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.date-actions .date-done {
+    height: 34px;
+    margin-left: auto;
+    padding: 0 14px;
+}

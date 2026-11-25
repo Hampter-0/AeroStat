@@ -15,6 +15,10 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 /// A keyword is only searched in the first part of a page, so a huge
 /// download can't tie up the checker.
 const MAX_BODY_BYTES: usize = 2 * 1024 * 1024;
+/// How much of a failed answer is kept for the check log.
+const DETAIL_BODY_BYTES: usize = 2 * 1024;
+/// Headers worth seeing when a check fails.
+const DETAIL_HEADERS: [&str; 6] = ["content-type", "content-length", "server", "location", "retry-after", "cf-ray"];
 
 pub const CHECK_TYPES: [&str; 11] = [
     "http", "tcp", "dns", "ping", "docker", "postgres", "mysql", "redis", "minecraft", "bedrock", "source",
@@ -58,9 +62,9 @@ pub async fn check_service(client: &reqwest::Client, service: &CheckableService)
     };
     let response_time_ms = start.elapsed().as_millis() as i32;
 
-    let (status, status_code, error) = match outcome {
-        Ok(code) => ("online", code, None),
-        Err(failure) => ("offline", failure.status_code, Some(failure.reason)),
+    let (status, status_code, error, details) = match outcome {
+        Ok(code) => ("online", code, None, None),
+        Err(failure) => ("offline", failure.status_code, Some(failure.reason), failure.details),
     };
     Some(CheckResult {
         service_id: service.id.clone(),
@@ -68,19 +72,52 @@ pub async fn check_service(client: &reqwest::Client, service: &CheckableService)
         response_time_ms,
         status_code,
         error,
+        details,
     })
 }
 
 struct Failure {
     status_code: Option<i32>,
     reason: String,
+    details: Option<String>,
 }
 
 fn failed(reason: impl Into<String>) -> Failure {
     Failure {
         status_code: None,
         reason: reason.into(),
+        details: None,
     }
+}
+
+/// The status line, the useful headers and the start of the body.
+fn answer_details(status: reqwest::StatusCode, headers: &reqwest::header::HeaderMap, body: &str) -> String {
+    let mut text = format!("HTTP {}\n", status);
+    for name in DETAIL_HEADERS {
+        if let Some(value) = headers.get(name).and_then(|value| value.to_str().ok()) {
+            text.push_str(&format!("{name}: {value}\n"));
+        }
+    }
+    let mut excerpt: String = body.chars().take(DETAIL_BODY_BYTES).collect();
+    if body.len() > excerpt.len() {
+        excerpt.push_str("\n…");
+    }
+    if !excerpt.trim().is_empty() {
+        text.push('\n');
+        text.push_str(excerpt.trim());
+    }
+    text
+}
+
+/// Every layer of a request error, for the check log.
+fn error_chain(error: &reqwest::Error) -> String {
+    let mut parts = vec![error.to_string()];
+    let mut source = std::error::Error::source(error);
+    while let Some(inner) = source {
+        parts.push(inner.to_string());
+        source = inner.source();
+    }
+    parts.join("\ncaused by: ")
 }
 
 /// Status code on success. Fails on another code, no answer, or a keyword
@@ -91,33 +128,44 @@ async fn check_http(client: &reqwest::Client, service: &CheckableService) -> Res
         .timeout(TIMEOUT)
         .send()
         .await
-        .map_err(|e| failed(http_error(&e)))?;
-    let code = response.status().as_u16() as i32;
+        .map_err(|e| Failure {
+            status_code: None,
+            reason: http_error(&e),
+            details: Some(error_chain(&e)),
+        })?;
+    let status = response.status();
+    let headers = response.headers().clone();
+    let code = status.as_u16() as i32;
     if !service.expected_status.contains(&code) {
+        let body = read_body(response).await.unwrap_or_default();
         return Err(Failure {
             status_code: Some(code),
             reason: format!("It answered with status {code}."),
+            details: Some(answer_details(status, &headers, &body)),
         });
     }
 
     let Some(keyword) = service.keyword.as_deref().filter(|word| !word.is_empty()) else {
         return Ok(Some(code));
     };
-    let body = read_body(response).await.map_err(|_| Failure {
+    let body = read_body(response).await.map_err(|e| Failure {
         status_code: Some(code),
         reason: "The page could not be read to look for the keyword.".into(),
+        details: Some(e.to_string()),
     })?;
     let found = body.to_lowercase().contains(&keyword.to_lowercase());
     if found && service.keyword_absent {
         return Err(Failure {
             status_code: Some(code),
             reason: format!("The page contains \"{keyword}\"."),
+            details: Some(answer_details(status, &headers, &body)),
         });
     }
     if !found && !service.keyword_absent {
         return Err(Failure {
             status_code: Some(code),
             reason: format!("The page does not contain \"{keyword}\"."),
+            details: Some(answer_details(status, &headers, &body)),
         });
     }
     Ok(Some(code))

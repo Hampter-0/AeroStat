@@ -18,7 +18,14 @@ export const metadata = {
 
 interface ManageSettings {
   values: Record<string, string | null>
-  defaults: { timezone: string; metrics_retention_days: number; down_after_checks: number; slow_alert_percent: number }
+  defaults: {
+    timezone: string
+    metrics_retention_days: number
+    down_after_checks: number
+    slow_alert_percent: number
+    slow_checks: number
+    slow_window: number
+  }
   logo_version: number | null
   favicon_version: number | null
 }
@@ -27,7 +34,7 @@ const TABS = [
   { id: 'general', label: 'General', permission: 'settings.general' },
   { id: 'appearance', label: 'Appearance', permission: 'settings.appearance' },
   { id: 'monitoring', label: 'Monitoring', permission: 'settings.monitoring' },
-  { id: 'docker', label: 'Docker', permission: 'settings.monitoring' },
+  { id: 'docker', label: 'Docker', permission: 'settings.docker' },
   { id: 'time', label: 'Time & region', permission: 'settings.time' },
   { id: 'notifications', label: 'Notifications', permission: 'settings.notifications' },
 ]
@@ -195,6 +202,31 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               />
               <small className="field-hint">A web page or a mailto: address. Leave empty to hide the Contact link.</small>
             </label>
+            <div className="form-row">
+              <label>
+                <span>Company name</span>
+                <input
+                  key={'company_name-' + value(settings, 'company_name')}
+                  name="company_name"
+                  defaultValue={value(settings, 'company_name')}
+                  maxLength={60}
+                  placeholder={value(settings, 'site_name') || defaults.siteName}
+                />
+              </label>
+              <label>
+                <span>Company website</span>
+                <input
+                  key={'company_url-' + value(settings, 'company_url')}
+                  name="company_url"
+                  defaultValue={value(settings, 'company_url')}
+                  placeholder="https://example.com"
+                />
+              </label>
+            </div>
+            <small className="field-hint">
+              Shown in the copyright line on the sign-in page, linking to your website. Empty uses the site name and the status
+              page.
+            </small>
             <label>
               <span>Status page address</span>
               <input
@@ -249,7 +281,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       )}
 
       {activeTab === 'docker' && dockerHosts && (
-        <DockerHosts data={dockerHosts} canEdit={can(user, 'settings.monitoring')} />
+        <DockerHosts data={dockerHosts} canEdit={can(user, 'settings.docker')} />
       )}
 
       {activeTab === 'monitoring' && (
@@ -300,11 +332,41 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 })}
               </select>
               <small className="field-hint">
-                Compares the last few minutes with the usual response time of the past week, and only for at least 100 ms
-                extra. Goes to Discord, email, the panel and a notice on the status page, with one message for everything that
-                turns slow at the same time.
+                Compares each check with the usual response time of the past week, and only counts at least 100 ms extra.
+                Goes to Discord, email, the panel and a notice on the status page, with one message for everything that turns
+                slow at the same time.
               </small>
             </label>
+            <div className="form-row">
+              <label>
+                <span>Slow checks</span>
+                <input
+                  key={'slow_checks-' + value(settings, 'slow_checks')}
+                  name="slow_checks"
+                  type="number"
+                  min={1}
+                  max={10}
+                  defaultValue={value(settings, 'slow_checks')}
+                  placeholder={String(settings.defaults.slow_checks)}
+                />
+              </label>
+              <label>
+                <span>Out of the last</span>
+                <input
+                  key={'slow_window-' + value(settings, 'slow_window')}
+                  name="slow_window"
+                  type="number"
+                  min={1}
+                  max={20}
+                  defaultValue={value(settings, 'slow_window')}
+                  placeholder={String(settings.defaults.slow_window)}
+                />
+              </label>
+            </div>
+            <small className="field-hint">
+              A service counts as slow when this many of its last checks were slow, and is back to normal when fewer are.
+              The default of 3 of the last 5 keeps a single hiccup quiet; 1 of the last 1 warns about every slow check.
+            </small>
           </SettingsForm>
         </section>
       )}

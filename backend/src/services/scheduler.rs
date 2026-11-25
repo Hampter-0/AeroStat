@@ -12,7 +12,7 @@ const CERTIFICATE_HOURS: i64 = 6;
 
 /// Sent with every check. Firewalls such as Cloudflare often refuse requests
 /// without a user agent, which would show a healthy site as down.
-const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
+pub const USER_AGENT: &str = concat!("AeroStat/", env!("CARGO_PKG_VERSION"), " (+https://github.com/Hampter-0/AeroStat)");
 
 /// One loop for all services: every tick it claims the services whose
 /// `next_check_at` has passed and checks them. Services added, edited or

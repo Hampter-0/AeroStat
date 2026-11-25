@@ -4,11 +4,12 @@ import { notFound, redirect } from 'next/navigation'
 import { ChevronLeft } from '@/components/icons'
 import DeleteForm from '@/components/manage/DeleteForm'
 import BadgeCard from '@/components/manage/services/BadgeCard'
+import ServiceChecks from '@/components/manage/services/ServiceChecks'
 import ServiceForm from '@/components/manage/services/ServiceForm'
 import type { DockerHostsResponse } from '@/lib/docker'
 import { getSiteConfig } from '@/lib/branding'
 import { can, manageFetch, requireUser } from '@/lib/manage'
-import { checkTypeInfo, checkTypeLabel, intervalLabel, type ManageServicesResponse } from '@/lib/services'
+import { checkTypeInfo, checkTypeLabel, intervalLabel, type CheckEntry, type ManageServicesResponse } from '@/lib/services'
 import { formatDateTimeShort } from '@/lib/time'
 import { deleteService } from '../actions'
 import PageHeader from '@/components/manage/PageHeader'
@@ -44,6 +45,12 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   }
 
   const { timezone } = await getSiteConfig()
+  let checks: CheckEntry[] = []
+  try {
+    checks = await manageFetch<CheckEntry[]>('/services/' + encodeURIComponent(service.id) + '/checks')
+  } catch {
+    checks = []
+  }
   let certificateText: string | null = null
   if (service.cert_expires_at) {
     certificateText = formatDateTimeShort(service.cert_expires_at, timezone)
@@ -146,6 +153,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
           </dl>
         </section>
       )}
+      <ServiceChecks serviceId={service.id} checks={checks} timezone={timezone} canTest={can(user, 'services.check')} />
       <BadgeCard serviceId={service.id} serviceName={service.name} baseUrl={baseUrl} />
       {can(user, 'services.delete') && (
         <section className="manage-panel danger">

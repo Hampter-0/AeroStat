@@ -1,4 +1,5 @@
 import HistoryTabs from '@/components/status/HistoryTabs'
+import RetryButton from '@/components/status/RetryButton'
 import RangePicker from '@/components/status/RangePicker'
 import UptimeCalendar from '@/components/status/UptimeCalendar'
 import UptimeServiceSelect from '@/components/status/UptimeServiceSelect'
@@ -45,6 +46,7 @@ export default async function UptimePage({ searchParams }: { searchParams: Promi
       <section className="status-unavailable">
         <h2>Status temporarily unavailable</h2>
         <p>We can&apos;t load the uptime history right now. Please check back in a moment.</p>
+        <RetryButton />
       </section>
     )
   }

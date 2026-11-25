@@ -34,6 +34,11 @@ export default function ServiceCard({
     labelClassName = 'pending'
     statusText = 'Not checked yet'
     kind = 'pending'
+  } else if (typeof service.slow_ms === 'number') {
+    checkClassName = 'live-check slow'
+    labelClassName = 'slow'
+    statusText = 'Slower than usual'
+    kind = 'gauge'
   }
 
   let responseText = ''

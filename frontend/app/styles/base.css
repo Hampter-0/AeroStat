@@ -1,5 +1,4 @@
 :root {
-    overscroll-behavior-y: none;
     font-family: 'Inter', sans-serif;
     color: var(--text);
     background: var(--panel-soft);
@@ -129,6 +128,12 @@ html {
     scrollbar-gutter: stable;
 }
 
+@media (hover: hover) and (pointer: fine) {
+    :root {
+        overscroll-behavior-y: none;
+    }
+}
+
 a {
     color: var(--link);
     text-underline-offset: 3px;
@@ -136,6 +141,8 @@ a {
 
 body {
     --link: var(--blue);
+    --accent-bg: color-mix(in srgb, var(--link) 14%, transparent);
+    --accent-border: color-mix(in srgb, var(--link) 40%, transparent);
 }
 
 :root[data-theme="dark"] body {

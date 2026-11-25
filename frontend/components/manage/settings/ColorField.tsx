@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Arrow } from '@/components/icons'
+import ColorPicker from '@/components/manage/settings/ColorPicker'
 
 const HEX = /^#[0-9a-fA-F]{6}$/
 
@@ -11,10 +12,6 @@ export default function ColorField({ value, fallback }: { value: string; fallbac
   let preview = fallback
   if (HEX.test(text)) {
     preview = text
-  }
-
-  function onPick(event: React.ChangeEvent<HTMLInputElement>) {
-    setText(event.target.value)
   }
 
   function onType(event: React.ChangeEvent<HTMLInputElement>) {
@@ -30,7 +27,7 @@ export default function ColorField({ value, fallback }: { value: string; fallbac
   return (
     <div className="color-field">
       <div className="color-inputs">
-        <input type="color" value={preview} onChange={onPick} aria-label="Pick accent color" />
+        <ColorPicker value={text} fallback={fallback} onChange={setText} label="Pick accent color" />
         <input
           name="primary_color"
           value={text}

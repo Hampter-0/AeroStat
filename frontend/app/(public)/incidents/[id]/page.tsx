@@ -105,18 +105,20 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
           <p>{formatFullDate(incident.created_at)}</p>
         </header>
 
-        <div className="affected-row">
-          <span>Affected services</span>
-          <div>
-            {affectedServices.map(function (label) {
-              return (
-                <span className="service-chip" key={label}>
-                  {label}
-                </span>
-              )
-            })}
+        {affectedServices.length > 0 && (
+          <div className="affected-row">
+            <span>Affected services</span>
+            <div>
+              {affectedServices.map(function (label) {
+                return (
+                  <span className="service-chip" key={label}>
+                    {label}
+                  </span>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         <Timeline entries={entries} />
       </article>

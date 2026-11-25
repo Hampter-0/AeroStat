@@ -1,12 +1,13 @@
 'use client'
 
 import { useActionState } from 'react'
+import DateTimeField from '@/components/manage/DateTimeField'
 import type { FormState } from '@/app/manage/actions'
 import { createMaintenance, updateMaintenance } from '@/app/manage/(panel)/maintenance/actions'
 import ServicePicker, { type PickerService } from '@/components/manage/ServicePicker'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { toInputValue, zoneAbbreviation } from '@/lib/time'
-import { useFormSubmit } from '@/lib/use-form-submit'
+import { useFormSubmit, useKeepValuesSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -34,7 +35,14 @@ export default function MaintenanceForm({
   }
   const [state, formAction, pending] = useActionState(action, initialState)
   useResultToast(state)
-  const { formRef, onSubmit } = useFormSubmit(formAction, state)
+  const { formRef, onSubmit: submitAndReset } = useFormSubmit(formAction, state)
+  const submitAndKeep = useKeepValuesSubmit(formAction)
+  let onSubmit = submitAndReset
+  let resetRef: typeof formRef | null = formRef
+  if (maintenance) {
+    onSubmit = submitAndKeep
+    resetRef = null
+  }
 
   let title = ''
   let description = ''
@@ -62,7 +70,7 @@ export default function MaintenanceForm({
   }
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
+    <form ref={resetRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {maintenance && <input type="hidden" name="id" value={maintenance.id} />}
       <label>
         <span>Title</span>
@@ -75,11 +83,11 @@ export default function MaintenanceForm({
       <div className="form-row">
         <label>
           <span>Start ({zoneAbbreviation(timezone)})</span>
-          <input name="scheduled_start" type="datetime-local" defaultValue={start} required />
+          <DateTimeField name="scheduled_start" defaultValue={start} required timezone={timezone} />
         </label>
         <label>
           <span>End ({zoneAbbreviation(timezone)})</span>
-          <input name="scheduled_end" type="datetime-local" defaultValue={end} required />
+          <DateTimeField name="scheduled_end" defaultValue={end} required timezone={timezone} />
         </label>
       </div>
       <ServicePicker services={services} selected={selected} />

@@ -120,7 +120,22 @@ pub enum Event {
 pub struct SlowService {
     pub id: String,
     pub ms: i32,
-    pub usual_ms: i32,
+    /// The median of the week before, when there is enough history.
+    pub usual_ms: Option<i32>,
+    /// The service's own limit, when it has one.
+    pub limit_ms: Option<i32>,
+}
+
+impl SlowService {
+    /// "usually 120 ms", "limit 500 ms" or both.
+    fn compared(&self) -> String {
+        match (self.usual_ms, self.limit_ms) {
+            (Some(usual), Some(limit)) => format!("usually {usual} ms, limit {limit} ms"),
+            (Some(usual), None) => format!("usually {usual} ms"),
+            (None, Some(limit)) => format!("limit {limit} ms"),
+            (None, None) => "slower than usual".to_string(),
+        }
+    }
 }
 
 impl Event {
@@ -373,6 +388,60 @@ async fn save_panel(db: &PgPool, item: PanelItem, permission: Option<&str>, acto
     Ok(())
 }
 
+/// Sends one event as a test: to the Discord webhook when there is one, by
+/// email to the person who asked and as a panel notification for them. Returns
+/// where it went.
+pub async fn send_test_event(
+    db: &PgPool,
+    user_id: i64,
+    email: Option<String>,
+    event: &Event,
+) -> anyhow::Result<Vec<&'static str>> {
+    let settings = load(db).await?;
+    let site = site_name(db).await;
+    let mut sent = Vec::new();
+
+    if let Some(webhook) = settings.discord_webhook_url.as_deref() {
+        let image = card_image(db, &settings, event_card(db, event).await).await;
+        let mut message = content(db, &settings, event, &Times::Discord, image).await;
+        message.title = format!("Test: {}", message.title);
+        send_discord(webhook, &discord_embed(&site, message)).await?;
+        sent.push("Discord");
+    }
+
+    if let (Some(to), Some(_)) = (email, mailer::config()) {
+        let times = Times::Email(site_settings::timezone(db).await);
+        let mut message = content(db, &settings, event, &times, None).await;
+        message.title = format!("Test: {}", message.title);
+        let (html, text) = email_body(&site, &message, &settings);
+        mailer::send(mailer::Email {
+            to,
+            subject: format!("[{site}] {}", message.title),
+            html,
+            text,
+            site_name: site.clone(),
+        })
+        .await?;
+        sent.push("email");
+    }
+
+    let times = Times::Email(site_settings::timezone(db).await);
+    let message = content(db, &settings, event, &times, None).await;
+    sqlx::query(
+        "INSERT INTO panel_notifications (user_id, kind, title, body, tone, path, important) VALUES ($1, $2, $3, $4, $5, $6, false)",
+    )
+    .bind(user_id)
+    .bind(event.kind())
+    .bind(format!("Test: {}", message.title).chars().take(256).collect::<String>())
+    .bind(message.description.chars().take(500).collect::<String>())
+    .bind(tone_name(message.color))
+    .bind(panel_path(event))
+    .execute(db)
+    .await?;
+    sent.push("the panel");
+    Ok(sent)
+}
+
 /// Posts to the webhook and returns Discord's error text if it refuses.
 pub async fn send_discord(webhook: &str, payload: &Value) -> anyhow::Result<()> {
     let client = reqwest::Client::builder()
@@ -533,7 +602,7 @@ async fn event_card(db: &PgPool, event: &Event) -> Card {
             let ids: Vec<String> = services.iter().map(|service| service.id.clone()).collect();
             let labels = affected_labels(db, &ids).await;
             let subline = match services.as_slice() {
-                [only] => format!("{} ms, usually {} ms", only.ms, only.usual_ms),
+                [only] => format!("{} ms, {}", only.ms, only.compared()),
                 _ => format!("{} services, up to {} ms", services.len(), services.iter().map(|s| s.ms).max().unwrap_or(0)),
             };
             Card {
@@ -712,6 +781,9 @@ async fn content(
                 (Some(code), _, None) => format!("It answered with status {code}."),
                 (None, _, None) => "It did not answer.".to_string(),
             };
+            if let Some(url) = link(settings, &format!("/manage/services/{service_id}")) {
+                fields.push(field("Check log", url, false));
+            }
             (
                 format!("{name} is down"),
                 format!("{reason} Down since {}.", times.format(*since)),
@@ -755,7 +827,7 @@ async fn content(
             let names = service_names(db, &ids).await;
             let mut lines: Vec<String> = Vec::new();
             for (service, name) in services.iter().zip(names.iter()).take(10) {
-                lines.push(format!("{name}: {} ms, usually {} ms.", service.ms, service.usual_ms));
+                lines.push(format!("{name}: {} ms, {}.", service.ms, service.compared()));
             }
             if services.len() > 10 {
                 lines.push(format!("And {} more.", services.len() - 10));

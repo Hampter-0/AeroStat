@@ -64,7 +64,7 @@ pub static PERMISSION_GROUPS: &[PermissionGroup] = &[
             perm("services.create", "Add services", "Add a new service to check.", Some("services.view")),
             perm("services.edit", "Edit services", "Change a service and its place in the list.", Some("services.view")),
             perm("services.delete", "Delete services", "Remove a service and its check history.", Some("services.view")),
-            perm("services.check", "Check now", "Run all checks right away.", Some("services.view")),
+            perm("services.check", "Check now", "Run all checks, or one, right away.", Some("services.view")),
         ],
     },
     PermissionGroup {
@@ -82,7 +82,8 @@ pub static PERMISSION_GROUPS: &[PermissionGroup] = &[
         permissions: &[
             perm("settings.general", "General", "Site name, description and contact link.", None),
             perm("settings.appearance", "Appearance", "Logo, favicon and accent colour.", None),
-            perm("settings.monitoring", "Monitoring", "How long check results are kept.", None),
+            perm("settings.monitoring", "Monitoring", "Check history, when a service is down and slow warnings.", None),
+            perm("settings.docker", "Docker hosts", "The Docker servers that container checks use.", None),
             perm("settings.time", "Time & region", "The time zone the status page uses.", None),
             perm("settings.notifications", "Notifications", "The Discord webhook and which events it gets.", None),
         ],

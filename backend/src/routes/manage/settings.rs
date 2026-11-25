@@ -12,7 +12,7 @@ use crate::auth::CurrentUser;
 use crate::error::ApiError;
 use crate::routes::settings::{asset_versions, BRAND_ASSETS};
 use crate::site_settings::{
-    self, BACKUP_BEFORE_UPDATE, BACKUP_KEEP, BACKUP_SCHEDULE, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, SLOW_ALERT_PERCENT, TIMEZONE,
+    self, BACKUP_BEFORE_UPDATE, BACKUP_KEEP, BACKUP_SCHEDULE, COMPANY_NAME, COMPANY_URL, CONTACT_URL, DOWN_AFTER_CHECKS, METRICS_RETENTION_DAYS, PRIMARY_COLOR, PUBLIC_URL, SITE_DESCRIPTION, SITE_NAME, SLOW_ALERT_PERCENT, SLOW_CHECKS, SLOW_WINDOW, TIMEZONE,
 };
 use crate::state::AppState;
 
@@ -33,6 +33,8 @@ pub struct Defaults {
     metrics_retention_days: i32,
     down_after_checks: i64,
     slow_alert_percent: i64,
+    slow_checks: i64,
+    slow_window: i64,
 }
 
 #[derive(Serialize)]
@@ -64,6 +66,19 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 return Err(ApiError::BadRequest(
                     "Contact link must be a full https:// URL or a mailto: address".into(),
                 ));
+            }
+        }
+        COMPANY_NAME => {
+            if value.chars().count() > 60 {
+                return Err(ApiError::BadRequest("Company name can be at most 60 characters".into()));
+            }
+        }
+        COMPANY_URL => {
+            let ok = reqwest::Url::parse(value)
+                .map(|url| matches!(url.scheme(), "http" | "https") && url.host_str().is_some())
+                .unwrap_or(false);
+            if !ok {
+                return Err(ApiError::BadRequest("Company website must be a full URL like https://example.com".into()));
             }
         }
         PUBLIC_URL => {
@@ -116,6 +131,22 @@ fn validate(key: &str, value: &str) -> Result<String, ApiError> {
                 return Err(ApiError::BadRequest("Warn between 25% and 1000% slower than usual".into()));
             }
         }
+        SLOW_CHECKS => {
+            let checks: i64 = value
+                .parse()
+                .map_err(|_| ApiError::BadRequest("Slow checks must be a whole number".into()))?;
+            if !(1..=10).contains(&checks) {
+                return Err(ApiError::BadRequest("Slow checks must be between 1 and 10".into()));
+            }
+        }
+        SLOW_WINDOW => {
+            let window: i64 = value
+                .parse()
+                .map_err(|_| ApiError::BadRequest("The number of checks to look at must be a whole number".into()))?;
+            if !(1..=20).contains(&window) {
+                return Err(ApiError::BadRequest("Look at between 1 and 20 checks".into()));
+            }
+        }
         BACKUP_SCHEDULE => {
             if !matches!(value, "off" | "daily" | "weekly") {
                 return Err(ApiError::BadRequest("The schedule must be off, daily or weekly".into()));
@@ -157,6 +188,8 @@ pub async fn get(State(state): State<AppState>, user: CurrentUser) -> Result<Jso
             metrics_retention_days: state.default_retention_days,
             down_after_checks: site_settings::DEFAULT_DOWN_AFTER_CHECKS,
             slow_alert_percent: site_settings::DEFAULT_SLOW_ALERT_PERCENT,
+            slow_checks: site_settings::DEFAULT_SLOW_CHECKS,
+            slow_window: site_settings::DEFAULT_SLOW_WINDOW,
         },
         logo_version,
         favicon_version,

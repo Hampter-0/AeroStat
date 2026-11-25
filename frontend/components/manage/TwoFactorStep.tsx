@@ -5,6 +5,10 @@ import { sendLoginCode, verifyLoginCode } from '@/app/manage/two-factor-login'
 import type { TwoFactorChallenge } from '@/lib/two-factor'
 import { useErrorToast, useToast } from '@/components/manage/toast/Toasts'
 
+function backToLogin() {
+  window.location.assign('/manage/login')
+}
+
 export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChallenge }) {
   let firstMode = 'app'
   if (challenge.methods[0] === 'email') {
@@ -144,9 +148,9 @@ export default function TwoFactorStep({ challenge }: { challenge: TwoFactorChall
         <div className="login-divider">
           <span>or</span>
         </div>
-        <a href="/manage/login" className="button-soft">
+        <button type="button" className="button-soft" onClick={backToLogin}>
           Back
-        </a>
+        </button>
       </div>
     </form>
   )

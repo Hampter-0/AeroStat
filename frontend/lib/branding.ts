@@ -4,6 +4,8 @@ export interface SiteConfig {
   siteName: string
   description: string
   contactUrl: string | null
+  companyName: string | null
+  companyUrl: string | null
   accentColor: string
   timezone: string
   faviconUrl: string | null
@@ -13,6 +15,8 @@ interface PublicSettings {
   site_name: string | null
   site_description: string | null
   contact_url: string | null
+  company_name: string | null
+  company_url: string | null
   primary_color: string | null
   timezone: string
   logo_version: number | null
@@ -36,7 +40,16 @@ export function envDefaults(): SiteConfig {
   if (process.env.CONTACT_URL) {
     contactUrl = process.env.CONTACT_URL
   }
-  return { siteName, description: defaultDescription(siteName), contactUrl, accentColor, timezone: 'UTC', faviconUrl: null }
+  return {
+    siteName,
+    description: defaultDescription(siteName),
+    contactUrl,
+    companyName: null,
+    companyUrl: null,
+    accentColor,
+    timezone: 'UTC',
+    faviconUrl: null,
+  }
 }
 
 export const getSiteConfig = cache(async function (): Promise<SiteConfig> {
@@ -61,6 +74,12 @@ export const getSiteConfig = cache(async function (): Promise<SiteConfig> {
   }
   if (settings.contact_url) {
     config.contactUrl = settings.contact_url
+  }
+  if (settings.company_name) {
+    config.companyName = settings.company_name
+  }
+  if (settings.company_url) {
+    config.companyUrl = settings.company_url
   }
   if (settings.primary_color) {
     config.accentColor = settings.primary_color

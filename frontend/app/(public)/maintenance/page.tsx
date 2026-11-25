@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import RetryButton from '@/components/status/RetryButton'
 import { Check } from '@/components/icons'
 import { MaintenanceMarker } from '@/components/status/EventMarker'
 import RangePicker from '@/components/status/RangePicker'
@@ -51,6 +52,7 @@ export default async function MaintenancePage({ searchParams }: { searchParams: 
       <section className="status-unavailable">
         <h2>Status temporarily unavailable</h2>
         <p>We can&apos;t load maintenance history right now. Please check back in a moment.</p>
+        <RetryButton />
       </section>
     )
   }

@@ -7,7 +7,7 @@ use sqlx::PgPool;
 use crate::activity;
 use crate::auth::CurrentUser;
 use crate::error::ApiError;
-use crate::services::checker::{CHECK_TYPES, DNS_RECORD_TYPES};
+use crate::services::checker::{check_service, CheckableService, CHECK_TYPES, DNS_RECORD_TYPES};
 use crate::state::AppState;
 
 const PERMISSION: &str = "services";
@@ -39,6 +39,8 @@ pub struct ServiceRow {
     check_interval_seconds: i32,
     sort_order: i32,
     docker_host_id: Option<i64>,
+    slow_above_ms: Option<i32>,
+    slow_alerts: bool,
 }
 
 #[derive(Serialize)]
@@ -68,7 +70,15 @@ pub struct ServiceBody {
     cert_warn_days: Option<i32>,
     #[serde(default)]
     docker_host_id: Option<i64>,
+    #[serde(default)]
+    slow_above_ms: Option<i32>,
+    #[serde(default = "default_true")]
+    slow_alerts: bool,
     check_interval_seconds: i32,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 fn default_check_type() -> String {
@@ -87,6 +97,8 @@ struct CleanService {
     dns_expected: Option<String>,
     cert_warn_days: Option<i32>,
     docker_host_id: Option<i64>,
+    slow_above_ms: Option<i32>,
+    slow_alerts: bool,
 }
 
 #[derive(Deserialize)]
@@ -231,7 +243,15 @@ fn clean_service(body: ServiceBody) -> Result<CleanService, ApiError> {
         dns_expected: None,
         cert_warn_days: None,
         docker_host_id: None,
+        slow_above_ms: None,
+        slow_alerts: body.slow_alerts,
     };
+    if let Some(limit) = body.slow_above_ms {
+        if !(10..=60_000).contains(&limit) {
+            return Err(ApiError::BadRequest("The slow limit must be between 10 and 60000 ms".into()));
+        }
+        clean.slow_above_ms = Some(limit);
+    }
     if check_type == "tcp" {
         clean.url = clean_tcp_target(&body.url)?;
     } else if check_type == "ping" {
@@ -368,7 +388,8 @@ pub async fn list(State(state): State<AppState>, user: CurrentUser) -> Result<Js
     let services: Vec<ServiceRow> = sqlx::query_as(
         r#"
         SELECT id, name, check_type, url, group_id, expected_status, keyword, keyword_absent, dns_record_type,
-               dns_expected, cert_warn_days, cert_expires_at, check_interval_seconds, sort_order, docker_host_id
+               dns_expected, cert_warn_days, cert_expires_at, check_interval_seconds, sort_order, docker_host_id,
+               slow_above_ms, slow_alerts
         FROM services ORDER BY sort_order, name
         "#,
     )
@@ -394,8 +415,9 @@ pub async fn create(
     sqlx::query(
         r#"
         INSERT INTO services (id, name, check_type, url, group_id, expected_status, keyword, keyword_absent,
-            dns_record_type, dns_expected, cert_warn_days, check_interval_seconds, docker_host_id, sort_order)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+            dns_record_type, dns_expected, cert_warn_days, check_interval_seconds, docker_host_id,
+            slow_above_ms, slow_alerts, sort_order)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
             (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM services WHERE group_id IS NOT DISTINCT FROM $5))
         "#,
     )
@@ -412,6 +434,8 @@ pub async fn create(
     .bind(service.cert_warn_days)
     .bind(interval)
     .bind(service.docker_host_id)
+    .bind(service.slow_above_ms)
+    .bind(service.slow_alerts)
     .execute(&state.db)
     .await?;
 
@@ -442,7 +466,8 @@ pub async fn update(
         UPDATE services
         SET name = $1, check_type = $2, url = $3, group_id = $4, expected_status = $5, keyword = $6,
             keyword_absent = $7, dns_record_type = $8, dns_expected = $9, cert_warn_days = $10,
-            check_interval_seconds = $11, docker_host_id = $13, next_check_at = now(),
+            check_interval_seconds = $11, docker_host_id = $13, slow_above_ms = $14, slow_alerts = $15,
+            next_check_at = now(),
             cert_checked_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_checked_at END,
             cert_expires_at = CASE WHEN url = $3 AND check_type = $2 THEN cert_expires_at END,
             cert_warned_for = CASE WHEN url = $3 AND check_type = $2 THEN cert_warned_for END
@@ -462,6 +487,8 @@ pub async fn update(
     .bind(interval)
     .bind(&id)
     .bind(service.docker_host_id)
+    .bind(service.slow_above_ms)
+    .bind(service.slow_alerts)
     .execute(&state.db)
     .await?
     .rows_affected();
@@ -529,38 +556,120 @@ pub async fn move_service(
     Ok(StatusCode::NO_CONTENT)
 }
 
+#[derive(Serialize, sqlx::FromRow)]
+pub struct CheckRow {
+    checked_at: chrono::DateTime<chrono::Utc>,
+    status: String,
+    response_time: i32,
+    status_code: Option<i32>,
+    error: Option<String>,
+    details: Option<String>,
+}
+
+/// The latest checks of one service, newest first, with what failed checks
+/// got back.
+pub async fn checks(State(state): State<AppState>, user: CurrentUser, Path(id): Path<String>) -> Result<Json<Vec<CheckRow>>, ApiError> {
+    user.require("services.view")?;
+    let rows: Vec<CheckRow> = sqlx::query_as(
+        r#"
+        SELECT checked_at, status, response_time, status_code, error, details
+        FROM metrics WHERE service_id = $1
+        ORDER BY checked_at DESC LIMIT 50
+        "#,
+    )
+    .bind(&id)
+    .fetch_all(&state.db)
+    .await?;
+    Ok(Json(rows))
+}
+
+#[derive(Serialize)]
+pub struct TestResult {
+    status: String,
+    response_time: i32,
+    status_code: Option<i32>,
+    error: Option<String>,
+    details: Option<String>,
+}
+
+/// Runs the check of one service right away and shows the whole result. It
+/// is not saved, so it never sends a notification.
+pub async fn test_now(State(state): State<AppState>, user: CurrentUser, Path(id): Path<String>) -> Result<Json<TestResult>, ApiError> {
+    user.require("services.check")?;
+    let service: Option<CheckableService> = sqlx::query_as(
+        r#"
+        SELECT id, check_type, url, expected_status, keyword, keyword_absent, dns_record_type, dns_expected,
+               cert_warn_days, cert_checked_at,
+               (SELECT address FROM docker_hosts WHERE docker_hosts.id = services.docker_host_id) AS docker_address
+        FROM services WHERE id = $1
+        "#,
+    )
+    .bind(&id)
+    .fetch_optional(&state.db)
+    .await?;
+    let Some(service) = service else {
+        return Err(ApiError::NotFound);
+    };
+    if let Some(wait) = cooldown_wait(&state, &format!("test-now:{id}"), TEST_NOW_COOLDOWN_SECONDS).await {
+        return Err(ApiError::TooManyRequests(format!("This service was just tested. Try again in {wait} seconds.")));
+    }
+    let client = reqwest::Client::builder()
+        .user_agent(crate::services::scheduler::USER_AGENT)
+        .build()
+        .map_err(|e| ApiError::Internal(e.into()))?;
+    let Some(result) = check_service(&client, &service).await else {
+        return Ok(Json(TestResult {
+            status: "starting".into(),
+            response_time: 0,
+            status_code: None,
+            error: Some("The container is still starting; its health check has no answer yet.".into()),
+            details: None,
+        }));
+    };
+    Ok(Json(TestResult {
+        status: result.status,
+        response_time: result.response_time_ms,
+        status_code: result.status_code,
+        error: result.error,
+        details: result.details,
+    }))
+}
+
 /// How often "Check all now" may run, for everyone together.
 const CHECK_ALL_COOLDOWN_SECONDS: i64 = 30;
 
-/// Seconds left before "Check all now" may run again, or None when it may run
-/// now (and the cooldown starts). If Redis is down the button keeps working.
-async fn check_all_wait(state: &AppState) -> Option<i64> {
+/// How often one service may be tested with "Test now".
+const TEST_NOW_COOLDOWN_SECONDS: i64 = 10;
+
+/// Seconds left before the action behind `key` may run again, or None when it
+/// may run now (and the cooldown starts). If Redis is down it keeps working.
+async fn cooldown_wait(state: &AppState, key: &str, seconds: i64) -> Option<i64> {
     let result: anyhow::Result<Option<i64>> = async {
         let mut conn = state.redis.get().await?;
         let set: Option<String> = deadpool_redis::redis::cmd("SET")
-            .arg("check-all:cooldown")
+            .arg(key)
             .arg("1")
             .arg("NX")
             .arg("EX")
-            .arg(CHECK_ALL_COOLDOWN_SECONDS)
+            .arg(seconds)
             .query_async(&mut conn)
             .await?;
         if set.is_some() {
             return Ok(None);
         }
-        let ttl: i64 = deadpool_redis::redis::cmd("TTL").arg("check-all:cooldown").query_async(&mut conn).await?;
+        let ttl: i64 = deadpool_redis::redis::cmd("TTL").arg(key).query_async(&mut conn).await?;
         Ok(Some(ttl.max(1)))
     }
     .await;
     result.unwrap_or_else(|e| {
-        tracing::warn!("Could not read the Check all cooldown: {e}");
+        tracing::warn!("Could not read the cooldown {key}: {e}");
         None
     })
 }
 
 pub async fn check_now(State(state): State<AppState>, user: CurrentUser) -> Result<StatusCode, ApiError> {
     user.require("services.check")?;
-    if let Some(wait) = check_all_wait(&state).await {
+    if let Some(wait) = cooldown_wait(&state, "check-all:cooldown", CHECK_ALL_COOLDOWN_SECONDS).await {
         return Err(ApiError::TooManyRequests(format!(
             "All services were just checked. Try again in {wait} seconds."
         )));

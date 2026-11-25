@@ -23,11 +23,16 @@
     gap: 8px;
 }
 
-.manage-login-card .manage-error-actions .button-primary {
+.manage-login-card .manage-error-actions .button-primary,
+.manage-login-card .manage-error-actions .button-secondary {
     width: auto;
-    height: 34px;
+    height: 40px;
     margin-top: 0;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
     font-size: 14px;
+    text-decoration: none;
 }
 
 .header-actions {
@@ -85,7 +90,7 @@
 
 .inline-form input:focus {
     border-color: var(--link);
-    outline: 2px solid var(--info-bg);
+    outline: 2px solid var(--accent-bg);
 }
 
 .move-buttons {
@@ -197,4 +202,95 @@
     border-color: var(--danger-border);
     color: var(--danger-text);
     background: var(--danger-bg);
+}
+
+.manage-form .slow-alerts-row {
+    align-self: center;
+}
+
+.check-lines {
+    margin: 0;
+    padding: 0;
+    display: grid;
+    list-style: none;
+}
+
+.check-line {
+    padding: 10px 0;
+    border-top: 1px solid var(--border-soft);
+}
+
+.check-line:first-child {
+    border-top: 0;
+}
+
+.check-line-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+    font-size: 13px;
+}
+
+.check-line-head time {
+    min-width: 150px;
+    color: var(--text-soft);
+    font-variant-numeric: tabular-nums;
+}
+
+.check-line-summary {
+    color: var(--muted);
+}
+
+.check-line-error {
+    flex: 1 1 200px;
+    color: var(--danger-text);
+}
+
+.check-details {
+    max-height: 320px;
+    margin: 10px 0 0;
+    padding: 12px;
+    overflow: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    color: var(--text-soft);
+    background: var(--panel-soft);
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.check-test {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 6px;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--danger-text);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.check-test.ok {
+    border-left-color: var(--success-text);
+}
+
+.check-test.waiting {
+    border-left-color: var(--warning-text);
+}
+
+.check-test span {
+    color: var(--text-soft);
+}
+
+.check-test small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.check-more {
+    margin-top: 10px;
 }

@@ -2,7 +2,7 @@ pub mod checker;
 pub mod probes;
 mod cleanup_scheduler;
 mod rollup_scheduler;
-mod scheduler;
+pub mod scheduler;
 pub mod slow_checker;
 pub mod update_checker;
 

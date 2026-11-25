@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import RetryButton from '@/components/status/RetryButton'
 import LastChecked from '@/components/status/LastChecked'
 import Notice from '@/components/status/Notice'
 import PastIncidents, { PAST_DAYS } from '@/components/status/PastIncidents'
@@ -49,6 +50,7 @@ export default async function Home() {
       <section className="status-unavailable">
         <h2>Status temporarily unavailable</h2>
         <p>We can&apos;t check the current status of our services right now. Please check back in a moment.</p>
+        <RetryButton />
       </section>
     )
   }
@@ -177,7 +179,11 @@ export default async function Home() {
     if (labels.length === 1 && labels[0] === 'All') {
       slowNoticeText = 'All services respond slower than usual'
     } else {
-      slowNoticeText = labels.join(', ') + ' respond slower than usual'
+      let names = labels.join(', ')
+      if (labels.length > 1) {
+        names = labels.slice(0, -1).join(', ') + ' and ' + labels[labels.length - 1]
+      }
+      slowNoticeText = names + ' respond slower than usual'
     }
   }
 

@@ -292,6 +292,10 @@ a.notice:hover {
     color: var(--muted);
 }
 
+.live-check.slow {
+    color: #eab308;
+}
+
 .live-service-name strong {
     overflow: hidden;
     color: var(--text);
@@ -324,6 +328,10 @@ a.notice:hover {
 
 .live-uptime.pending {
     color: var(--muted);
+}
+
+.live-uptime.slow {
+    color: #eab308;
 }
 
 .sr-only {
@@ -550,10 +558,6 @@ a.bar {
         padding: 0 12px 2px;
     }
 
-    .live-response {
-        display: none;
-    }
-
     .uptime-bars {
         height: 33px;
         gap: 2px;
@@ -580,7 +584,7 @@ a.bar {
     }
 }
 
-.status-unavailable .button-secondary {
+.status-unavailable .button-primary {
     margin-top: 18px;
 }
 

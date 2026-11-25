@@ -65,7 +65,7 @@ function buildGroups(user: ManageUser): NavGroup[] {
   }
 
   const system: NavItem[] = []
-  const settingsPermissions = ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.time', 'settings.notifications']
+  const settingsPermissions = ['settings.general', 'settings.appearance', 'settings.monitoring', 'settings.docker', 'settings.time', 'settings.notifications']
   const canSettings = settingsPermissions.some(function (permission) {
     return hasPermission(user, permission)
   })

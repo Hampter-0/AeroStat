@@ -20,6 +20,25 @@ export interface ManageService {
   check_interval_seconds: number
   sort_order: number
   docker_host_id: number | null
+  slow_above_ms: number | null
+  slow_alerts: boolean
+}
+
+export interface CheckEntry {
+  checked_at: string
+  status: string
+  response_time: number
+  status_code: number | null
+  error: string | null
+  details: string | null
+}
+
+export interface CheckTest {
+  status: string
+  response_time: number
+  status_code: number | null
+  error: string | null
+  details: string | null
 }
 
 export interface CheckType {

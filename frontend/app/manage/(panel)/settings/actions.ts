@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
 
-const KEYS = ['site_name', 'site_description', 'contact_url', 'public_url', 'primary_color', 'timezone', 'metrics_retention_days', 'down_after_checks', 'slow_alert_percent', 'backup_schedule', 'backup_keep', 'backup_before_update']
+const KEYS = ['site_name', 'site_description', 'contact_url', 'company_name', 'company_url', 'public_url', 'primary_color', 'timezone', 'metrics_retention_days', 'down_after_checks', 'slow_alert_percent', 'slow_checks', 'slow_window', 'backup_schedule', 'backup_keep', 'backup_before_update']
 const ASSETS = ['logo', 'favicon']
 
 function refreshEverything() {
@@ -152,6 +152,17 @@ export async function sendTestEmail(_state: FormState, formData: FormData): Prom
     return { error: errorMessage(error), success: null }
   }
   return { error: null, success: 'Sent to ' + to + '. It can take a minute to arrive.' }
+}
+
+export async function sendTestSlow(): Promise<FormState> {
+  let sent: string[] = []
+  try {
+    const result = await manageFetch<{ sent: string[] }>('/notifications/test-slow', { method: 'POST' })
+    sent = result.sent
+  } catch (error) {
+    return { error: errorMessage(error), success: null }
+  }
+  return { error: null, success: 'Test sent to ' + sent.join(', ') + '.' }
 }
 
 export async function sendTestNotification(): Promise<FormState> {

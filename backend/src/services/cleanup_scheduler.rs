@@ -24,6 +24,12 @@ pub fn spawn(pool: PgPool, default_retention_days: i32) {
                 Ok(_) => {}
                 Err(e) => tracing::error!("Metrics cleanup failed: {e}"),
             }
+            let details = sqlx::query("UPDATE metrics SET details = NULL WHERE details IS NOT NULL AND checked_at < now() - interval '7 days'")
+                .execute(&pool)
+                .await;
+            if let Err(e) = details {
+                tracing::error!("Clearing old check details failed: {e}");
+            }
             if let Err(e) = crate::activity::cleanup(&pool, ACTIVITY_RETENTION_DAYS).await {
                 tracing::error!("Activity log cleanup failed: {e}");
             }

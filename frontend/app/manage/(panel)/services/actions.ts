@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import type { FormState } from '@/app/manage/actions'
 import { errorMessage, manageFetch } from '@/lib/manage'
-import { INTERVAL_UNITS } from '@/lib/services'
+import { INTERVAL_UNITS, type CheckTest } from '@/lib/services'
 import { flash } from '@/lib/flash'
 
 function text(formData: FormData, key: string): string {
@@ -55,6 +55,11 @@ function serviceBody(formData: FormData) {
   if (checkType === 'docker' && dockerText !== '') {
     dockerHostId = Number(dockerText)
   }
+  let slowAbove: number | null = null
+  const slowText = text(formData, 'slow_above_ms').trim()
+  if (slowText !== '') {
+    slowAbove = Math.round(Number(slowText))
+  }
   let certDays: number | null = null
   const certText = text(formData, 'cert_warn_days').trim()
   if (certText !== '') {
@@ -72,6 +77,8 @@ function serviceBody(formData: FormData) {
     dns_expected: text(formData, 'dns_expected'),
     cert_warn_days: certDays,
     docker_host_id: dockerHostId,
+    slow_above_ms: slowAbove,
+    slow_alerts: formData.get('slow_alerts') === 'on',
     check_interval_seconds: intervalSeconds(formData),
   }
 }
@@ -134,6 +141,15 @@ export async function moveService(_state: FormState, formData: FormData): Promis
   }
   refreshAll()
   return { error: null, success: null }
+}
+
+export async function testService(id: string): Promise<{ result: CheckTest | null; error: string | null }> {
+  try {
+    const result = await manageFetch<CheckTest>('/services/' + encodeURIComponent(id) + '/test', { method: 'POST' })
+    return { result: result, error: null }
+  } catch (error) {
+    return { result: null, error: errorMessage(error) }
+  }
 }
 
 export async function checkAllNow(): Promise<FormState> {

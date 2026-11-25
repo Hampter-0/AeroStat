@@ -12,7 +12,7 @@ use crate::docker;
 use crate::error::ApiError;
 use crate::state::AppState;
 
-const PERMISSION: &str = "settings.monitoring";
+const PERMISSION: &str = "settings.docker";
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct HostRow {

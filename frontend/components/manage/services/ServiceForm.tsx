@@ -15,7 +15,7 @@ import {
   type ManageGroup,
   type ManageService,
 } from '@/lib/services'
-import { useFormSubmit } from '@/lib/use-form-submit'
+import { useFormSubmit, useKeepValuesSubmit } from '@/lib/use-form-submit'
 
 const initialState: FormState = { error: null, success: null }
 
@@ -38,7 +38,14 @@ export default function ServiceForm({
   }
   const [state, formAction, pending] = useActionState(action, initialState)
   useResultToast(state)
-  const { formRef, onSubmit } = useFormSubmit(formAction, state)
+  const { formRef, onSubmit: submitAndReset } = useFormSubmit(formAction, state)
+  const submitAndKeep = useKeepValuesSubmit(formAction)
+  let onSubmit = submitAndReset
+  let resetRef: typeof formRef | null = formRef
+  if (service) {
+    onSubmit = submitAndKeep
+    resetRef = null
+  }
 
   let name = ''
   let url = ''
@@ -51,6 +58,8 @@ export default function ServiceForm({
   let recordType = 'A'
   let dnsExpected = ''
   let certDays = '14'
+  let slowAbove = ''
+  let slowAlerts = true
   if (service) {
     name = service.name
     url = service.url
@@ -74,6 +83,10 @@ export default function ServiceForm({
       dnsExpected = service.dns_expected
     }
     certDays = ''
+    if (service.slow_above_ms !== null) {
+      slowAbove = String(service.slow_above_ms)
+    }
+    slowAlerts = service.slow_alerts
     if (service.cert_warn_days) {
       certDays = String(service.cert_warn_days)
     }
@@ -142,7 +155,7 @@ export default function ServiceForm({
   )
 
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} className="manage-form">
+    <form ref={resetRef} action={formAction} onSubmit={onSubmit} className="manage-form">
       {service && <input type="hidden" name="id" value={service.id} />}
       <div className="form-row">
         <label>
@@ -273,6 +286,22 @@ export default function ServiceForm({
           {intervalField}
         </div>
       )}
+      <div className="form-row">
+        <label>
+          <span>Slow above (ms)</span>
+          <input name="slow_above_ms" type="number" min={10} max={60000} step={1} defaultValue={slowAbove} placeholder="Off" />
+          <small className="field-hint">
+            Optional. Counts as slow above this time, on top of slower than usual. Empty uses only the usual time.
+          </small>
+        </label>
+        <label className="check-row hint-row slow-alerts-row">
+          <input type="checkbox" name="slow_alerts" defaultChecked={slowAlerts} />
+          <span>
+            <strong>Warn when it answers slowly</strong>
+            <small>Turn off for a service whose speed always varies.</small>
+          </span>
+        </label>
+      </div>
       <div className="form-actions">
         <button type="submit" className="button-primary" disabled={pending}>
           {buttonText}

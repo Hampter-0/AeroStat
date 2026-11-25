@@ -25,7 +25,11 @@ export default function ServiceSection({
 
   let allOnline = true
   let inMaintenance = false
+  let anySlow = false
   for (const service of services) {
+    if (service.status === 'online' && typeof service.slow_ms === 'number') {
+      anySlow = true
+    }
     if (service.status === 'offline') {
       if (maintenanceServiceIds.includes(service.id)) {
         inMaintenance = true
@@ -39,6 +43,12 @@ export default function ServiceSection({
   let statusText = 'Operational'
   let dotClassName = 'live-check'
   let statusKind: GlyphKind = 'check'
+  if (anySlow) {
+    statusClassName = 'live-section-status slow'
+    statusText = 'Slow'
+    dotClassName = 'live-check slow'
+    statusKind = 'gauge'
+  }
   if (inMaintenance) {
     statusClassName = 'live-section-status maintenance'
     statusText = 'Maintenance'

@@ -4,6 +4,37 @@ What changed in each release. The GitHub release for a version shows its section
 
 Add a section per release, newest first, with the version as the heading (`## 1.2.3`). Use `###` headings inside it, for example New, Fixes and Changes.
 
+## 0.32.0
+
+### New
+
+- **Check log** on every service page: the latest 10 checks with **Show more** for older ones, with their time, response time and status. A failed check shows why, and **Details** shows what came back: the status line, useful headers and the start of the page, or the technical error. Details are kept for a week.
+- **Test now** on a service runs its check right away and shows the whole result. It is not saved and never sends a notification. You can test the same service once every 10 seconds.
+- A "service down" message on Discord and by email links to the check log of that service.
+- **Slow response warnings you can tune**: a service counts as slow when 3 of its last 5 checks were slow, so one hiccup stays quiet. Change both under **Settings → Monitoring**, down to 1 of 1 for a warning on every slow check. Per service you can add a fixed limit in ms, or turn the warnings off. Services are checked for this every minute instead of every 5.
+- Slow services show **Slower than usual** in yellow on the status page, and their group shows **Slow**.
+- **Send test** under **Settings → Notifications** shows how a slow response warning looks on Discord, by email and in your panel.
+- **Company name and website** under **Settings → General**: the copyright line on the sign-in page shows your company and links to your own website.
+- A page that doesn't exist in the panel shows a "Page not found" page in the panel's style once you're signed in.
+- **Try again** button when the status page can't reach the backend.
+- A colour picker for the accent colour with a colour field and a hue bar, and a calendar for every date and time field, instead of the browser's own.
+
+### Changes
+
+- Docker hosts have their own permission, **Docker hosts**. Everyone who could change the monitoring settings keeps it.
+- Posting an update picks the status from a dropdown, like editing an update.
+- The passkey button, soft buttons, the login notice and the focus rings of fields follow your accent colour.
+- The phone menu of the status page shows a cross while it is open.
+- `COMPOSE_PROFILES` in `.env` can hold `docker` next to `postgres`, so the normal update command also updates the Docker proxy.
+
+### Fixes
+
+- The response time of each service shows on phones again.
+- Pull to refresh works on phones again.
+- The two buttons on the "Can't reach the server" page have the same height.
+- Saving a service, incident or maintenance keeps the form as you saved it, instead of showing the old values (like the check type going back to HTTP) until you refresh.
+- An incident or maintenance whose services were all deleted no longer shows an empty "Affected services" row.
+
 ## 0.31.1
 
 ### Changes

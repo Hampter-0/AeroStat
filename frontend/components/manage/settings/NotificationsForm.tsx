@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import type { FormState } from '@/app/manage/actions'
-import { saveNotifications, sendTestNotification } from '@/app/manage/(panel)/settings/actions'
+import { saveNotifications, sendTestNotification, sendTestSlow } from '@/app/manage/(panel)/settings/actions'
 import { useResultToast } from '@/components/manage/toast/Toasts'
 import { EVENT_GROUPS, type NotificationSettings } from '@/lib/notifications'
 import { useFormSubmit } from '@/lib/use-form-submit'
@@ -15,6 +15,8 @@ export default function NotificationsForm({ settings }: { settings: Notification
   const { formRef, onSubmit } = useFormSubmit(formAction, state)
   const [testState, testAction, testing] = useActionState(sendTestNotification, initialState)
   useResultToast(testState)
+  const [slowState, slowAction, slowTesting] = useActionState(sendTestSlow, initialState)
+  useResultToast(slowState)
 
   let webhookHint = 'Server settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.'
   let webhookPlaceholder = 'https://discord.com/api/webhooks/…'
@@ -35,6 +37,10 @@ export default function NotificationsForm({ settings }: { settings: Notification
   let testText = 'Send test message'
   if (testing) {
     testText = 'Sending…'
+  }
+  let slowText = 'Send test'
+  if (slowTesting) {
+    slowText = 'Sending…'
   }
 
   return (
@@ -98,6 +104,13 @@ export default function NotificationsForm({ settings }: { settings: Notification
           </button>
         </form>
       )}
+
+      <form action={slowAction} className="notification-test">
+        <span>See how a slow response warning looks, on Discord, by email to you and in your panel.</span>
+        <button type="submit" className="button-secondary" disabled={slowTesting}>
+          {slowText}
+        </button>
+      </form>
     </>
   )
 }
